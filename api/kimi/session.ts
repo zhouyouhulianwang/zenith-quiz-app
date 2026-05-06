@@ -8,7 +8,7 @@ export async function signSessionToken(
   payload: SessionPayload,
 ): Promise<string> {
   const secret = new TextEncoder().encode(env.appSecret);
-  return new jose.SignJWT(payload)
+  return new jose.SignJWT(payload as Record<string, unknown>)
     .setProtectedHeader({ alg: JWT_ALG })
     .setIssuedAt()
     .setExpirationTime("1 year")
@@ -27,12 +27,16 @@ export async function verifySessionToken(
     const { payload } = await jose.jwtVerify(token, secret, {
       algorithms: [JWT_ALG],
     });
-    const { unionId, clientId } = payload;
-    if (!unionId || !clientId) {
-      console.warn("[session] JWT payload missing required fields.");
+    const { unionId, username, clientId } = payload;
+    if (!clientId) {
+      console.warn("[session] JWT payload missing clientId.");
       return null;
     }
-    return { unionId, clientId } as SessionPayload;
+    if (!unionId && !username) {
+      console.warn("[session] JWT payload missing unionId or username.");
+      return null;
+    }
+    return { unionId: unionId as string | undefined, username: username as string | undefined, clientId: clientId as string } as SessionPayload;
   } catch (error) {
     console.warn("[session] JWT verification failed:", error);
     return null;

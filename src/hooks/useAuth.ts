@@ -21,12 +21,12 @@ export function useAuth(options?: UseAuthOptions) {
     isLoading,
     error,
     refetch,
-  } = trpc.auth.me.useQuery(undefined, {
+  } = trpc.simpleAuth.me.useQuery(undefined, {
     staleTime: 1000 * 60 * 5,
     retry: false,
   });
 
-  const logoutMutation = trpc.auth.logout.useMutation({
+  const logoutMutation = trpc.simpleAuth.logout.useMutation({
     onSuccess: async () => {
       await utils.invalidate();
       navigate(redirectPath);

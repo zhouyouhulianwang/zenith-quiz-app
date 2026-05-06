@@ -9,10 +9,12 @@ import {
   bigint,
 } from "drizzle-orm/mysql-core";
 
-// Users table (managed by auth system)
+// Users table - supports both OAuth and username/password auth
 export const users = mysqlTable("users", {
   id: serial("id").primaryKey(),
-  unionId: varchar("unionId", { length: 255 }).notNull().unique(),
+  unionId: varchar("unionId", { length: 255 }), // nullable for simple auth users
+  username: varchar("username", { length: 50 }),
+  password: varchar("password", { length: 255 }), // bcrypt hashed
   name: varchar("name", { length: 255 }),
   email: varchar("email", { length: 320 }),
   avatar: text("avatar"),
@@ -33,7 +35,7 @@ export const banks = mysqlTable("banks", {
   category: varchar("category", { length: 50 }).notNull().default("自定义"),
   color: varchar("color", { length: 20 }).notNull().default("#00d4ff"),
   cover: varchar("cover", { length: 255 }),
-  questionsJson: text("questionsJson").notNull(), // JSON string of questions array
+  questionsJson: text("questionsJson").notNull(),
   progress: int("progress").notNull().default(0),
   importedAt: timestamp("importedAt").defaultNow().notNull(),
   lastPracticedAt: timestamp("lastPracticedAt"),
@@ -47,9 +49,9 @@ export const practiceRecords = mysqlTable("practice_records", {
   userId: bigint("userId", { mode: "number", unsigned: true }).notNull(),
   bankId: bigint("bankId", { mode: "number", unsigned: true }).notNull(),
   questionId: int("questionId").notNull(),
-  selected: text("selected").notNull(), // JSON array of indices
-  isCorrect: int("isCorrect", { unsigned: true }).notNull(), // 0 or 1
-  timeSpent: int("timeSpent").notNull(), // milliseconds
+  selected: text("selected").notNull(),
+  isCorrect: int("isCorrect", { unsigned: true }).notNull(),
+  timeSpent: int("timeSpent").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -59,7 +61,7 @@ export type PracticeRecord = typeof practiceRecords.$inferSelect;
 export const dailyRecords = mysqlTable("daily_records", {
   id: serial("id").primaryKey(),
   userId: bigint("userId", { mode: "number", unsigned: true }).notNull(),
-  date: varchar("date", { length: 10 }).notNull(), // YYYY-MM-DD
+  date: varchar("date", { length: 10 }).notNull(),
   count: int("count").notNull().default(0),
   correct: int("correct").notNull().default(0),
 });

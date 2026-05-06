@@ -7,7 +7,8 @@ export type TokenResponse = {
 };
 
 export type SessionPayload = {
-  unionId: string;
+  unionId?: string;
+  username?: string;
   clientId: string;
 };
 

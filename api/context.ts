@@ -5,7 +5,7 @@ import { authenticateRequest } from "./kimi/auth";
 export type TrpcContext = {
   req: Request;
   resHeaders: Headers;
-  user?: User;
+  user?: User | null;
 };
 
 export async function createContext(
@@ -13,7 +13,7 @@ export async function createContext(
 ): Promise<TrpcContext> {
   const ctx: TrpcContext = { req: opts.req, resHeaders: opts.resHeaders };
   try {
-    ctx.user = await authenticateRequest(opts.req.headers);
+    ctx.user = await authenticateRequest(opts.req);
   } catch {
     // Authentication is optional here
   }
