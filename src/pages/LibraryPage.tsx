@@ -100,7 +100,7 @@ export default function LibraryPage() {
   });
 
   const handleFileImport = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
       const isJson = file.name.endsWith(".json");
@@ -112,7 +112,7 @@ export default function LibraryPage() {
       }
 
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = async (event) => {
         try {
           let title: string;
           let questions: Question[];
@@ -131,11 +131,11 @@ export default function LibraryPage() {
             ({ title, questions } = parseTxtToBank(text));
           }
 
-          createBank.mutate({ title, questions, category: "证券从业", color: "#00d4ff" });
+          await createBank.mutateAsync({ title, questions, category: "证券从业", color: "#00d4ff" });
           setImportSuccess(`成功导入「${title}」，共 ${questions.length} 题`);
           setTimeout(() => setImportSuccess(""), 3000);
         } catch (err) {
-          setImportError(err instanceof Error ? err.message : "解析失败");
+          setImportError(err instanceof Error ? err.message : "导入失败，请检查文件格式");
           setTimeout(() => setImportError(""), 3000);
         }
       };

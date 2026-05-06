@@ -63,16 +63,18 @@ export const bankRouter = createRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const db = getDb();
+      const questionsJson = JSON.stringify(input.questions);
       const result = await db.insert(banks).values({
         userId: ctx.user.id,
         title: input.title,
         description: input.description || `${input.questions.length} 题`,
         category: input.category,
         color: input.color,
-        questionsJson: JSON.stringify(input.questions),
+        questionsJson,
         progress: 0,
       });
-      return { id: Number(result[0].insertId) };
+      const insertId = result[0]?.insertId ? Number(result[0].insertId) : 0;
+      return { id: insertId };
     }),
 
   // Delete a bank
