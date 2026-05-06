@@ -1,14 +1,15 @@
-import { authRouter } from "./auth-router";
 import { createRouter, publicQuery } from "./middleware";
+import { authRouter } from "./auth-router";
+import { bankRouter } from "./bank-router";
+import { recordRouter } from "./record-router";
+import { settingsRouter } from "./settings-router";
 
 export const appRouter = createRouter({
-  ping: publicQuery.query(() => ({ ok: true, ts: Date.now() })),
+  health: publicQuery.query(() => "ok"),
   auth: authRouter,
-
-  // TODO: add feature routers here, e.g.
-  // todo: createRouter({
-  //   list: publicQuery.query(() => findTodos()),
-  // }),
+  bank: bankRouter,
+  record: recordRouter,
+  settings: settingsRouter,
 });
 
 export type AppRouter = typeof appRouter;

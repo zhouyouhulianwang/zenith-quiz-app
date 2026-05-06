@@ -1,0 +1,193 @@
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { Settings, Bell, Moon, Type, Target, Download, Trash2, HelpCircle, FileText, Award, Calendar, BookOpen, Flame, Languages, RotateCcw } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useAppSettings } from "@/context/AppContext";
+import { trpc } from "@/providers/trpc";
+import ParticleBackground from "@/components/ParticleBackground";
+
+export default function ProfilePage() {
+  const { user, logout, isAuthenticated } = useAuth();
+  const { settings, setSettings } = useAppSettings();
+  const { data: banks } = trpc.bank.list.useQuery();
+  const { data: records } = trpc.record.list.useQuery();
+  const utils = trpc.useUtils();
+  const deleteBank = trpc.bank.delete.useMutation({ onSuccess: () => utils.bank.list.invalidate() });
+
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showBankReset, setShowBankReset] = useState(false);
+  const [resetBankId, setResetBankId] = useState<number | null>(null);
+
+  const joinDays = user?.createdAt ? Math.floor((Date.now() - new Date(user.createdAt).getTime()) / 86400000) : 0;
+  const totalQ = records?.length || 0;
+
+  const handleExport = () => {
+    const data = { banks, records, settings, exportDate: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `zenith-backup-${new Date().toISOString().split("T")[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div style={{ position: "relative", minHeight: "100vh", background: "#1a1a1a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <ParticleBackground />
+        <div style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "20px" }}>
+          <div style={{ width: "80px", height: "80px", borderRadius: "50%", background: "#2a2a2a", margin: "0 auto 16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <UserIcon size={32} color="#666" />
+          </div>
+          <p style={{ color: "#a0a0a0", marginBottom: "20px" }}>登录后同步你的练习数据</p>
+          <a href="/api/oauth/authorize" style={{ display: "inline-block", padding: "14px 32px", background: "#00d4ff", color: "#1a1a1a", borderRadius: "12px", fontSize: "15px", fontWeight: 600, textDecoration: "none" }}>
+            立即登录
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ position: "relative", minHeight: "100vh", background: "#1a1a1a", overflowX: "hidden" }}>
+      <ParticleBackground />
+      <div style={{ position: "relative", zIndex: 1, paddingBottom: "100px" }}>
+        {/* User Card */}
+        <div style={{ background: "linear-gradient(135deg, #7c3aed, #00d4ff)", borderRadius: "0 0 24px 24px", padding: "32px 20px 24px", textAlign: "center" }}>
+          <div style={{ width: "80px", height: "80px", borderRadius: "50%", border: "3px solid rgba(255,255,255,0.3)", overflow: "hidden", margin: "0 auto 12px", background: "rgba(0,0,0,0.2)" }}>
+            <img src={user?.avatar || "/avatar-default.png"} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { (e.target as HTMLImageElement).src = "/avatar-default.png"; }} />
+          </div>
+          <div style={{ fontSize: "18px", fontWeight: 700, color: "#fff" }}>{user?.name || "学习者"}</div>
+          <div style={{ fontSize: "14px", color: "rgba(255,255,255,0.7)", marginTop: "4px" }}>{user?.email || ""}</div>
+          <div style={{ display: "flex", justifyContent: "center", gap: "24px", marginTop: "20px" }}>
+            <div><div style={{ fontSize: "20px", fontWeight: 700, color: "#fff" }}>{joinDays}</div><div style={{ fontSize: "11px", color: "rgba(255,255,255,0.7)" }}>加入天数</div></div>
+            <div><div style={{ fontSize: "20px", fontWeight: 700, color: "#fff" }}>{totalQ}</div><div style={{ fontSize: "11px", color: "rgba(255,255,255,0.7)" }}>总练习数</div></div>
+            <div><div style={{ fontSize: "20px", fontWeight: 700, color: "#fff" }}>{banks?.length || 0}</div><div style={{ fontSize: "11px", color: "rgba(255,255,255,0.7)" }}>题库数</div></div>
+          </div>
+          <motion.button whileTap={{ scale: 0.95 }} onClick={logout}
+            style={{ marginTop: "16px", padding: "8px 20px", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "20px", color: "#fff", fontSize: "13px", cursor: "pointer" }}>
+            退出登录
+          </motion.button>
+        </div>
+
+        <div style={{ padding: "16px" }}>
+          {/* Badges */}
+          <div style={{ marginBottom: "20px" }}>
+            <h2 style={{ fontSize: "16px", fontWeight: 600, color: "#fff", margin: "0 0 12px 0" }}>成就徽章</h2>
+            <div style={{ display: "flex", gap: "12px", overflowX: "auto" }}>
+              {[
+                { id: "first", name: "初次练习", icon: BookOpen, earned: totalQ > 0 },
+                { id: "streak3", name: "连续3天", icon: Flame, earned: joinDays >= 3 },
+                { id: "streak7", name: "连续7天", icon: Flame, earned: joinDays >= 7 },
+                { id: "master", name: "百题斩", icon: Award, earned: totalQ >= 100 },
+                { id: "expert", name: "专家级", icon: Award, earned: totalQ >= 500 },
+                { id: "perfect", name: "全对一次", icon: Award, earned: records?.some((r) => r.isCorrect) || false },
+              ].map((badge, i) => (
+                <motion.div key={badge.id} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }} style={{ minWidth: "80px", textAlign: "center", opacity: badge.earned ? 1 : 0.4 }}>
+                  <div style={{ width: "56px", height: "56px", borderRadius: "50%", background: badge.earned ? "rgba(0,212,255,0.2)" : "#2a2a2a", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 6px", border: badge.earned ? "1px solid rgba(0,212,255,0.3)" : "1px solid rgba(255,255,255,0.05)" }}>
+                    <badge.icon size={24} color={badge.earned ? "#00d4ff" : "#666"} />
+                  </div>
+                  <div style={{ fontSize: "12px", color: badge.earned ? "#fff" : "#666" }}>{badge.name}</div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
+          {/* Settings */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div>
+              <div style={{ fontSize: "12px", color: "#666", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px", paddingLeft: "4px" }}>学习设置</div>
+              <div style={{ background: "#222", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden" }}>
+                <SettingRow icon={Target} label="每日目标" value={`${settings.dailyGoal}题`} onClick={() => { const v = prompt("设置每日目标题数:", String(settings.dailyGoal)); if (v && !isNaN(Number(v))) setSettings({ dailyGoal: Number(v) }); }} />
+                <SettingRow icon={Bell} label="提醒时间" value={settings.reminderTime} onClick={() => { const v = prompt("设置提醒时间 (HH:MM):", settings.reminderTime); if (v && /^\d{2}:\d{2}$/.test(v)) setSettings({ reminderTime: v }); }} />
+                <SettingRow icon={Type} label="难度偏好" value={`${"★".repeat(settings.difficulty)}${"☆".repeat(5 - settings.difficulty)}`} onClick={() => { const v = prompt("设置难度偏好 (1-5):", String(settings.difficulty)); if (v) setSettings({ difficulty: Math.max(1, Math.min(5, Number(v))) }); }} />
+                <SettingRow icon={Languages} label="题目语言" value={settings.questionLanguage === "zh" ? "中文" : settings.questionLanguage === "en" ? "English" : "中英对照"} onClick={() => { const langs: Array<"zh" | "en" | "both"> = ["zh", "en", "both"]; const idx = langs.indexOf(settings.questionLanguage); setSettings({ questionLanguage: langs[(idx + 1) % langs.length] }); }} />
+              </div>
+            </div>
+
+            <div>
+              <div style={{ fontSize: "12px", color: "#666", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px", paddingLeft: "4px" }}>数据管理</div>
+              <div style={{ background: "#222", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden" }}>
+                <SettingRow icon={Download} label="导出数据" value="JSON" onClick={handleExport} />
+                <SettingRow icon={RotateCcw} label="按卷清空记录" value={`${banks?.length || 0} 套题库`} onClick={() => setShowBankReset(true)} />
+                <SettingRow icon={Trash2} label="清空所有记录" value="" danger onClick={() => setShowResetConfirm(true)} />
+              </div>
+            </div>
+
+            <div>
+              <div style={{ fontSize: "12px", color: "#666", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px", paddingLeft: "4px" }}>应用设置</div>
+              <div style={{ background: "#222", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden" }}>
+                <SettingRow icon={Moon} label="深色模式" value={<div style={{ width: "34px", height: "20px", borderRadius: "10px", background: "#00d4ff", position: "relative" }}><div style={{ width: "16px", height: "16px", borderRadius: "50%", background: "#fff", position: "absolute", top: "2px", right: "2px" }} /></div>} />
+                <SettingRow icon={Type} label="字体大小" value={settings.fontSize === "small" ? "小" : settings.fontSize === "large" ? "大" : "中"} onClick={() => { const sizes: Array<"small" | "medium" | "large"> = ["small", "medium", "large"]; const idx = sizes.indexOf(settings.fontSize); setSettings({ fontSize: sizes[(idx + 1) % sizes.length] }); }} />
+              </div>
+            </div>
+
+            <div>
+              <div style={{ fontSize: "12px", color: "#666", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px", paddingLeft: "4px" }}>关于</div>
+              <div style={{ background: "#222", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden" }}>
+                <SettingRow icon={HelpCircle} label="帮助与反馈" value="" onClick={() => alert("请发送邮件至 support@zenith.app")} />
+                <SettingRow icon={FileText} label="隐私政策" value="" onClick={() => alert("所有数据存储在云端服务器，我们严格保护您的隐私。")} />
+                <div style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: "12px" }}><Calendar size={18} color="#666" /><span style={{ fontSize: "14px", color: "#fff", flex: 1 }}>版本号</span><span style={{ fontSize: "14px", color: "#666" }}>v2.0.0</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bank Reset Modal */}
+      {showBankReset && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} style={{ background: "#222", borderRadius: "16px", padding: "20px", width: "100%", maxWidth: "340px", border: "1px solid rgba(255,255,255,0.1)", maxHeight: "80vh", overflowY: "auto" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: 600, color: "#fff", margin: "0 0 4px 0" }}>选择要清空的题库</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "12px" }}>
+              {(banks || []).map((bank) => (
+                <button key={bank.id} onClick={() => setResetBankId(bank.id === resetBankId ? null : bank.id)}
+                  style={{ display: "flex", alignItems: "center", gap: "10px", padding: "12px", borderRadius: "10px", background: resetBankId === bank.id ? "rgba(239,68,68,0.15)" : "#2a2a2a", border: resetBankId === bank.id ? "1px solid rgba(239,68,68,0.4)" : "1px solid rgba(255,255,255,0.05)", cursor: "pointer", width: "100%", textAlign: "left" }}>
+                  <div style={{ width: "4px", height: "36px", borderRadius: "2px", background: bank.color || "#00d4ff" }} />
+                  <div style={{ flex: 1 }}><div style={{ fontSize: "14px", color: "#fff" }}>{bank.title}</div></div>
+                </button>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: "10px", marginTop: "16px" }}>
+              <button onClick={() => { setShowBankReset(false); setResetBankId(null); }} style={{ flex: 1, padding: "12px", borderRadius: "10px", background: "#2a2a2a", color: "#fff", border: "none", cursor: "pointer" }}>取消</button>
+              <button onClick={() => { if (resetBankId) deleteBank.mutate({ id: resetBankId }); setShowBankReset(false); }} disabled={!resetBankId} style={{ flex: 1, padding: "12px", borderRadius: "10px", background: resetBankId ? "#ef4444" : "#2a2a2a", color: "#fff", border: "none", cursor: resetBankId ? "pointer" : "not-allowed" }}>确认清空</button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Reset All Confirm */}
+      {showResetConfirm && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} style={{ background: "#222", borderRadius: "16px", padding: "24px", width: "100%", maxWidth: "300px", border: "1px solid rgba(255,255,255,0.1)" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: 600, color: "#fff", margin: "0 0 8px 0" }}>确认全部清空</h3>
+            <p style={{ fontSize: "14px", color: "#a0a0a0", margin: "0 0 20px 0" }}>此操作将删除所有题库和练习记录，无法恢复。</p>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <button onClick={() => setShowResetConfirm(false)} style={{ flex: 1, padding: "12px", borderRadius: "10px", background: "#2a2a2a", color: "#fff", border: "none", cursor: "pointer" }}>取消</button>
+              <button onClick={() => { (banks || []).forEach((b) => deleteBank.mutate({ id: b.id })); setShowResetConfirm(false); }} style={{ flex: 1, padding: "12px", borderRadius: "10px", background: "#ef4444", color: "#fff", border: "none", cursor: "pointer", fontWeight: 600 }}>确认清空</button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
+function UserIcon({ size, color }: { size: number; color: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+
+function SettingRow({ icon: Icon, label, value, onClick, danger }: { icon: typeof Settings; label: string; value: React.ReactNode; onClick?: () => void; danger?: boolean }) {
+  return (
+    <button onClick={onClick} style={{ width: "100%", padding: "14px 16px", display: "flex", alignItems: "center", gap: "12px", background: "none", border: "none", borderBottom: "1px solid rgba(255,255,255,0.05)", cursor: onClick ? "pointer" : "default", textAlign: "left" }}>
+      <Icon size={18} color={danger ? "#ef4444" : "#666"} />
+      <span style={{ fontSize: "14px", color: danger ? "#ef4444" : "#fff", flex: 1 }}>{label}</span>
+      {typeof value === "string" ? <span style={{ fontSize: "14px", color: "#a0a0a0" }}>{value}</span> : value}
+    </button>
+  );
+}
