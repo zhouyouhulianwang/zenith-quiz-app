@@ -4,6 +4,7 @@ import { simpleAuthRouter } from "./simple-auth-router";
 import { bankRouter } from "./bank-router";
 import { recordRouter } from "./record-router";
 import { settingsRouter } from "./settings-router";
+import { adminRouter } from "./admin-router";
 
 export const appRouter = createRouter({
   health: publicQuery.query(() => "ok"),
@@ -12,6 +13,7 @@ export const appRouter = createRouter({
   bank: bankRouter,
   record: recordRouter,
   settings: settingsRouter,
+  admin: adminRouter,
 });
 
 export type AppRouter = typeof appRouter;

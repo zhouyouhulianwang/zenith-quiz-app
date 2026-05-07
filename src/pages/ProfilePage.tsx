@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { motion } from "framer-motion";
-import { Settings, Bell, Moon, Type, Target, Download, Trash2, HelpCircle, FileText, Award, Calendar, BookOpen, Flame, Languages, RotateCcw } from "lucide-react";
+import { Settings, Bell, Moon, Type, Target, Download, Trash2, HelpCircle, FileText, Award, Calendar, BookOpen, Flame, Languages, RotateCcw, Shield } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAppSettings } from "@/context/AppContext";
 import { trpc } from "@/providers/trpc";
@@ -8,6 +9,7 @@ import ParticleBackground from "@/components/ParticleBackground";
 
 export default function ProfilePage() {
   const { user, logout, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const { settings, setSettings } = useAppSettings();
   const { data: banks } = trpc.bank.list.useQuery();
   const { data: records } = trpc.record.list.useQuery();
@@ -114,6 +116,15 @@ export default function ProfilePage() {
                 <SettingRow icon={Trash2} label="清空所有记录" value="" danger onClick={() => setShowResetConfirm(true)} />
               </div>
             </div>
+
+            {user?.role === "admin" && (
+              <div>
+                <div style={{ fontSize: "12px", color: "#666", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px", paddingLeft: "4px" }}>管理</div>
+                <div style={{ background: "#222", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden" }}>
+                  <SettingRow icon={Shield} label="管理后台" value="查看数据库" onClick={() => navigate("/admin")} />
+                </div>
+              </div>
+            )}
 
             <div>
               <div style={{ fontSize: "12px", color: "#666", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px", paddingLeft: "4px" }}>应用设置</div>
