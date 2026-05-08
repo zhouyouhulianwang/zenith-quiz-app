@@ -234,7 +234,7 @@ function ChapterSelector({ bankId, onSelectChapter }: { bankId: number; onSelect
                 <FileText size={18} color={bank.color || "#00d4ff"} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: "14px", fontWeight: 600, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ch.chapterName}</div>
+                <div style={{ fontSize: "14px", fontWeight: 600, color: "#fff" }} title={ch.chapterName}>第{i + 1}章</div>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "3px" }}>
                   <span style={{ fontSize: "11px", color: "#666" }}>{ch.questionCount} 题</span>
                   {ch.totalInChapter > 0 ? (
@@ -302,10 +302,11 @@ function ChapterBar({
       >
         全部
       </button>
-      {chapters.map((ch) => (
+      {chapters.map((ch, idx) => (
         <button
           key={ch.chapterId}
           onClick={() => onSelect(ch.chapterId)}
+          title={ch.chapterName}
           style={{
             padding: "6px 14px",
             borderRadius: "10px",
@@ -323,7 +324,7 @@ function ChapterBar({
             WebkitTapHighlightColor: "transparent",
           }}
         >
-          {ch.chapterName.length > 8 ? ch.chapterName.slice(0, 8) + "..." : ch.chapterName}
+          第{idx + 1}章
         </button>
       ))}
     </div>
@@ -567,7 +568,11 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
             <div style={{ background: "#222", borderRadius: "16px", padding: "20px", border: "1px solid rgba(255,255,255,0.08)", marginBottom: "16px" }}>
               <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "4px 12px", borderRadius: "8px", background: "rgba(0,212,255,0.15)", color: "#00d4ff", fontSize: "12px", fontWeight: 500, marginBottom: "12px" }}>
                 {typeLabel}
-                {currentQuestion?.chapterName && <span style={{ opacity: 0.7 }}>{currentQuestion.chapterName.length > 15 ? currentQuestion.chapterName.slice(0, 15) + "..." : currentQuestion.chapterName}</span>}
+                {currentQuestion?.chapterId !== undefined && (
+                  <span style={{ opacity: 0.7 }}>
+                    第{chapters.findIndex((c) => c.chapterId === currentQuestion.chapterId) + 1}章
+                  </span>
+                )}
                 {currentAnswer?.submitted && <span style={{ color: currentAnswer.isCorrect ? "#10b981" : "#ef4444" }}>{currentAnswer.isCorrect ? " ✓ 正确" : " ✗ 错误"}</span>}
               </div>
               <div style={{ fontSize: "18px", fontWeight: 500, color: "#fff", lineHeight: 1.6, whiteSpace: "pre-wrap", userSelect: "text", WebkitUserSelect: "text" }}>{displayQuestion}</div>

@@ -144,10 +144,10 @@ export default function StatsPage() {
                   </button>
                   {expandedBank === bank.bankId && (
                     <div style={{ padding: "0 16px 12px" }}>
-                      {bank.chapters.map((ch) => (
+                      {bank.chapters.map((ch, idx) => (
                         <div key={ch.chapterId} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: "13px", color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ch.chapterName}</div>
+                            <div style={{ fontSize: "13px", color: "#fff" }}>第{idx + 1}章</div>
                             <div style={{ display: "flex", gap: "12px", marginTop: "2px" }}>
                               <span style={{ fontSize: "11px", color: "#666" }}>{ch.total} 题</span>
                               <span style={{ fontSize: "11px", color: "#10b981" }}>{ch.correct} 正确</span>
