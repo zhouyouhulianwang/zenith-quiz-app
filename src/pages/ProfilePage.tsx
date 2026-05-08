@@ -22,6 +22,7 @@ export default function ProfilePage() {
 
   const joinDays = user?.createdAt ? Math.floor((Date.now() - new Date(user.createdAt).getTime()) / 86400000) : 0;
   const totalQ = records?.length || 0;
+  const wrongQ = records?.filter((r) => !r.isCorrect).length || 0;
 
   const handleExport = () => {
     const data = { banks, records, settings, exportDate: new Date().toISOString() };
@@ -65,6 +66,10 @@ export default function ProfilePage() {
           <div style={{ display: "flex", justifyContent: "center", gap: "24px", marginTop: "20px" }}>
             <div><div style={{ fontSize: "20px", fontWeight: 700, color: "#fff" }}>{joinDays}</div><div style={{ fontSize: "11px", color: "rgba(255,255,255,0.7)" }}>加入天数</div></div>
             <div><div style={{ fontSize: "20px", fontWeight: 700, color: "#fff" }}>{totalQ}</div><div style={{ fontSize: "11px", color: "rgba(255,255,255,0.7)" }}>总练习数</div></div>
+            <div onClick={() => wrongQ > 0 && navigate("/mistakes")} style={{ cursor: wrongQ > 0 ? "pointer" : "default" }}>
+              <div style={{ fontSize: "20px", fontWeight: 700, color: wrongQ > 0 ? "#ef4444" : "#fff" }}>{wrongQ}</div>
+              <div style={{ fontSize: "11px", color: wrongQ > 0 ? "#ef4444" : "rgba(255,255,255,0.7)" }}>错题数</div>
+            </div>
             <div><div style={{ fontSize: "20px", fontWeight: 700, color: "#fff" }}>{banks?.length || 0}</div><div style={{ fontSize: "11px", color: "rgba(255,255,255,0.7)" }}>题库数</div></div>
           </div>
           <motion.button whileTap={{ scale: 0.95 }} onClick={logout}
