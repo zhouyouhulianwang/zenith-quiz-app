@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Check, X, Clock, ChevronRight, ChevronLeft, RotateCcw, Home, BookOpen, Languages, AlertCircle, Trophy, Zap, FileText } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAppSettings } from "@/context/AppContext";
+import { toTraditional } from "@/lib/chineseConv";
 import ParticleBackground from "@/components/ParticleBackground";
 
 interface AnswerState {
@@ -510,7 +511,7 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
     if (!currentQuestion) return "";
     switch (lang) {
       case "en": return currentQuestion.enQuestion || currentQuestion.question;
-      case "tc": return currentQuestion.tcQuestion || currentQuestion.question;
+      case "tc": return toTraditional(currentQuestion.question);
       case "entc": return currentQuestion.enQuestion || "";
       default: return currentQuestion.question;
     }
@@ -519,11 +520,14 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
     if (!currentQuestion) return [];
     switch (lang) {
       case "en": return currentQuestion.enOptions?.length ? currentQuestion.enOptions : currentQuestion.options;
-      case "tc": return currentQuestion.tcOptions?.length ? currentQuestion.tcOptions : currentQuestion.options;
+      case "tc": return currentQuestion.options.map((o) => toTraditional(o));
       case "entc": return currentQuestion.enOptions?.length ? currentQuestion.enOptions : currentQuestion.options;
       default: return currentQuestion.options;
     }
   })();
+  // For entc mode, also prepare the traditional Chinese secondary display
+  const secondaryQuestion = lang === "entc" ? toTraditional(currentQuestion?.question || "") : undefined;
+  const secondaryOptions = lang === "entc" ? currentQuestion?.options.map((o) => toTraditional(o)) : undefined;
   const typeLabel = { single: "单选题", multiple: "多选题", boolean: "判断题", fill: "填空题" }[currentQuestion?.type || "single"];
   const langMap: Record<string, string> = { zh: "中", en: "EN", both: "中英", tc: "繁", entc: "EN+繁" };
   const langLabelText = langMap[lang] || "EN+繁";
@@ -603,7 +607,7 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
               </div>
               <div style={{ fontSize: "18px", fontWeight: 500, color: "#fff", lineHeight: 1.6, whiteSpace: "pre-wrap", userSelect: "text", WebkitUserSelect: "text" }}>{displayQuestion}</div>
               {lang === "both" && currentQuestion?.enQuestion && <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: "14px", color: "#a0a0a0", lineHeight: 1.6, userSelect: "text", WebkitUserSelect: "text" }}>{currentQuestion.enQuestion}</div>}
-              {lang === "entc" && (currentQuestion?.tcQuestion || currentQuestion?.question) && <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: "14px", color: "#a0a0a0", lineHeight: 1.6, userSelect: "text", WebkitUserSelect: "text" }}>{currentQuestion.tcQuestion || currentQuestion.question}</div>}
+              {lang === "entc" && secondaryQuestion && <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: "16px", color: "#d0d0d0", lineHeight: 1.6, userSelect: "text", WebkitUserSelect: "text" }}>{secondaryQuestion}</div>}
             </div>
 
             {/* Options */}
@@ -631,7 +635,7 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
                     <div style={{ flex: 1 }}>
                       <span style={{ fontSize: "16px", color: "#fff", lineHeight: 1.5, userSelect: "text", WebkitUserSelect: "text" }}>{option}</span>
                       {lang === "both" && currentQuestion?.enOptions?.[index] && <div style={{ fontSize: "13px", color: "#a0a0a0", marginTop: "4px", userSelect: "text", WebkitUserSelect: "text" }}>{currentQuestion.enOptions[index]}</div>}
-                      {lang === "entc" && (currentQuestion?.tcOptions?.[index] || currentQuestion?.options?.[index]) && <div style={{ fontSize: "13px", color: "#a0a0a0", marginTop: "4px", userSelect: "text", WebkitUserSelect: "text" }}>{currentQuestion.tcOptions?.[index] || currentQuestion.options?.[index]}</div>}
+                      {lang === "entc" && secondaryOptions?.[index] && <div style={{ fontSize: "15px", color: "#d0d0d0", marginTop: "4px", userSelect: "text", WebkitUserSelect: "text" }}>{secondaryOptions[index]}</div>}
                     </div>
                     {submitted && isCorrect && <Check size={20} color="#10b981" style={{ flexShrink: 0, marginTop: "2px" }} />}
                     {submitted && isSelected && !isCorrect && <X size={20} color="#ef4444" style={{ flexShrink: 0, marginTop: "2px" }} />}

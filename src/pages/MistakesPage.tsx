@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from "react-router";
 import { motion } from "framer-motion";
 import { ArrowLeft, XCircle, CheckCircle, ChevronLeft, ChevronRight, RotateCcw, Filter, AlertCircle, BookOpen, Clock } from "lucide-react";
 import { trpc } from "@/providers/trpc";
+import { useAppSettings } from "@/context/AppContext";
+import { toTraditional } from "@/lib/chineseConv";
 import ParticleBackground from "@/components/ParticleBackground";
 
 export default function MistakesPage() {
@@ -44,6 +46,8 @@ export default function MistakesPage() {
     catch { return []; }
   }, [bank?.questionsJson]);
   const question = current ? bankQuestions.find((q) => q.id === current.questionId) : null;
+  const { settings } = useAppSettings();
+  const showTc = settings.questionLanguage === "entc" || settings.questionLanguage === "tc";
 
   const handlePrev = () => { if (currentIndex > 0) setCurrentIndex((p) => p - 1); };
   const handleNext = () => { if (currentIndex < filtered.length - 1) setCurrentIndex((p) => p + 1); };
@@ -111,9 +115,10 @@ export default function MistakesPage() {
                 <span style={{ fontSize: "11px", color: "#666", display: "flex", alignItems: "center", gap: "3px" }}><Clock size={10} />{formatDate(current.createdAt)}</span>
               </div>
               <div style={{ background: "#222", borderRadius: "16px", padding: "20px", border: "1px solid rgba(255,255,255,0.08)", marginBottom: "16px" }}>
-                <div style={{ fontSize: "17px", fontWeight: 500, color: "#fff", lineHeight: 1.6, marginBottom: "16px" }}>{question.question}</div>
+                <div style={{ fontSize: "17px", fontWeight: 500, color: "#fff", lineHeight: 1.6, marginBottom: "16px" }}>{showTc ? toTraditional(question.question) : question.question}</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   {question.options.map((opt, idx) => {
+                    const displayOpt = showTc ? toTraditional(opt) : opt;
                     const isCorrect = question.correct.includes(idx);
                     const isSelected = current.selected.includes(idx);
                     const isWrong = isSelected && !isCorrect;
@@ -123,7 +128,7 @@ export default function MistakesPage() {
                     return (
                       <div key={idx} style={{ padding: "10px 12px", borderRadius: "8px", background: bg, border, fontSize: "14px", color, display: "flex", alignItems: "center", gap: "8px" }}>
                         <span style={{ width: "22px", height: "22px", borderRadius: "50%", background: isCorrect ? "#10b981" : isWrong ? "#ef4444" : isSelected ? "#00d4ff" : "#333", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 600, color: "#fff", flexShrink: 0 }}>{String.fromCharCode(65 + idx)}</span>
-                        <span>{opt}</span>
+                        <span>{displayOpt}</span>
                         {isCorrect && <span style={{ fontSize: "11px", marginLeft: "auto" }}>正确答案</span>}
                         {!isCorrect && isSelected && <span style={{ fontSize: "11px", marginLeft: "auto" }}>你的选择</span>}
                       </div>

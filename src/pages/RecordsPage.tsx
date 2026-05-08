@@ -3,6 +3,8 @@ import { useNavigate } from "react-router";
 import { motion } from "framer-motion";
 import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle, XCircle, Clock, BookOpen, Filter, Calendar } from "lucide-react";
 import { trpc } from "@/providers/trpc";
+import { useAppSettings } from "@/context/AppContext";
+import { toTraditional } from "@/lib/chineseConv";
 import ParticleBackground from "@/components/ParticleBackground";
 
 export default function RecordsPage() {
@@ -22,6 +24,8 @@ export default function RecordsPage() {
   const current = filtered[currentIndex];
   const bank = current ? banks?.find((b) => b.id === current.bankId) : null;
   const question = current ? (JSON.parse(bank?.questionsJson || "[]") as Array<{ id: number; question: string; options: string[]; correct: number[]; explanation: string }>).find((q) => q.id === current.questionId) : null;
+  const { settings } = useAppSettings();
+  const showTc = settings.questionLanguage === "entc" || settings.questionLanguage === "tc";
   const total = filtered.length;
   const correctCount = (records || []).filter((r) => r.isCorrect).length;
   const wrongCount = (records || []).filter((r) => !r.isCorrect).length;
@@ -92,17 +96,18 @@ export default function RecordsPage() {
                 <span style={{ fontSize: "11px", color: "#666" }}><Clock size={10} />{formatDate(current.createdAt)}</span>
               </div>
               <div style={{ background: "#222", borderRadius: "16px", padding: "20px", border: "1px solid rgba(255,255,255,0.08)" }}>
-                <div style={{ fontSize: "16px", fontWeight: 500, color: "#fff", lineHeight: 1.6, marginBottom: "16px" }}>{question.question}</div>
+                <div style={{ fontSize: "16px", fontWeight: 500, color: "#fff", lineHeight: 1.6, marginBottom: "16px" }}>{showTc ? toTraditional(question.question) : question.question}</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   {question.options.map((opt, idx) => {
                     const isCorrect = question.correct.includes(idx);
                     const isSelected = current.selected.includes(idx);
+                    const displayOpt = showTc ? toTraditional(opt) : opt;
                     const bg = isCorrect ? "rgba(16,185,129,0.12)" : isSelected && !isCorrect ? "rgba(239,68,68,0.12)" : "#2a2a2a";
                     const color = isCorrect ? "#10b981" : isSelected && !isCorrect ? "#ef4444" : "#a0a0a0";
                     return (
                       <div key={idx} style={{ padding: "10px 12px", borderRadius: "8px", background: bg, border: `1px solid ${isCorrect ? "rgba(16,185,129,0.3)" : isSelected && !isCorrect ? "rgba(239,68,68,0.3)" : "rgba(255,255,255,0.05)"}`, fontSize: "14px", color, display: "flex", alignItems: "center", gap: "8px" }}>
                         <span style={{ width: "22px", height: "22px", borderRadius: "50%", background: isCorrect ? "#10b981" : isSelected ? "#ef4444" : "#333", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 600, color: "#fff" }}>{String.fromCharCode(65 + idx)}</span>
-                        <span>{opt}</span>
+                        <span>{displayOpt}</span>
                       </div>
                     );
                   })}
