@@ -57,8 +57,15 @@ function TrainingSelector({ onSelect }: { onSelect: (id: number) => void }) {
     <div style={{ position: "relative", minHeight: "100dvh", background: "#1a1a1a", overflowX: "hidden" }}>
       <ParticleBackground />
       <div style={{ position: "relative", zIndex: 1, padding: "16px", paddingBottom: "100px" }}>
-        <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#fff", margin: "0 0 4px 0" }}>开始训练</h1>
-        <p style={{ fontSize: "13px", color: "#666", marginBottom: "20px" }}>选择题库开始练习，或错题重练</p>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "4px" }}>
+          <button onClick={() => navigate("/")} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px", minWidth: "44px", minHeight: "44px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <ArrowLeft size={24} color="#fff" />
+          </button>
+          <div>
+            <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#fff", margin: 0 }}>开始训练</h1>
+            <p style={{ fontSize: "13px", color: "#666", margin: "2px 0 0" }}>选择题库开始练习，或错题重练</p>
+          </div>
+        </div>
 
         {totalWrong > 0 && (
           <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.97 }}
