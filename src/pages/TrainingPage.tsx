@@ -256,8 +256,82 @@ function ChapterSelector({ bankId, onSelectChapter }: { bankId: number; onSelect
   );
 }
 
+// ========== Chapter Bar Component ==========
+function ChapterBar({
+  chapters,
+  currentChapterId,
+  onSelect,
+  bankColor,
+}: {
+  chapters: ChapterInfo[];
+  currentChapterId?: number;
+  onSelect: (chapterId?: number) => void;
+  bankColor: string;
+}) {
+  if (chapters.length === 0) return null;
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        gap: "6px",
+        padding: "8px 16px",
+        overflowX: "auto",
+        WebkitOverflowScrolling: "touch",
+        borderBottom: "1px solid rgba(255,255,255,0.06)",
+      }}
+    >
+      <button
+        onClick={() => onSelect(undefined)}
+        style={{
+          padding: "6px 14px",
+          borderRadius: "10px",
+          fontSize: "12px",
+          fontWeight: 600,
+          border: "none",
+          cursor: "pointer",
+          whiteSpace: "nowrap",
+          flexShrink: 0,
+          background: currentChapterId === undefined ? bankColor || "#00d4ff" : "#2a2a2a",
+          color: currentChapterId === undefined ? "#1a1a1a" : "#a0a0a0",
+          transition: "all 0.2s",
+          touchAction: "manipulation",
+          userSelect: "none",
+          WebkitTapHighlightColor: "transparent",
+        }}
+      >
+        全部
+      </button>
+      {chapters.map((ch) => (
+        <button
+          key={ch.chapterId}
+          onClick={() => onSelect(ch.chapterId)}
+          style={{
+            padding: "6px 14px",
+            borderRadius: "10px",
+            fontSize: "12px",
+            fontWeight: 600,
+            border: "none",
+            cursor: "pointer",
+            whiteSpace: "nowrap",
+            flexShrink: 0,
+            background: currentChapterId === ch.chapterId ? bankColor || "#00d4ff" : "#2a2a2a",
+            color: currentChapterId === ch.chapterId ? "#1a1a1a" : "#a0a0a0",
+            transition: "all 0.2s",
+            touchAction: "manipulation",
+            userSelect: "none",
+            WebkitTapHighlightColor: "transparent",
+          }}
+        >
+          {ch.chapterName.length > 8 ? ch.chapterName.slice(0, 8) + "..." : ch.chapterName}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 // ========== Training Session ==========
-function TrainingSession({ bankId: rawBankId, chapterId: rawChapterId }: { bankId: number; chapterId?: number }) {
+function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { bankId: number; chapterId?: number }) {
   const navigate = useNavigate();
   const { settings } = useAppSettings();
   const utils = trpc.useUtils();
@@ -273,6 +347,9 @@ function TrainingSession({ bankId: rawBankId, chapterId: rawChapterId }: { bankI
   const upsertDaily = trpc.record.upsertDaily.useMutation();
   const updateProgress = trpc.bank.updateProgress.useMutation({ onSuccess: () => utils.bank.list.invalidate() });
 
+  // Internal chapter state — allows switching chapters during practice
+  const [activeChapterId, setActiveChapterId] = useState<number | undefined>(initialChapterId);
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<AnswerState[]>([]);
   const [showSummary, setShowSummary] = useState(false);
@@ -283,14 +360,24 @@ function TrainingSession({ bankId: rawBankId, chapterId: rawChapterId }: { bankI
 
   // Memoize parsed questions to avoid re-parsing on every render
   const allQuestions: Q[] = useMemo(() => bankData ? JSON.parse(bankData.questionsJson) : [], [bankData?.questionsJson]);
+  const chapters: ChapterInfo[] = useMemo(() => bankData?.chaptersJson ? JSON.parse(bankData.chaptersJson) : [], [bankData?.chaptersJson]);
 
-  // Filter by chapter if specified
+  // Filter by active chapter
   const questions: Q[] = useMemo(() =>
-    rawChapterId ? allQuestions.filter((q) => q.chapterId === rawChapterId) : allQuestions,
-    [allQuestions, rawChapterId]
+    activeChapterId ? allQuestions.filter((q) => q.chapterId === activeChapterId) : allQuestions,
+    [allQuestions, activeChapterId]
   );
 
   const lang = settings.questionLanguage;
+
+  // Switch chapter and reset state
+  const handleSwitchChapter = useCallback((chapterId?: number) => {
+    setActiveChapterId(chapterId);
+    setCurrentIndex(0);
+    setAnswers([]);
+    setShowSummary(false);
+    restoredRef.current = false;
+  }, []);
 
   // Restore saved progress
   useEffect(() => {
@@ -307,7 +394,7 @@ function TrainingSession({ bankId: rawBankId, chapterId: rawChapterId }: { bankI
     const firstUnanswered = init.findIndex((a) => !a.submitted);
     setAnswers(init);
     setCurrentIndex(firstUnanswered >= 0 ? firstUnanswered : 0);
-  }, [questions, savedRecords]);
+  }, [questions.length]);
 
   useEffect(() => { setQStartTime(Date.now()); setSwipeDir(null); }, [currentIndex]);
 
@@ -425,7 +512,6 @@ function TrainingSession({ bankId: rawBankId, chapterId: rawChapterId }: { bankI
           </button>
           <div style={{ fontSize: "14px", fontWeight: 500, color: "#fff", flex: 1, textAlign: "center", margin: "0 8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {bankData.title}
-            {rawChapterId && currentQuestion?.chapterName && <span style={{ fontSize: "12px", color: "#a0a0a0", marginLeft: "6px" }}>[{currentQuestion.chapterName.length > 10 ? currentQuestion.chapterName.slice(0, 10) + "..." : currentQuestion.chapterName}]</span>}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <span style={{ display: "flex", alignItems: "center", gap: "4px", background: "rgba(0,212,255,0.15)", border: "1px solid rgba(0,212,255,0.3)", borderRadius: "8px", padding: "4px 10px", color: "#00d4ff", fontSize: "12px", fontWeight: 600 }}>
@@ -439,6 +525,16 @@ function TrainingSession({ bankId: rawBankId, chapterId: rawChapterId }: { bankI
         <div style={{ width: "100%", height: "3px", background: "#2a2a2a" }}>
           <motion.div animate={{ width: `${progress}%` }} transition={{ duration: 0.3 }} style={{ height: "100%", background: "#00d4ff" }} />
         </div>
+
+        {/* Chapter Switcher */}
+        {chapters.length > 0 && (
+          <ChapterBar
+            chapters={chapters}
+            currentChapterId={activeChapterId}
+            onSelect={handleSwitchChapter}
+            bankColor={bankData.color || "#00d4ff"}
+          />
+        )}
 
         {/* Mini Navigator */}
         <div style={{ display: "flex", gap: "5px", padding: "10px 16px", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>

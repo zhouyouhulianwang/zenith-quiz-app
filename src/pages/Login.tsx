@@ -46,13 +46,6 @@ export default function Login() {
     loginMutation.mutate({ username: username.trim(), password });
   }, [username, password, loginMutation]);
 
-  // Quick account fill for test accounts
-  const fillAccount = useCallback((u: string, p: string) => {
-    setUsername(u);
-    setPassword(p);
-    setError("");
-  }, []);
-
   return (
     <div
       style={{
@@ -245,42 +238,17 @@ export default function Login() {
           </button>
         </form>
 
-        {/* Quick fill test accounts */}
-        <div
+        {/* Hint */}
+        <p
           style={{
-            display: "flex",
-            justifyContent: "center",
-            gap: "8px",
-            marginTop: "20px",
+            textAlign: "center",
+            marginTop: "24px",
+            fontSize: "12px",
+            color: "#555",
           }}
         >
-          {[
-            { u: "1", p: "a", label: "账号1" },
-            { u: "2", p: "b", label: "账号2" },
-            { u: "3", p: "c", label: "账号3" },
-          ].map((acc) => (
-            <button
-              key={acc.u}
-              type="button"
-              onClick={() => fillAccount(acc.u, acc.p)}
-              style={{
-                padding: "8px 16px",
-                borderRadius: "10px",
-                background: "#222",
-                border: "1px solid rgba(255,255,255,0.08)",
-                color: "#a0a0a0",
-                fontSize: "13px",
-                cursor: "pointer",
-                transition: "all 0.2s",
-                minHeight: "44px",
-              }}
-              onMouseDown={(e) => { e.currentTarget.style.background = "#2a2a2a"; e.currentTarget.style.color = "#fff"; }}
-              onMouseUp={(e) => { e.currentTarget.style.background = "#222"; e.currentTarget.style.color = "#a0a0a0"; }}
-            >
-              {acc.label}
-            </button>
-          ))}
-        </div>
+          请输入您的账号和密码登录
+        </p>
       </motion.div>
     </div>
   );
