@@ -558,7 +558,7 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
         </div>
 
         {/* Question + Options */}
-        <div style={{ padding: "0 16px 120px", userSelect: "none", WebkitUserSelect: "none" }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+        <div style={{ padding: "0 16px calc(140px + env(safe-area-inset-bottom))", userSelect: "none", WebkitUserSelect: "none" }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
           <motion.div key={currentIndex} custom={swipeDir}
             initial={{ opacity: 0, x: swipeDir === "left" ? 80 : swipeDir === "right" ? -80 : 30 }}
             animate={{ opacity: 1, x: 0 }}
@@ -647,9 +647,9 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
 
         {/* Bottom Nav */}
         <div style={{
-          position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 40,
-          padding: "12px 16px", paddingBottom: "max(12px, env(safe-area-inset-bottom))",
-          background: "rgba(26,26,26,0.95)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
+          position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100,
+          padding: "12px 16px", paddingBottom: "max(16px, env(safe-area-inset-bottom))",
+          background: "rgba(26,26,26,0.98)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
           borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", gap: "12px",
         }}>
           <motion.button whileTap={{ scale: 0.95 }} onClick={handlePrev} disabled={currentIndex === 0}

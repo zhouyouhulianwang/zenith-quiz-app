@@ -103,8 +103,11 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+const HIDE_NAV_PATHS = ["/training", "/mistakes"];
+
 function AnimatedRoutes() {
   const location = useLocation();
+  const hideNav = HIDE_NAV_PATHS.includes(location.pathname);
   return (
     <AnimatePresence mode="wait">
       <motion.div
@@ -124,6 +127,7 @@ function AnimatedRoutes() {
           <Route path="/records" element={<RecordsPage />} />
         </Routes>
       </motion.div>
+      {!hideNav && <BottomNav />}
     </AnimatePresence>
   );
 }
@@ -160,7 +164,6 @@ export default function App() {
             element={
               <AuthGuard>
                 <AnimatedRoutes />
-                <BottomNav />
               </AuthGuard>
             }
           />
