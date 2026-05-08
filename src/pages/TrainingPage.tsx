@@ -28,6 +28,8 @@ interface Q {
   explanation: string;
   enQuestion?: string;
   enOptions?: string[];
+  tcQuestion?: string;
+  tcOptions?: string[];
   chapterId?: number;
   chapterName?: string;
 }
@@ -504,10 +506,27 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
     return <div style={{ minHeight: "100dvh", background: "#1a1a1a", display: "flex", alignItems: "center", justifyContent: "center", color: "#666" }}>加载中...</div>;
   }
 
-  const displayQuestion = lang === "en" && currentQuestion?.enQuestion ? currentQuestion.enQuestion : currentQuestion?.question || "";
-  const displayOptions = lang === "en" && currentQuestion?.enOptions?.length ? currentQuestion.enOptions : currentQuestion?.options || [];
+  const displayQuestion = (() => {
+    if (!currentQuestion) return "";
+    switch (lang) {
+      case "en": return currentQuestion.enQuestion || currentQuestion.question;
+      case "tc": return currentQuestion.tcQuestion || currentQuestion.question;
+      case "entc": return currentQuestion.enQuestion || "";
+      default: return currentQuestion.question;
+    }
+  })();
+  const displayOptions: string[] = (() => {
+    if (!currentQuestion) return [];
+    switch (lang) {
+      case "en": return currentQuestion.enOptions?.length ? currentQuestion.enOptions : currentQuestion.options;
+      case "tc": return currentQuestion.tcOptions?.length ? currentQuestion.tcOptions : currentQuestion.options;
+      case "entc": return currentQuestion.enOptions?.length ? currentQuestion.enOptions : currentQuestion.options;
+      default: return currentQuestion.options;
+    }
+  })();
   const typeLabel = { single: "单选题", multiple: "多选题", boolean: "判断题", fill: "填空题" }[currentQuestion?.type || "single"];
-  const langLabel = { zh: "中", en: "EN", both: "中英" }[lang];
+  const langMap: Record<string, string> = { zh: "中", en: "EN", both: "中英", tc: "繁", entc: "EN+繁" };
+  const langLabelText = langMap[lang] || "EN+繁";
 
   return (
     <div style={{ position: "relative", minHeight: "100dvh", background: "#1a1a1a" }}>
@@ -523,7 +542,7 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <span style={{ display: "flex", alignItems: "center", gap: "4px", background: "rgba(0,212,255,0.15)", border: "1px solid rgba(0,212,255,0.3)", borderRadius: "8px", padding: "4px 10px", color: "#00d4ff", fontSize: "12px", fontWeight: 600 }}>
-              <Languages size={14} /> {langLabel}
+              <Languages size={14} /> {langLabelText}
             </span>
             <span style={{ fontSize: "12px", color: "#a0a0a0" }}>{currentIndex + 1} / {totalQuestions}</span>
           </div>
@@ -584,6 +603,7 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
               </div>
               <div style={{ fontSize: "18px", fontWeight: 500, color: "#fff", lineHeight: 1.6, whiteSpace: "pre-wrap", userSelect: "text", WebkitUserSelect: "text" }}>{displayQuestion}</div>
               {lang === "both" && currentQuestion?.enQuestion && <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: "14px", color: "#a0a0a0", lineHeight: 1.6, userSelect: "text", WebkitUserSelect: "text" }}>{currentQuestion.enQuestion}</div>}
+              {lang === "entc" && (currentQuestion?.tcQuestion || currentQuestion?.question) && <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: "14px", color: "#a0a0a0", lineHeight: 1.6, userSelect: "text", WebkitUserSelect: "text" }}>{currentQuestion.tcQuestion || currentQuestion.question}</div>}
             </div>
 
             {/* Options */}
@@ -611,6 +631,7 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
                     <div style={{ flex: 1 }}>
                       <span style={{ fontSize: "16px", color: "#fff", lineHeight: 1.5, userSelect: "text", WebkitUserSelect: "text" }}>{option}</span>
                       {lang === "both" && currentQuestion?.enOptions?.[index] && <div style={{ fontSize: "13px", color: "#a0a0a0", marginTop: "4px", userSelect: "text", WebkitUserSelect: "text" }}>{currentQuestion.enOptions[index]}</div>}
+                      {lang === "entc" && (currentQuestion?.tcOptions?.[index] || currentQuestion?.options?.[index]) && <div style={{ fontSize: "13px", color: "#a0a0a0", marginTop: "4px", userSelect: "text", WebkitUserSelect: "text" }}>{currentQuestion.tcOptions?.[index] || currentQuestion.options?.[index]}</div>}
                     </div>
                     {submitted && isCorrect && <Check size={20} color="#10b981" style={{ flexShrink: 0, marginTop: "2px" }} />}
                     {submitted && isSelected && !isCorrect && <X size={20} color="#ef4444" style={{ flexShrink: 0, marginTop: "2px" }} />}

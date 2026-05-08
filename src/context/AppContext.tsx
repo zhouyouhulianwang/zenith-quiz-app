@@ -9,6 +9,8 @@ export interface Question {
   explanation: string;
   enQuestion?: string;
   enOptions?: string[];
+  tcQuestion?: string;
+  tcOptions?: string[];
   chapterId?: number;
   chapterName?: string;
 }
@@ -33,7 +35,7 @@ interface AppSettings {
   reminderTime: string;
   difficulty: number;
   fontSize: "small" | "medium" | "large";
-  questionLanguage: "zh" | "en" | "both";
+  questionLanguage: "zh" | "en" | "both" | "tc" | "entc";
 }
 
 interface AppContextType {
@@ -46,7 +48,7 @@ const defaultSettings: AppSettings = {
   reminderTime: "20:00",
   difficulty: 3,
   fontSize: "medium",
-  questionLanguage: "zh",
+  questionLanguage: "entc",
 };
 
 const AppContext = createContext<AppContextType>({

@@ -24,7 +24,7 @@ export const settingsRouter = createRouter({
         reminderTime: "20:00",
         difficulty: 3,
         fontSize: "medium" as const,
-        questionLanguage: "zh" as const,
+        questionLanguage: "entc" as const,
       };
     }
 
@@ -33,7 +33,7 @@ export const settingsRouter = createRouter({
       reminderTime: rows[0].reminderTime,
       difficulty: rows[0].difficulty,
       fontSize: rows[0].fontSize as "small" | "medium" | "large",
-      questionLanguage: rows[0].questionLanguage as "zh" | "en" | "both",
+      questionLanguage: rows[0].questionLanguage as "zh" | "en" | "both" | "tc" | "entc",
     };
   }),
 
@@ -45,7 +45,7 @@ export const settingsRouter = createRouter({
         reminderTime: z.string().optional(),
         difficulty: z.number().optional(),
         fontSize: z.enum(["small", "medium", "large"]).optional(),
-        questionLanguage: z.enum(["zh", "en", "both"]).optional(),
+        questionLanguage: z.enum(["zh", "en", "both", "tc", "entc"]).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {

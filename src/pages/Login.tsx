@@ -1,12 +1,9 @@
-import { useState, useCallback, useEffect } from "react";
-import { useNavigate } from "react-router";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { trpc } from "@/providers/trpc";
 import { Zap, Eye, EyeOff } from "lucide-react";
 
 export default function Login() {
-  const navigate = useNavigate();
-  const utils = trpc.useUtils();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -25,8 +22,8 @@ export default function Login() {
   const loginMutation = trpc.simpleAuth.login.useMutation({
     onSuccess: async (data) => {
       if (data.success) {
-        await utils.invalidate();
-        navigate("/");
+        // Force full page reload to ensure auth state is fresh
+        window.location.href = "/";
       } else {
         setError(data.error || "登录失败");
       }
@@ -36,7 +33,7 @@ export default function Login() {
     },
   });
 
-  const handleSubmit = useCallback((e?: React.FormEvent) => {
+  const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     setError("");
     if (!username.trim() || !password.trim()) {
@@ -44,7 +41,7 @@ export default function Login() {
       return;
     }
     loginMutation.mutate({ username: username.trim(), password });
-  }, [username, password, loginMutation]);
+  };
 
   return (
     <div
