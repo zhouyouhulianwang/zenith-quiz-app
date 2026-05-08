@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, Clock, Target, BookOpen, Brain } from "lucide-react";
+import { TrendingUp, TrendingDown, Clock, Target, BookOpen, Brain, FileText, ChevronDown, ChevronUp } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import ParticleBackground from "@/components/ParticleBackground";
 
@@ -9,6 +9,7 @@ export default function StatsPage() {
   const { data: dailyRecords } = trpc.record.listDaily.useQuery();
   const { data: banks } = trpc.bank.list.useQuery();
   const [timeRange, setTimeRange] = useState("全部");
+  const [expandedBank, setExpandedBank] = useState<number | null>(null);
 
   const totalTime = Math.round(((records || []).reduce((sum, r) => sum + r.timeSpent, 0)) / 60000);
   const totalQuestions = (dailyRecords || []).reduce((sum, d) => sum + d.count, 0);
@@ -35,6 +36,46 @@ export default function StatsPage() {
     { name: "判断题", accuracy: Math.round(avgAccuracy + 5) },
     { name: "填空题", accuracy: Math.round(avgAccuracy - 15) },
   ];
+
+  // Per-bank chapter stats
+  const bankChapterStats = useMemo(() => {
+    const result: Array<{
+      bankId: number;
+      bankTitle: string;
+      bankColor: string;
+      chapters: Array<{ chapterId: number; chapterName: string; total: number; correct: number; wrong: number; accuracy: number }>;
+    }> = [];
+
+    for (const bank of banks || []) {
+      if (!bank.chaptersJson) continue;
+      const chapters: Array<{ chapterId: number; chapterName: string }> = JSON.parse(bank.chaptersJson);
+      const bankRecords = (records || []).filter((r) => r.bankId === bank.id);
+      const chapterStats = chapters.map((ch) => {
+        const chRecs = bankRecords.filter((r) => r.chapterId === ch.chapterId);
+        const correct = chRecs.filter((r) => r.isCorrect).length;
+        const wrong = chRecs.filter((r) => !r.isCorrect).length;
+        const total = correct + wrong;
+        return {
+          chapterId: ch.chapterId,
+          chapterName: ch.chapterName,
+          total,
+          correct,
+          wrong,
+          accuracy: total > 0 ? Math.round((correct / total) * 100) : 0,
+        };
+      }).filter((ch) => ch.total > 0);
+
+      if (chapterStats.length > 0) {
+        result.push({
+          bankId: bank.id,
+          bankTitle: bank.title,
+          bankColor: bank.color,
+          chapters: chapterStats,
+        });
+      }
+    }
+    return result;
+  }, [banks, records]);
 
   return (
     <div style={{ position: "relative", minHeight: "100vh", background: "#1a1a1a", overflowX: "hidden" }}>
@@ -84,8 +125,53 @@ export default function StatsPage() {
           </div>
         </motion.div>
 
+        {/* Chapter Stats */}
+        {bankChapterStats.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} style={{ marginBottom: "16px" }}>
+            <h2 style={{ fontSize: "16px", fontWeight: 600, color: "#fff", margin: "0 0 12px 0" }}>章节统计</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {bankChapterStats.map((bank) => (
+                <div key={bank.bankId} style={{ background: "#222", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden" }}>
+                  <button
+                    onClick={() => setExpandedBank(expandedBank === bank.bankId ? null : bank.bankId)}
+                    style={{ width: "100%", padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "none", border: "none", cursor: "pointer" }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <FileText size={16} color={bank.bankColor} />
+                      <span style={{ fontSize: "14px", fontWeight: 600, color: "#fff" }}>{bank.bankTitle}</span>
+                    </div>
+                    {expandedBank === bank.bankId ? <ChevronUp size={16} color="#666" /> : <ChevronDown size={16} color="#666" />}
+                  </button>
+                  {expandedBank === bank.bankId && (
+                    <div style={{ padding: "0 16px 12px" }}>
+                      {bank.chapters.map((ch) => (
+                        <div key={ch.chapterId} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: "13px", color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ch.chapterName}</div>
+                            <div style={{ display: "flex", gap: "12px", marginTop: "2px" }}>
+                              <span style={{ fontSize: "11px", color: "#666" }}>{ch.total} 题</span>
+                              <span style={{ fontSize: "11px", color: "#10b981" }}>{ch.correct} 正确</span>
+                              <span style={{ fontSize: "11px", color: "#ef4444" }}>{ch.wrong} 错误</span>
+                            </div>
+                          </div>
+                          <div style={{ textAlign: "right", flexShrink: 0 }}>
+                            <div style={{ fontSize: "16px", fontWeight: 700, color: ch.accuracy >= 80 ? "#10b981" : ch.accuracy >= 60 ? "#00d4ff" : "#ef4444" }}>{ch.accuracy}%</div>
+                            <div style={{ width: "60px", height: "4px", background: "#2a2a2a", borderRadius: "2px", marginTop: "4px" }}>
+                              <div style={{ width: `${ch.accuracy}%`, height: "100%", background: ch.accuracy >= 80 ? "#10b981" : ch.accuracy >= 60 ? "#00d4ff" : "#ef4444", borderRadius: "2px" }} />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
         {/* Trend */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} style={{ background: "#222", borderRadius: "16px", padding: "16px", border: "1px solid rgba(255,255,255,0.08)", marginBottom: "16px" }}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} style={{ background: "#222", borderRadius: "16px", padding: "16px", border: "1px solid rgba(255,255,255,0.08)", marginBottom: "16px" }}>
           <h2 style={{ fontSize: "16px", fontWeight: 600, color: "#fff", margin: "0 0 12px 0" }}>学习趋势</h2>
           <div style={{ display: "flex", alignItems: "flex-end", gap: "4px", height: "140px" }}>
             {(dailyRecords || []).slice(-14).map((d, i) => {

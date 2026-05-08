@@ -41,11 +41,23 @@ function mapQuestionType(qtype: string): Question["type"] {
   return mapping[qtype] || "single";
 }
 
-function parsePaperJson(data: Record<string, unknown>): { title: string; questions: Question[] } {
+interface ChapterInfo {
+  chapterId: number;
+  chapterName: string;
+  questionCount: number;
+}
+
+function parsePaperJson(data: Record<string, unknown>): { title: string; questions: Question[]; chapters: ChapterInfo[] } {
   const chapters = (data.chapters as Array<Record<string, unknown>>) || [];
   const questions: Question[] = [];
+  const chapterInfos: ChapterInfo[] = [];
   for (const ch of chapters) {
     const qs = (ch.questions as Array<Record<string, unknown>>) || [];
+    const chapterId = (ch.chapterId as number) || 0;
+    const chapterName = (ch.chapterName as string) || "未命名章节";
+    if (qs.length > 0) {
+      chapterInfos.push({ chapterId, chapterName, questionCount: qs.length });
+    }
     for (const q of qs) {
       questions.push({
         id: (q.id as number) || 0,
@@ -56,12 +68,12 @@ function parsePaperJson(data: Record<string, unknown>): { title: string; questio
         explanation: stripHtml((q.analysis as string) || ""),
         enQuestion: stripHtml((q.enContent as string) || ""),
         enOptions: ((q.enOptions as string[]) || []).map(stripOptionPrefix),
-        chapterId: (ch.chapterId as number) || undefined,
-        chapterName: (ch.chapterName as string) || undefined,
+        chapterId,
+        chapterName,
       });
     }
   }
-  return { title: (data.paperName as string) || "未命名题库", questions };
+  return { title: (data.paperName as string) || "未命名题库", questions, chapters: chapterInfos };
 }
 
 function parseLegacyJson(data: Record<string, unknown>): { title: string; questions: Question[] } {
@@ -117,10 +129,12 @@ export default function LibraryPage() {
           let title: string;
           let questions: Question[];
 
+          let chapters: ChapterInfo[] | undefined;
+
           if (isJson) {
             const data = JSON.parse(event.target?.result as string) as Record<string, unknown>;
             if (Array.isArray(data.chapters)) {
-              ({ title, questions } = parsePaperJson(data));
+              ({ title, questions, chapters } = parsePaperJson(data));
             } else if (Array.isArray(data.questions)) {
               ({ title, questions } = parseLegacyJson(data));
             } else {
@@ -131,7 +145,7 @@ export default function LibraryPage() {
             ({ title, questions } = parseTxtToBank(text));
           }
 
-          await createBank.mutateAsync({ title, questions, category: "证券从业", color: "#00d4ff" });
+          await createBank.mutateAsync({ title, questions, chapters, category: "证券从业", color: "#00d4ff" });
           setImportSuccess(`成功导入「${title}」，共 ${questions.length} 题`);
           setTimeout(() => setImportSuccess(""), 3000);
         } catch (err) {

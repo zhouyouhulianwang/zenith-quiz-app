@@ -59,11 +59,13 @@ export const bankRouter = createRouter({
         category: z.string().default("自定义"),
         color: z.string().default("#00d4ff"),
         questions: z.array(z.any()),
+        chapters: z.array(z.any()).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
       const db = getDb();
       const questionsJson = JSON.stringify(input.questions);
+      const chaptersJson = input.chapters ? JSON.stringify(input.chapters) : null;
       const result = await db.insert(banks).values({
         userId: ctx.user.id,
         title: input.title,
@@ -71,6 +73,7 @@ export const bankRouter = createRouter({
         category: input.category,
         color: input.color,
         questionsJson,
+        chaptersJson,
         progress: 0,
       });
       const insertId = result[0]?.insertId ? Number(result[0].insertId) : 0;

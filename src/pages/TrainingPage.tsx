@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { motion } from "framer-motion";
-import { ArrowLeft, Check, X, Clock, ChevronRight, ChevronLeft, RotateCcw, Home, BookOpen, Languages, AlertCircle, Trophy, Zap } from "lucide-react";
+import { ArrowLeft, Check, X, Clock, ChevronRight, ChevronLeft, RotateCcw, Home, BookOpen, Languages, AlertCircle, Trophy, Zap, FileText } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAppSettings } from "@/context/AppContext";
 import ParticleBackground from "@/components/ParticleBackground";
@@ -13,8 +13,14 @@ interface AnswerState {
   submitted: boolean;
 }
 
+interface ChapterInfo {
+  chapterId: number;
+  chapterName: string;
+  questionCount: number;
+}
+
 // ========== Training Selector ==========
-function TrainingSelector({ onSelect }: { onSelect: (id: number) => void }) {
+function TrainingSelector({ onSelect }: { onSelect: (id: number, chapterId?: number) => void }) {
   const navigate = useNavigate();
   const { data: banks } = trpc.bank.list.useQuery();
   const { data: records } = trpc.record.list.useQuery();
@@ -30,36 +36,40 @@ function TrainingSelector({ onSelect }: { onSelect: (id: number) => void }) {
   const completed = bankStats.filter((b) => b.progress >= 100);
   const withMistakes = bankStats.filter((b) => b.wrongCount > 0);
 
-  const BankCard = ({ bank }: { bank: typeof bankStats[0] }) => (
-    <motion.div
-      whileTap={{ scale: 0.98 }}
-      onClick={() => onSelect(bank.id)}
-      style={{
-        background: "#222", borderRadius: "12px", padding: "14px 16px",
-        border: "1px solid rgba(255,255,255,0.06)", marginBottom: "8px",
-        cursor: "pointer", display: "flex", alignItems: "center", gap: "12px",
-      }}
-    >
-      <div style={{ width: "4px", height: "40px", borderRadius: "2px", background: bank.progress >= 100 ? "#10b981" : bank.color || "#00d4ff", flexShrink: 0 }} />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: "15px", fontWeight: 600, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{bank.title}</div>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "3px" }}>
-          <span style={{ fontSize: "12px", color: "#666" }}>{JSON.parse(bank.questionsJson).length} 题</span>
-          {bank.progress > 0 && bank.progress < 100 && (
-            <>
-              <div style={{ flex: 1, height: "3px", background: "#2a2a2a", borderRadius: "2px", maxWidth: "80px" }}>
-                <div style={{ width: `${bank.progress}%`, height: "100%", background: bank.color || "#00d4ff", borderRadius: "2px" }} />
-              </div>
-              <span style={{ fontSize: "11px", color: "#a0a0a0" }}>{bank.progress}%</span>
-            </>
-          )}
+  const BankCard = ({ bank }: { bank: typeof bankStats[0] }) => {
+    const chapters: ChapterInfo[] = bank.chaptersJson ? JSON.parse(bank.chaptersJson) : [];
+    return (
+      <motion.div
+        whileTap={{ scale: 0.98 }}
+        onClick={() => onSelect(bank.id)}
+        style={{
+          background: "#222", borderRadius: "12px", padding: "14px 16px",
+          border: "1px solid rgba(255,255,255,0.06)", marginBottom: "8px",
+          cursor: "pointer", display: "flex", alignItems: "center", gap: "12px",
+        }}
+      >
+        <div style={{ width: "4px", height: "40px", borderRadius: "2px", background: bank.progress >= 100 ? "#10b981" : bank.color || "#00d4ff", flexShrink: 0 }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: "15px", fontWeight: 600, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{bank.title}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "3px" }}>
+            <span style={{ fontSize: "12px", color: "#666" }}>{JSON.parse(bank.questionsJson).length} 题</span>
+            {chapters.length > 0 && <span style={{ fontSize: "11px", color: "#a0a0a0" }}>{chapters.length} 章</span>}
+            {bank.progress > 0 && bank.progress < 100 && (
+              <>
+                <div style={{ flex: 1, height: "3px", background: "#2a2a2a", borderRadius: "2px", maxWidth: "80px" }}>
+                  <div style={{ width: `${bank.progress}%`, height: "100%", background: bank.color || "#00d4ff", borderRadius: "2px" }} />
+                </div>
+                <span style={{ fontSize: "11px", color: "#a0a0a0" }}>{bank.progress}%</span>
+              </>
+            )}
+          </div>
         </div>
-      </div>
-      {bank.wrongCount > 0 && <span style={{ fontSize: "11px", padding: "3px 8px", borderRadius: "8px", background: "rgba(239,68,68,0.12)", color: "#ef4444", fontWeight: 500, flexShrink: 0 }}>{bank.wrongCount} 错题</span>}
-      {bank.progress >= 100 && <Trophy size={16} color="#10b981" />}
-      {!bank.hasRecords && <Zap size={16} color="#00d4ff" />}
-    </motion.div>
-  );
+        {bank.wrongCount > 0 && <span style={{ fontSize: "11px", padding: "3px 8px", borderRadius: "8px", background: "rgba(239,68,68,0.12)", color: "#ef4444", fontWeight: 500, flexShrink: 0 }}>{bank.wrongCount} 错题</span>}
+        {bank.progress >= 100 && <Trophy size={16} color="#10b981" />}
+        {!bank.hasRecords && <Zap size={16} color="#00d4ff" />}
+      </motion.div>
+    );
+  };
 
   return (
     <div style={{ position: "relative", minHeight: "100vh", background: "#1a1a1a", overflowX: "hidden" }}>
@@ -109,8 +119,107 @@ function TrainingSelector({ onSelect }: { onSelect: (id: number) => void }) {
   );
 }
 
+// ========== Chapter Selector ==========
+function ChapterSelector({ bankId, onSelectChapter }: { bankId: number; onSelectChapter: (chapterId?: number) => void }) {
+  const { data: bank } = trpc.bank.get.useQuery({ id: bankId });
+  const { data: records } = trpc.record.listByBank.useQuery({ bankId });
+  const navigate = useNavigate();
+
+  const chapters: ChapterInfo[] = bank?.chaptersJson ? JSON.parse(bank.chaptersJson) : [];
+  const allQuestions: Array<{ chapterId?: number; chapterName?: string }> = bank ? JSON.parse(bank.questionsJson) : [];
+
+  // Per-chapter stats
+  const chapterStats = chapters.map((ch) => {
+    const chRecords = (records || []).filter((r) => r.chapterId === ch.chapterId);
+    const correct = chRecords.filter((r) => r.isCorrect).length;
+    const wrong = chRecords.filter((r) => !r.isCorrect).length;
+    const totalInChapter = allQuestions.filter((q) => q.chapterId === ch.chapterId).length;
+    return { ...ch, correct, wrong, totalInChapter };
+  });
+
+  if (!bank) return <div style={{ minHeight: "100vh", background: "#1a1a1a", display: "flex", alignItems: "center", justifyContent: "center", color: "#666" }}>加载中...</div>;
+
+  // If no chapters, skip to full bank
+  if (chapters.length === 0) {
+    onSelectChapter(undefined);
+    return null;
+  }
+
+  return (
+    <div style={{ position: "relative", minHeight: "100vh", background: "#1a1a1a", overflowX: "hidden" }}>
+      <ParticleBackground />
+      <div style={{ position: "relative", zIndex: 1, padding: "16px", paddingBottom: "100px" }}>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+          <button onClick={() => navigate("/training")} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px" }}>
+            <ArrowLeft size={24} color="#fff" />
+          </button>
+          <div style={{ flex: 1 }}>
+            <h1 style={{ fontSize: "20px", fontWeight: 700, color: "#fff", margin: 0 }}>{bank.title}</h1>
+            <p style={{ fontSize: "12px", color: "#666", margin: "2px 0 0" }}>选择章节开始练习</p>
+          </div>
+        </div>
+
+        {/* All chapters option */}
+        <motion.button
+          whileTap={{ scale: 0.98 }}
+          onClick={() => onSelectChapter(undefined)}
+          style={{
+            width: "100%", padding: "16px", borderRadius: "14px",
+            background: "linear-gradient(135deg, #00d4ff20, #0077ff10)",
+            border: "1px solid rgba(0,212,255,0.3)", marginBottom: "12px",
+            cursor: "pointer", display: "flex", alignItems: "center", gap: "12px",
+          }}
+        >
+          <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: "rgba(0,212,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <BookOpen size={22} color="#00d4ff" />
+          </div>
+          <div style={{ flex: 1, textAlign: "left" }}>
+            <div style={{ fontSize: "15px", fontWeight: 600, color: "#fff" }}>全部章节</div>
+            <div style={{ fontSize: "12px", color: "#a0a0a0", marginTop: "2px" }}>{allQuestions.length} 题</div>
+          </div>
+          <ChevronRight size={18} color="#00d4ff" />
+        </motion.button>
+
+        {/* Chapter list */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          {chapterStats.map((ch, i) => (
+            <motion.button
+              key={ch.chapterId}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => onSelectChapter(ch.chapterId)}
+              style={{
+                width: "100%", padding: "14px 16px", borderRadius: "12px",
+                background: "#222", border: "1px solid rgba(255,255,255,0.06)",
+                cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: "12px",
+              }}
+            >
+              <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: `${bank.color || "#00d4ff"}15`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <FileText size={18} color={bank.color || "#00d4ff"} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: "14px", fontWeight: 600, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ch.chapterName}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "3px" }}>
+                  <span style={{ fontSize: "11px", color: "#666" }}>{ch.questionCount} 题</span>
+                  {ch.correct > 0 && <span style={{ fontSize: "11px", color: "#10b981" }}>{ch.correct} 正确</span>}
+                  {ch.wrong > 0 && <span style={{ fontSize: "11px", color: "#ef4444" }}>{ch.wrong} 错误</span>}
+                  {ch.correct === 0 && ch.wrong === 0 && <span style={{ fontSize: "11px", color: "#666" }}>未练习</span>}
+                </div>
+              </div>
+              <ChevronRight size={16} color="#666" />
+            </motion.button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ========== Training Session ==========
-function TrainingSession({ bankId: rawBankId }: { bankId: number }) {
+function TrainingSession({ bankId: rawBankId, chapterId: rawChapterId }: { bankId: number; chapterId?: number }) {
   const navigate = useNavigate();
   const { settings } = useAppSettings();
   const utils = trpc.useUtils();
@@ -129,7 +238,16 @@ function TrainingSession({ bankId: rawBankId }: { bankId: number }) {
   const [swipeDir, setSwipeDir] = useState<"left" | "right" | null>(null);
   const restoredRef = useRef(false);
 
-  const questions = bankData ? (JSON.parse(bankData.questionsJson) as Array<{ id: number; type: string; question: string; options: string[]; correct: number[]; explanation: string; enQuestion?: string; enOptions?: string[]; chapterName?: string }>) : [];
+  const allQuestions = bankData ? (JSON.parse(bankData.questionsJson) as Array<{
+    id: number; type: string; question: string; options: string[]; correct: number[];
+    explanation: string; enQuestion?: string; enOptions?: string[]; chapterId?: number; chapterName?: string;
+  }>) : [];
+
+  // Filter by chapter if specified
+  const questions = rawChapterId
+    ? allQuestions.filter((q) => q.chapterId === rawChapterId)
+    : allQuestions;
+
   const lang = settings.questionLanguage;
 
   useEffect(() => {
@@ -170,6 +288,8 @@ function TrainingSession({ bankId: rawBankId }: { bankId: number }) {
       addRecord.mutate({
         bankId: rawBankId,
         questionId: currentQuestion.id,
+        chapterId: currentQuestion.chapterId,
+        chapterName: currentQuestion.chapterName,
         selected,
         isCorrect: correct,
         timeSpent,
@@ -207,11 +327,11 @@ function TrainingSession({ bankId: rawBankId }: { bankId: number }) {
     } else {
       const submitted = answers.filter((a) => a.submitted);
       const correctCount = submitted.filter((a) => a.isCorrect).length;
-      updateProgress.mutate({ id: rawBankId, progress: Math.min(100, Math.round((submitted.length / questions.length) * 100)) });
+      updateProgress.mutate({ id: rawBankId, progress: Math.min(100, Math.round((submitted.length / allQuestions.length) * 100)) });
       upsertDaily.mutate({ date: new Date().toISOString().split("T")[0], count: submitted.length, correct: correctCount });
       setShowSummary(true);
     }
-  }, [currentIndex, questions.length, answers, rawBankId, updateProgress, upsertDaily]);
+  }, [currentIndex, questions.length, answers, rawBankId, allQuestions.length, updateProgress, upsertDaily]);
 
   const handlePrev = useCallback(() => {
     if (currentIndex > 0) { setSwipeDir("right"); setCurrentIndex((p) => p - 1); }
@@ -251,7 +371,10 @@ function TrainingSession({ bankId: rawBankId }: { bankId: number }) {
         {/* Top Bar */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
           <button onClick={() => navigate("/training")} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px" }}><ArrowLeft size={24} color="#fff" /></button>
-          <div style={{ fontSize: "14px", fontWeight: 500, color: "#fff", flex: 1, textAlign: "center", margin: "0 8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{bankData.title}</div>
+          <div style={{ fontSize: "14px", fontWeight: 500, color: "#fff", flex: 1, textAlign: "center", margin: "0 8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {bankData.title}
+            {rawChapterId && currentQuestion?.chapterName && <span style={{ fontSize: "12px", color: "#a0a0a0", marginLeft: "6px" }}>[{currentQuestion.chapterName.slice(0, 10)}]</span>}
+          </div>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <button style={{ display: "flex", alignItems: "center", gap: "4px", background: "rgba(0,212,255,0.15)", border: "1px solid rgba(0,212,255,0.3)", borderRadius: "8px", padding: "4px 10px", color: "#00d4ff", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}><Languages size={14} /> {langLabel}</button>
             <div style={{ fontSize: "12px", color: "#a0a0a0" }}>{currentIndex + 1} / {totalQuestions}</div>
@@ -395,9 +518,20 @@ function TrainingSession({ bankId: rawBankId }: { bankId: number }) {
 // ========== Entry Point ==========
 export default function TrainingPage() {
   const location = useLocation();
-  const navState = location.state as { bankId?: number } | null;
+  const navState = location.state as { bankId?: number; chapterId?: number } | null;
   const bankId = navState?.bankId;
+  const chapterId = navState?.chapterId;
+
+  // If we have a bankId and chapterId (or no chapters), show training session
+  // If we have a bankId but no chapterId yet, show chapter selector first
+  const [selectedChapter, setSelectedChapter] = useState<number | undefined>(chapterId);
 
   if (!bankId) return <TrainingSelector onSelect={(id) => { window.history.replaceState({ bankId: id }, ""); }} />;
-  return <TrainingSession bankId={bankId} />;
+
+  // If no chapter selected yet, show chapter selector
+  if (selectedChapter === undefined && chapterId === undefined) {
+    return <ChapterSelector bankId={bankId} onSelectChapter={(chId) => setSelectedChapter(chId)} />;
+  }
+
+  return <TrainingSession bankId={bankId} chapterId={selectedChapter ?? chapterId} />;
 }

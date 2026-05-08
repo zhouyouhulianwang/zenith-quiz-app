@@ -11,6 +11,8 @@ export const recordRouter = createRouter({
       z.object({
         bankId: z.number(),
         questionId: z.number(),
+        chapterId: z.number().optional(),
+        chapterName: z.string().optional(),
         selected: z.array(z.number()),
         isCorrect: z.boolean(),
         timeSpent: z.number(),
@@ -22,6 +24,8 @@ export const recordRouter = createRouter({
         userId: ctx.user.id,
         bankId: input.bankId,
         questionId: input.questionId,
+        chapterId: input.chapterId,
+        chapterName: input.chapterName,
         selected: JSON.stringify(input.selected),
         isCorrect: input.isCorrect ? 1 : 0,
         timeSpent: input.timeSpent,
