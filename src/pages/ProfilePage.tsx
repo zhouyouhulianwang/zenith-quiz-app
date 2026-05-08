@@ -23,6 +23,7 @@ export default function ProfilePage() {
   const joinDays = user?.createdAt ? Math.floor((Date.now() - new Date(user.createdAt).getTime()) / 86400000) : 0;
   const totalQ = records?.length || 0;
   const wrongQ = records?.filter((r) => !r.isCorrect).length || 0;
+  const correctQ = records?.filter((r) => r.isCorrect).length || 0;
 
   const handleExport = () => {
     const data = { banks, records, settings, exportDate: new Date().toISOString() };
@@ -63,10 +64,14 @@ export default function ProfilePage() {
           </div>
           <div style={{ fontSize: "18px", fontWeight: 700, color: "#fff" }}>{user?.name || "学习者"}</div>
           <div style={{ fontSize: "14px", color: "rgba(255,255,255,0.7)", marginTop: "4px" }}>{user?.email || ""}</div>
-          <div style={{ display: "flex", justifyContent: "center", gap: "24px", marginTop: "20px" }}>
+          <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "20px" }}>
             <div><div style={{ fontSize: "20px", fontWeight: 700, color: "#fff" }}>{joinDays}</div><div style={{ fontSize: "11px", color: "rgba(255,255,255,0.7)" }}>加入天数</div></div>
             <div><div style={{ fontSize: "20px", fontWeight: 700, color: "#fff" }}>{totalQ}</div><div style={{ fontSize: "11px", color: "rgba(255,255,255,0.7)" }}>总练习数</div></div>
-            <div onClick={() => wrongQ > 0 && navigate("/mistakes")} style={{ cursor: wrongQ > 0 ? "pointer" : "default" }}>
+            <div onClick={() => correctQ > 0 && navigate("/mistakes", { state: { mode: "correct" } })} style={{ cursor: correctQ > 0 ? "pointer" : "default" }}>
+              <div style={{ fontSize: "20px", fontWeight: 700, color: correctQ > 0 ? "#10b981" : "#fff" }}>{correctQ}</div>
+              <div style={{ fontSize: "11px", color: correctQ > 0 ? "#10b981" : "rgba(255,255,255,0.7)" }}>正确数</div>
+            </div>
+            <div onClick={() => wrongQ > 0 && navigate("/mistakes", { state: { mode: "wrong" } })} style={{ cursor: wrongQ > 0 ? "pointer" : "default" }}>
               <div style={{ fontSize: "20px", fontWeight: 700, color: wrongQ > 0 ? "#ef4444" : "#fff" }}>{wrongQ}</div>
               <div style={{ fontSize: "11px", color: wrongQ > 0 ? "#ef4444" : "rgba(255,255,255,0.7)" }}>错题数</div>
             </div>
