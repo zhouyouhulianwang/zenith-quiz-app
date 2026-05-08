@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { motion } from "framer-motion";
 import { ArrowLeft, Check, X, Clock, ChevronRight, ChevronLeft, RotateCcw, Home, BookOpen, Languages, AlertCircle, Trophy, Zap, FileText } from "lucide-react";
@@ -19,68 +19,50 @@ interface ChapterInfo {
   questionCount: number;
 }
 
+interface Q {
+  id: number;
+  type: string;
+  question: string;
+  options: string[];
+  correct: number[];
+  explanation: string;
+  enQuestion?: string;
+  enOptions?: string[];
+  chapterId?: number;
+  chapterName?: string;
+}
+
 // ========== Training Selector ==========
-function TrainingSelector({ onSelect }: { onSelect: (id: number, chapterId?: number) => void }) {
+function TrainingSelector({ onSelect }: { onSelect: (id: number) => void }) {
   const navigate = useNavigate();
   const { data: banks } = trpc.bank.list.useQuery();
   const { data: records } = trpc.record.list.useQuery();
 
-  const bankStats = (banks || []).map((b) => {
-    const recs = (records || []).filter((r) => r.bankId === b.id);
-    const wrongCount = recs.filter((r) => !r.isCorrect).length;
-    return { ...b, wrongCount, hasRecords: recs.length > 0 };
-  });
+  const bankStats = useMemo(() => {
+    return (banks || []).map((b) => {
+      const recs = (records || []).filter((r) => r.bankId === b.id);
+      const wrongCount = recs.filter((r) => !r.isCorrect).length;
+      return { ...b, recCount: recs.length, wrongCount };
+    });
+  }, [banks, records]);
 
-  const unpracticed = bankStats.filter((b) => !b.hasRecords);
-  const inProgress = bankStats.filter((b) => b.hasRecords && b.progress < 100);
-  const completed = bankStats.filter((b) => b.progress >= 100);
-  const withMistakes = bankStats.filter((b) => b.wrongCount > 0);
+  const unpracticed = useMemo(() => bankStats.filter((b) => b.recCount === 0), [bankStats]);
+  const inProgress = useMemo(() => bankStats.filter((b) => b.recCount > 0 && b.progress < 100), [bankStats]);
+  const completed = useMemo(() => bankStats.filter((b) => b.progress >= 100), [bankStats]);
+  const withMistakes = useMemo(() => bankStats.filter((b) => b.wrongCount > 0), [bankStats]);
 
-  const BankCard = ({ bank }: { bank: typeof bankStats[0] }) => {
-    const chapters: ChapterInfo[] = bank.chaptersJson ? JSON.parse(bank.chaptersJson) : [];
-    return (
-      <motion.div
-        whileTap={{ scale: 0.98 }}
-        onClick={() => onSelect(bank.id)}
-        style={{
-          background: "#222", borderRadius: "12px", padding: "14px 16px",
-          border: "1px solid rgba(255,255,255,0.06)", marginBottom: "8px",
-          cursor: "pointer", display: "flex", alignItems: "center", gap: "12px",
-        }}
-      >
-        <div style={{ width: "4px", height: "40px", borderRadius: "2px", background: bank.progress >= 100 ? "#10b981" : bank.color || "#00d4ff", flexShrink: 0 }} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: "15px", fontWeight: 600, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{bank.title}</div>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "3px" }}>
-            <span style={{ fontSize: "12px", color: "#666" }}>{JSON.parse(bank.questionsJson).length} 题</span>
-            {chapters.length > 0 && <span style={{ fontSize: "11px", color: "#a0a0a0" }}>{chapters.length} 章</span>}
-            {bank.progress > 0 && bank.progress < 100 && (
-              <>
-                <div style={{ flex: 1, height: "3px", background: "#2a2a2a", borderRadius: "2px", maxWidth: "80px" }}>
-                  <div style={{ width: `${bank.progress}%`, height: "100%", background: bank.color || "#00d4ff", borderRadius: "2px" }} />
-                </div>
-                <span style={{ fontSize: "11px", color: "#a0a0a0" }}>{bank.progress}%</span>
-              </>
-            )}
-          </div>
-        </div>
-        {bank.wrongCount > 0 && <span style={{ fontSize: "11px", padding: "3px 8px", borderRadius: "8px", background: "rgba(239,68,68,0.12)", color: "#ef4444", fontWeight: 500, flexShrink: 0 }}>{bank.wrongCount} 错题</span>}
-        {bank.progress >= 100 && <Trophy size={16} color="#10b981" />}
-        {!bank.hasRecords && <Zap size={16} color="#00d4ff" />}
-      </motion.div>
-    );
-  };
+  const totalWrong = useMemo(() => withMistakes.reduce((s, b) => s + b.wrongCount, 0), [withMistakes]);
 
   return (
-    <div style={{ position: "relative", minHeight: "100vh", background: "#1a1a1a", overflowX: "hidden" }}>
+    <div style={{ position: "relative", minHeight: "100dvh", background: "#1a1a1a", overflowX: "hidden" }}>
       <ParticleBackground />
       <div style={{ position: "relative", zIndex: 1, padding: "16px", paddingBottom: "100px" }}>
         <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#fff", margin: "0 0 4px 0" }}>开始训练</h1>
         <p style={{ fontSize: "13px", color: "#666", marginBottom: "20px" }}>选择题库开始练习，或错题重练</p>
 
-        {withMistakes.length > 0 && (
+        {totalWrong > 0 && (
           <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.97 }}
-            onClick={() => navigate("/mistakes")}
+            onClick={() => navigate("/mistakes", { state: { mode: "wrong" } })}
             style={{
               width: "100%", padding: "16px", borderRadius: "14px",
               background: "linear-gradient(135deg, rgba(239,68,68,0.12), rgba(239,68,68,0.03))",
@@ -92,16 +74,31 @@ function TrainingSelector({ onSelect }: { onSelect: (id: number, chapterId?: num
             </div>
             <div style={{ flex: 1, textAlign: "left" }}>
               <div style={{ fontSize: "15px", fontWeight: 600, color: "#ef4444" }}>错题重练</div>
-              <div style={{ fontSize: "12px", color: "#a0a0a0", marginTop: "2px" }}>共 {withMistakes.reduce((s, b) => s + b.wrongCount, 0)} 道错题待复习</div>
+              <div style={{ fontSize: "12px", color: "#a0a0a0", marginTop: "2px" }}>共 {totalWrong} 道错题待复习</div>
             </div>
             <ChevronRight size={18} color="#ef4444" />
           </motion.button>
         )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          {inProgress.length > 0 && <div><div style={{ fontSize: "11px", fontWeight: 500, color: "#00d4ff", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: "8px", paddingLeft: "4px" }}>继续练习 · {inProgress.length}</div>{inProgress.map((b) => <BankCard key={b.id} bank={b} />)}</div>}
-          {unpracticed.length > 0 && <div><div style={{ fontSize: "11px", fontWeight: 500, color: "#a0a0a0", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: "8px", paddingLeft: "4px" }}>未练习 · {unpracticed.length}</div>{unpracticed.map((b) => <BankCard key={b.id} bank={b} />)}</div>}
-          {completed.length > 0 && <div><div style={{ fontSize: "11px", fontWeight: 500, color: "#10b981", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: "8px", paddingLeft: "4px" }}>已完成 · {completed.length}</div>{completed.map((b) => <BankCard key={b.id} bank={b} />)}</div>}
+          {inProgress.length > 0 && (
+            <div>
+              <div style={{ fontSize: "11px", fontWeight: 500, color: "#00d4ff", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: "8px", paddingLeft: "4px" }}>继续练习 · {inProgress.length}</div>
+              {inProgress.map((b) => <BankCard key={b.id} bank={b} onSelect={onSelect} />)}
+            </div>
+          )}
+          {unpracticed.length > 0 && (
+            <div>
+              <div style={{ fontSize: "11px", fontWeight: 500, color: "#a0a0a0", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: "8px", paddingLeft: "4px" }}>未练习 · {unpracticed.length}</div>
+              {unpracticed.map((b) => <BankCard key={b.id} bank={b} onSelect={onSelect} />)}
+            </div>
+          )}
+          {completed.length > 0 && (
+            <div>
+              <div style={{ fontSize: "11px", fontWeight: 500, color: "#10b981", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: "8px", paddingLeft: "4px" }}>已完成 · {completed.length}</div>
+              {completed.map((b) => <BankCard key={b.id} bank={b} onSelect={onSelect} />)}
+            </div>
+          )}
         </div>
 
         {(!banks || banks.length === 0) && (
@@ -119,39 +116,80 @@ function TrainingSelector({ onSelect }: { onSelect: (id: number, chapterId?: num
   );
 }
 
+function BankCard({ bank, onSelect }: { bank: { id: number; title: string; color: string; progress: number; questionsJson: string; chaptersJson: string | null; recCount: number; wrongCount: number }; onSelect: (id: number) => void }) {
+  const chapters: ChapterInfo[] = useMemo(() => bank.chaptersJson ? JSON.parse(bank.chaptersJson) : [], [bank.chaptersJson]);
+  const qCount = useMemo(() => { try { return JSON.parse(bank.questionsJson).length; } catch { return 0; } }, [bank.questionsJson]);
+
+  return (
+    <motion.div
+      whileTap={{ scale: 0.98 }}
+      onClick={() => onSelect(bank.id)}
+      style={{
+        background: "#222", borderRadius: "12px", padding: "14px 16px",
+        border: "1px solid rgba(255,255,255,0.06)", marginBottom: "8px",
+        cursor: "pointer", display: "flex", alignItems: "center", gap: "12px",
+        WebkitTapHighlightColor: "transparent",
+        userSelect: "none",
+      }}
+    >
+      <div style={{ width: "4px", height: "40px", borderRadius: "2px", background: bank.progress >= 100 ? "#10b981" : bank.color || "#00d4ff", flexShrink: 0 }} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: "15px", fontWeight: 600, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{bank.title}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "3px" }}>
+          <span style={{ fontSize: "12px", color: "#666" }}>{qCount} 题</span>
+          {chapters.length > 0 && <span style={{ fontSize: "11px", color: "#a0a0a0" }}>{chapters.length} 章</span>}
+          {bank.progress > 0 && bank.progress < 100 && (
+            <>
+              <div style={{ flex: 1, height: "3px", background: "#2a2a2a", borderRadius: "2px", maxWidth: "80px" }}>
+                <div style={{ width: `${bank.progress}%`, height: "100%", background: bank.color || "#00d4ff", borderRadius: "2px" }} />
+              </div>
+              <span style={{ fontSize: "11px", color: "#a0a0a0" }}>{bank.progress}%</span>
+            </>
+          )}
+        </div>
+      </div>
+      {bank.wrongCount > 0 && <span style={{ fontSize: "11px", padding: "3px 8px", borderRadius: "8px", background: "rgba(239,68,68,0.12)", color: "#ef4444", fontWeight: 500, flexShrink: 0 }}>{bank.wrongCount} 错题</span>}
+      {bank.progress >= 100 && <Trophy size={16} color="#10b981" />}
+      {bank.recCount === 0 && <Zap size={16} color="#00d4ff" />}
+    </motion.div>
+  );
+}
+
 // ========== Chapter Selector ==========
 function ChapterSelector({ bankId, onSelectChapter }: { bankId: number; onSelectChapter: (chapterId?: number) => void }) {
+  const navigate = useNavigate();
   const { data: bank } = trpc.bank.get.useQuery({ id: bankId });
   const { data: records } = trpc.record.listByBank.useQuery({ bankId });
-  const navigate = useNavigate();
 
-  const chapters: ChapterInfo[] = bank?.chaptersJson ? JSON.parse(bank.chaptersJson) : [];
-  const allQuestions: Array<{ chapterId?: number; chapterName?: string }> = bank ? JSON.parse(bank.questionsJson) : [];
+  const allQuestions: Q[] = useMemo(() => bank ? JSON.parse(bank.questionsJson) : [], [bank?.questionsJson]);
+  const chapters: ChapterInfo[] = useMemo(() => bank?.chaptersJson ? JSON.parse(bank.chaptersJson) : [], [bank?.chaptersJson]);
 
   // Per-chapter stats
-  const chapterStats = chapters.map((ch) => {
-    const chRecords = (records || []).filter((r) => r.chapterId === ch.chapterId);
-    const correct = chRecords.filter((r) => r.isCorrect).length;
-    const wrong = chRecords.filter((r) => !r.isCorrect).length;
-    const totalInChapter = allQuestions.filter((q) => q.chapterId === ch.chapterId).length;
-    return { ...ch, correct, wrong, totalInChapter };
-  });
+  const chapterStats = useMemo(() => {
+    return chapters.map((ch) => {
+      const chRecs = (records || []).filter((r) => r.chapterId === ch.chapterId);
+      const correct = chRecs.filter((r) => r.isCorrect).length;
+      const wrong = chRecs.filter((r) => !r.isCorrect).length;
+      return { ...ch, correct, wrong, totalInChapter: correct + wrong };
+    });
+  }, [chapters, records]);
 
-  if (!bank) return <div style={{ minHeight: "100vh", background: "#1a1a1a", display: "flex", alignItems: "center", justifyContent: "center", color: "#666" }}>加载中...</div>;
+  if (!bank) return (
+    <div style={{ minHeight: "100dvh", background: "#1a1a1a", display: "flex", alignItems: "center", justifyContent: "center", color: "#666" }}>加载中...</div>
+  );
 
-  // If no chapters, skip to full bank
+  // No chapters — skip directly
   if (chapters.length === 0) {
     onSelectChapter(undefined);
     return null;
   }
 
   return (
-    <div style={{ position: "relative", minHeight: "100vh", background: "#1a1a1a", overflowX: "hidden" }}>
+    <div style={{ position: "relative", minHeight: "100dvh", background: "#1a1a1a", overflowX: "hidden" }}>
       <ParticleBackground />
       <div style={{ position: "relative", zIndex: 1, padding: "16px", paddingBottom: "100px" }}>
-        {/* Header */}
         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
-          <button onClick={() => navigate("/training")} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px" }}>
+          <button onClick={() => navigate("/training")} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px", minWidth: "44px", minHeight: "44px", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <ArrowLeft size={24} color="#fff" />
           </button>
           <div style={{ flex: 1 }}>
@@ -160,15 +198,15 @@ function ChapterSelector({ bankId, onSelectChapter }: { bankId: number; onSelect
           </div>
         </div>
 
-        {/* All chapters option */}
-        <motion.button
-          whileTap={{ scale: 0.98 }}
+        <motion.button whileTap={{ scale: 0.98 }}
           onClick={() => onSelectChapter(undefined)}
           style={{
             width: "100%", padding: "16px", borderRadius: "14px",
             background: "linear-gradient(135deg, #00d4ff20, #0077ff10)",
             border: "1px solid rgba(0,212,255,0.3)", marginBottom: "12px",
             cursor: "pointer", display: "flex", alignItems: "center", gap: "12px",
+            WebkitTapHighlightColor: "transparent",
+            userSelect: "none",
           }}
         >
           <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: "rgba(0,212,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -181,22 +219,17 @@ function ChapterSelector({ bankId, onSelectChapter }: { bankId: number; onSelect
           <ChevronRight size={18} color="#00d4ff" />
         </motion.button>
 
-        {/* Chapter list */}
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {chapterStats.map((ch, i) => (
-            <motion.button
-              key={ch.chapterId}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => onSelectChapter(ch.chapterId)}
+            <motion.button key={ch.chapterId} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
+              whileTap={{ scale: 0.98 }} onClick={() => onSelectChapter(ch.chapterId)}
               style={{
                 width: "100%", padding: "14px 16px", borderRadius: "12px",
                 background: "#222", border: "1px solid rgba(255,255,255,0.06)",
                 cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: "12px",
-              }}
-            >
+                WebkitTapHighlightColor: "transparent",
+                userSelect: "none",
+              }}>
               <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: `${bank.color || "#00d4ff"}15`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <FileText size={18} color={bank.color || "#00d4ff"} />
               </div>
@@ -204,9 +237,14 @@ function ChapterSelector({ bankId, onSelectChapter }: { bankId: number; onSelect
                 <div style={{ fontSize: "14px", fontWeight: 600, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ch.chapterName}</div>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "3px" }}>
                   <span style={{ fontSize: "11px", color: "#666" }}>{ch.questionCount} 题</span>
-                  {ch.correct > 0 && <span style={{ fontSize: "11px", color: "#10b981" }}>{ch.correct} 正确</span>}
-                  {ch.wrong > 0 && <span style={{ fontSize: "11px", color: "#ef4444" }}>{ch.wrong} 错误</span>}
-                  {ch.correct === 0 && ch.wrong === 0 && <span style={{ fontSize: "11px", color: "#666" }}>未练习</span>}
+                  {ch.totalInChapter > 0 ? (
+                    <>
+                      <span style={{ fontSize: "11px", color: "#10b981" }}>{ch.correct} 正确</span>
+                      {ch.wrong > 0 && <span style={{ fontSize: "11px", color: "#ef4444" }}>{ch.wrong} 错误</span>}
+                    </>
+                  ) : (
+                    <span style={{ fontSize: "11px", color: "#666" }}>未练习</span>
+                  )}
                 </div>
               </div>
               <ChevronRight size={16} color="#666" />
@@ -226,7 +264,12 @@ function TrainingSession({ bankId: rawBankId, chapterId: rawChapterId }: { bankI
 
   const { data: bankData } = trpc.bank.get.useQuery({ id: rawBankId });
   const { data: savedRecords } = trpc.record.listByBank.useQuery({ bankId: rawBankId });
-  const addRecord = trpc.record.add.useMutation({ onSuccess: () => { utils.record.list.invalidate(); utils.record.listByBank.invalidate({ bankId: rawBankId }); } });
+  const addRecord = trpc.record.add.useMutation({
+    onSuccess: () => {
+      utils.record.list.invalidate();
+      utils.record.listByBank.invalidate({ bankId: rawBankId });
+    },
+  });
   const upsertDaily = trpc.record.upsertDaily.useMutation();
   const updateProgress = trpc.bank.updateProgress.useMutation({ onSuccess: () => utils.bank.list.invalidate() });
 
@@ -238,35 +281,33 @@ function TrainingSession({ bankId: rawBankId, chapterId: rawChapterId }: { bankI
   const [swipeDir, setSwipeDir] = useState<"left" | "right" | null>(null);
   const restoredRef = useRef(false);
 
-  const allQuestions = bankData ? (JSON.parse(bankData.questionsJson) as Array<{
-    id: number; type: string; question: string; options: string[]; correct: number[];
-    explanation: string; enQuestion?: string; enOptions?: string[]; chapterId?: number; chapterName?: string;
-  }>) : [];
+  // Memoize parsed questions to avoid re-parsing on every render
+  const allQuestions: Q[] = useMemo(() => bankData ? JSON.parse(bankData.questionsJson) : [], [bankData?.questionsJson]);
 
   // Filter by chapter if specified
-  const questions = rawChapterId
-    ? allQuestions.filter((q) => q.chapterId === rawChapterId)
-    : allQuestions;
+  const questions: Q[] = useMemo(() =>
+    rawChapterId ? allQuestions.filter((q) => q.chapterId === rawChapterId) : allQuestions,
+    [allQuestions, rawChapterId]
+  );
 
   const lang = settings.questionLanguage;
 
+  // Restore saved progress
   useEffect(() => {
     if (questions.length === 0 || restoredRef.current) return;
     restoredRef.current = true;
 
     const init: AnswerState[] = questions.map(() => ({ selected: [], submitted: false }));
-
     for (const rec of savedRecords || []) {
       const idx = questions.findIndex((q) => q.id === rec.questionId);
       if (idx >= 0) {
         init[idx] = { selected: rec.selected, isCorrect: rec.isCorrect, submitted: true };
       }
     }
-
     const firstUnanswered = init.findIndex((a) => !a.submitted);
     setAnswers(init);
     setCurrentIndex(firstUnanswered >= 0 ? firstUnanswered : 0);
-  }, [questions.length, savedRecords?.length]);
+  }, [questions, savedRecords]);
 
   useEffect(() => { setQStartTime(Date.now()); setSwipeDir(null); }, [currentIndex]);
 
@@ -337,18 +378,27 @@ function TrainingSession({ bankId: rawBankId, chapterId: rawChapterId }: { bankI
     if (currentIndex > 0) { setSwipeDir("right"); setCurrentIndex((p) => p - 1); }
   }, [currentIndex]);
 
-  // Touch swipe
+  // Swipe — only horizontal, require minimum distance, prevent default on horizontal swipe
   const tsX = useRef<number | null>(null);
-  const handleTouchStart = (e: React.TouchEvent) => { tsX.current = e.touches[0].clientX; };
+  const tsY = useRef<number | null>(null);
+  const handleTouchStart = (e: React.TouchEvent) => {
+    tsX.current = e.touches[0].clientX;
+    tsY.current = e.touches[0].clientY;
+  };
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (tsX.current === null) return;
+    if (tsX.current === null || tsY.current === null) return;
     const dx = e.changedTouches[0].clientX - tsX.current;
-    if (Math.abs(dx) > 60) dx > 0 ? handlePrev() : handleNext();
+    const dy = e.changedTouches[0].clientY - tsY.current;
+    // Only trigger if horizontal movement is dominant and significant
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) {
+      if (dx > 0) handlePrev(); else handleNext();
+    }
     tsX.current = null;
+    tsY.current = null;
   };
 
   const totalQuestions = questions.length;
-  const progress = ((currentIndex + 1) / totalQuestions) * 100;
+  const progress = totalQuestions > 0 ? ((currentIndex + 1) / totalQuestions) * 100 : 0;
   const submittedAnswers = answers.filter((a) => a.submitted);
   const correctCount = submittedAnswers.filter((a) => a.isCorrect).length;
   const wrongCount = submittedAnswers.filter((a) => !a.isCorrect).length;
@@ -356,7 +406,7 @@ function TrainingSession({ bankId: rawBankId, chapterId: rawChapterId }: { bankI
   const totalTime = Math.round((Date.now() - startTime) / 1000);
 
   if (!bankData || questions.length === 0) {
-    return <div style={{ minHeight: "100vh", background: "#1a1a1a", display: "flex", alignItems: "center", justifyContent: "center", color: "#666" }}>加载中...</div>;
+    return <div style={{ minHeight: "100dvh", background: "#1a1a1a", display: "flex", alignItems: "center", justifyContent: "center", color: "#666" }}>加载中...</div>;
   }
 
   const displayQuestion = lang === "en" && currentQuestion?.enQuestion ? currentQuestion.enQuestion : currentQuestion?.question || "";
@@ -365,37 +415,53 @@ function TrainingSession({ bankId: rawBankId, chapterId: rawChapterId }: { bankI
   const langLabel = { zh: "中", en: "EN", both: "中英" }[lang];
 
   return (
-    <div style={{ position: "relative", minHeight: "100vh", background: "#1a1a1a" }}>
+    <div style={{ position: "relative", minHeight: "100dvh", background: "#1a1a1a" }}>
       <ParticleBackground />
       <div style={{ position: "relative", zIndex: 1 }}>
         {/* Top Bar */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-          <button onClick={() => navigate("/training")} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px" }}><ArrowLeft size={24} color="#fff" /></button>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", paddingTop: "max(12px, env(safe-area-inset-top))", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+          <button onClick={() => navigate("/training")} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px", minWidth: "44px", minHeight: "44px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <ArrowLeft size={24} color="#fff" />
+          </button>
           <div style={{ fontSize: "14px", fontWeight: 500, color: "#fff", flex: 1, textAlign: "center", margin: "0 8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {bankData.title}
-            {rawChapterId && currentQuestion?.chapterName && <span style={{ fontSize: "12px", color: "#a0a0a0", marginLeft: "6px" }}>[{currentQuestion.chapterName.slice(0, 10)}]</span>}
+            {rawChapterId && currentQuestion?.chapterName && <span style={{ fontSize: "12px", color: "#a0a0a0", marginLeft: "6px" }}>[{currentQuestion.chapterName.length > 10 ? currentQuestion.chapterName.slice(0, 10) + "..." : currentQuestion.chapterName}]</span>}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <button style={{ display: "flex", alignItems: "center", gap: "4px", background: "rgba(0,212,255,0.15)", border: "1px solid rgba(0,212,255,0.3)", borderRadius: "8px", padding: "4px 10px", color: "#00d4ff", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}><Languages size={14} /> {langLabel}</button>
-            <div style={{ fontSize: "12px", color: "#a0a0a0" }}>{currentIndex + 1} / {totalQuestions}</div>
+            <span style={{ display: "flex", alignItems: "center", gap: "4px", background: "rgba(0,212,255,0.15)", border: "1px solid rgba(0,212,255,0.3)", borderRadius: "8px", padding: "4px 10px", color: "#00d4ff", fontSize: "12px", fontWeight: 600 }}>
+              <Languages size={14} /> {langLabel}
+            </span>
+            <span style={{ fontSize: "12px", color: "#a0a0a0" }}>{currentIndex + 1} / {totalQuestions}</span>
           </div>
         </div>
 
         {/* Progress Bar */}
-        <div style={{ width: "100%", height: "3px", background: "#2a2a2a" }}><motion.div animate={{ width: `${progress}%` }} transition={{ duration: 0.3 }} style={{ height: "100%", background: "#00d4ff" }} /></div>
+        <div style={{ width: "100%", height: "3px", background: "#2a2a2a" }}>
+          <motion.div animate={{ width: `${progress}%` }} transition={{ duration: 0.3 }} style={{ height: "100%", background: "#00d4ff" }} />
+        </div>
 
         {/* Mini Navigator */}
-        <div style={{ display: "flex", gap: "5px", padding: "10px 16px", overflowX: "auto" }}>
+        <div style={{ display: "flex", gap: "5px", padding: "10px 16px", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
           {answers.map((ans, idx) => {
             let bg = "#2a2a2a", border = "1px solid transparent";
             if (idx === currentIndex) { bg = "#00d4ff"; border = "1px solid #00d4ff"; }
             else if (ans.submitted) { bg = ans.isCorrect ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)"; border = ans.isCorrect ? "1px solid rgba(16,185,129,0.4)" : "1px solid rgba(239,68,68,0.4)"; }
-            return <button key={idx} onClick={() => { setSwipeDir(idx > currentIndex ? "left" : "right"); setCurrentIndex(idx); }} style={{ width: "32px", height: "32px", borderRadius: "8px", background: bg, border, color: idx === currentIndex ? "#1a1a1a" : ans.submitted ? (ans.isCorrect ? "#10b981" : "#ef4444") : "#666", fontSize: "13px", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer" }}>{idx + 1}</button>;
+            return (
+              <button key={idx} onClick={() => { setSwipeDir(idx > currentIndex ? "left" : "right"); setCurrentIndex(idx); }}
+                style={{
+                  width: "32px", height: "32px", borderRadius: "8px", background: bg, border,
+                  color: idx === currentIndex ? "#1a1a1a" : ans.submitted ? (ans.isCorrect ? "#10b981" : "#ef4444") : "#666",
+                  fontSize: "13px", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0, cursor: "pointer", WebkitTapHighlightColor: "transparent", userSelect: "none",
+                }}>
+                {idx + 1}
+              </button>
+            );
           })}
         </div>
 
         {/* Question + Options */}
-        <div style={{ padding: "0 16px 100px" }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+        <div style={{ padding: "0 16px 120px", userSelect: "none", WebkitUserSelect: "none" }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
           <motion.div key={currentIndex} custom={swipeDir}
             initial={{ opacity: 0, x: swipeDir === "left" ? 80 : swipeDir === "right" ? -80 : 30 }}
             animate={{ opacity: 1, x: 0 }}
@@ -403,12 +469,13 @@ function TrainingSession({ bankId: rawBankId, chapterId: rawChapterId }: { bankI
             transition={{ duration: 0.25 }}>
             {/* Question Card */}
             <div style={{ background: "#222", borderRadius: "16px", padding: "20px", border: "1px solid rgba(255,255,255,0.08)", marginBottom: "16px" }}>
-              <div style={{ display: "inline-block", padding: "4px 12px", borderRadius: "8px", background: "rgba(0,212,255,0.15)", color: "#00d4ff", fontSize: "12px", fontWeight: 500, marginBottom: "12px" }}>
-                {typeLabel}{currentQuestion?.chapterName && <span style={{ marginLeft: "8px", opacity: 0.7 }}>{currentQuestion.chapterName.length > 15 ? currentQuestion.chapterName.slice(0, 15) + "..." : currentQuestion.chapterName}</span>}
-                {currentAnswer?.submitted && <span style={{ marginLeft: "8px", color: currentAnswer.isCorrect ? "#10b981" : "#ef4444" }}>{currentAnswer.isCorrect ? " ✓ 正确" : " ✗ 错误"}</span>}
+              <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "4px 12px", borderRadius: "8px", background: "rgba(0,212,255,0.15)", color: "#00d4ff", fontSize: "12px", fontWeight: 500, marginBottom: "12px" }}>
+                {typeLabel}
+                {currentQuestion?.chapterName && <span style={{ opacity: 0.7 }}>{currentQuestion.chapterName.length > 15 ? currentQuestion.chapterName.slice(0, 15) + "..." : currentQuestion.chapterName}</span>}
+                {currentAnswer?.submitted && <span style={{ color: currentAnswer.isCorrect ? "#10b981" : "#ef4444" }}>{currentAnswer.isCorrect ? " ✓ 正确" : " ✗ 错误"}</span>}
               </div>
-              <div style={{ fontSize: "18px", fontWeight: 500, color: "#fff", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{displayQuestion}</div>
-              {lang === "both" && currentQuestion?.enQuestion && <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: "14px", color: "#a0a0a0", lineHeight: 1.6 }}>{currentQuestion.enQuestion}</div>}
+              <div style={{ fontSize: "18px", fontWeight: 500, color: "#fff", lineHeight: 1.6, whiteSpace: "pre-wrap", userSelect: "text", WebkitUserSelect: "text" }}>{displayQuestion}</div>
+              {lang === "both" && currentQuestion?.enQuestion && <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: "14px", color: "#a0a0a0", lineHeight: 1.6, userSelect: "text", WebkitUserSelect: "text" }}>{currentQuestion.enQuestion}</div>}
             </div>
 
             {/* Options */}
@@ -424,13 +491,18 @@ function TrainingSession({ bankId: rawBankId, chapterId: rawChapterId }: { bankI
                 } else if (isSelected) { borderColor = "#00d4ff"; bgColor = "rgba(0,212,255,0.1)"; circleColor = "#00d4ff"; }
                 return (
                   <motion.button key={`${currentIndex}-${index}`} whileTap={!submitted ? { scale: 0.98 } : undefined} onClick={() => handleSelect(index)}
-                    style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "16px", borderRadius: "12px", background: bgColor, border: `1.5px solid ${borderColor}`, cursor: submitted ? "default" : "pointer", textAlign: "left", width: "100%" }}>
+                    style={{
+                      display: "flex", alignItems: "flex-start", gap: "12px", padding: "16px", borderRadius: "12px",
+                      background: bgColor, border: `1.5px solid ${borderColor}`, cursor: submitted ? "default" : "pointer",
+                      textAlign: "left", width: "100%", minHeight: "48px",
+                      WebkitTapHighlightColor: "transparent", userSelect: "none", touchAction: "manipulation",
+                    }}>
                     <div style={{ width: "22px", height: "22px", borderRadius: currentQuestion?.type === "multiple" ? "4px" : "50%", border: `2px solid ${circleColor}`, background: isSelected ? circleColor : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: "1px" }}>
                       {isSelected && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>{currentQuestion?.type === "multiple" ? <Check size={14} color="#1a1a1a" strokeWidth={3} /> : <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#1a1a1a" }} />}</motion.div>}
                     </div>
                     <div style={{ flex: 1 }}>
-                      <span style={{ fontSize: "16px", color: "#fff", lineHeight: 1.5 }}>{option}</span>
-                      {lang === "both" && currentQuestion?.enOptions?.[index] && <div style={{ fontSize: "13px", color: "#a0a0a0", marginTop: "4px" }}>{currentQuestion.enOptions[index]}</div>}
+                      <span style={{ fontSize: "16px", color: "#fff", lineHeight: 1.5, userSelect: "text", WebkitUserSelect: "text" }}>{option}</span>
+                      {lang === "both" && currentQuestion?.enOptions?.[index] && <div style={{ fontSize: "13px", color: "#a0a0a0", marginTop: "4px", userSelect: "text", WebkitUserSelect: "text" }}>{currentQuestion.enOptions[index]}</div>}
                     </div>
                     {submitted && isCorrect && <Check size={20} color="#10b981" style={{ flexShrink: 0, marginTop: "2px" }} />}
                     {submitted && isSelected && !isCorrect && <X size={20} color="#ef4444" style={{ flexShrink: 0, marginTop: "2px" }} />}
@@ -442,7 +514,13 @@ function TrainingSession({ bankId: rawBankId, chapterId: rawChapterId }: { bankI
             {/* Multi-select submit */}
             {currentQuestion?.type === "multiple" && !currentAnswer?.submitted && (
               <motion.button whileTap={{ scale: 0.95 }} onClick={handleMultiSubmit} disabled={!currentAnswer?.selected.length}
-                style={{ marginTop: "16px", width: "100%", padding: "14px", borderRadius: "12px", background: currentAnswer?.selected.length ? "#00d4ff" : "#2a2a2a", color: currentAnswer?.selected.length ? "#1a1a1a" : "#666", fontSize: "15px", fontWeight: 600, border: "none", cursor: currentAnswer?.selected.length ? "pointer" : "not-allowed" }}>
+                style={{
+                  marginTop: "16px", width: "100%", padding: "14px", borderRadius: "12px",
+                  background: currentAnswer?.selected.length ? "#00d4ff" : "#2a2a2a",
+                  color: currentAnswer?.selected.length ? "#1a1a1a" : "#666", fontSize: "15px", fontWeight: 600,
+                  border: "none", cursor: currentAnswer?.selected.length ? "pointer" : "not-allowed",
+                  minHeight: "48px", touchAction: "manipulation",
+                }}>
                 确认提交 ({currentAnswer?.selected.length || 0}项已选)
               </motion.button>
             )}
@@ -455,24 +533,42 @@ function TrainingSession({ bankId: rawBankId, chapterId: rawChapterId }: { bankI
                     {currentAnswer.isCorrect ? "回答正确！" : "回答错误"}
                     {!currentAnswer.isCorrect && <span style={{ fontWeight: 400, fontSize: "13px", color: "#a0a0a0", marginLeft: "8px" }}>正确答案: {currentQuestion?.correct.map((c) => String.fromCharCode(65 + c)).join(", ")}</span>}
                   </div>
-                  <div style={{ fontSize: "14px", color: "#a0a0a0", lineHeight: 1.6 }}>{currentQuestion?.explanation}</div>
+                  <div style={{ fontSize: "14px", color: "#a0a0a0", lineHeight: 1.6, userSelect: "text", WebkitUserSelect: "text" }}>{currentQuestion?.explanation}</div>
                 </div>
               </motion.div>
             )}
           </motion.div>
 
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "6px", marginTop: "20px", fontSize: "12px", color: "#444" }}><ChevronLeft size={14} /><span>左右滑动切换题目</span><ChevronRight size={14} /></div>
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "6px", marginTop: "20px", fontSize: "12px", color: "#444" }}>
+            <ChevronLeft size={14} /><span>左右滑动切换题目</span><ChevronRight size={14} />
+          </div>
         </div>
 
         {/* Bottom Nav */}
-        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, padding: "12px 16px", paddingBottom: "calc(12px + env(safe-area-inset-bottom))", background: "rgba(26,26,26,0.95)", backdropFilter: "blur(20px)", borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", gap: "12px", zIndex: 40 }}>
+        <div style={{
+          position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 40,
+          padding: "12px 16px", paddingBottom: "max(12px, env(safe-area-inset-bottom))",
+          background: "rgba(26,26,26,0.95)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
+          borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", gap: "12px",
+        }}>
           <motion.button whileTap={{ scale: 0.95 }} onClick={handlePrev} disabled={currentIndex === 0}
-            style={{ flex: 1, padding: "14px", borderRadius: "12px", background: "#2a2a2a", color: currentIndex === 0 ? "#666" : "#fff", fontSize: "14px", fontWeight: 500, border: "none", cursor: currentIndex === 0 ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+            style={{
+              flex: 1, padding: "14px", borderRadius: "12px", background: "#2a2a2a",
+              color: currentIndex === 0 ? "#666" : "#fff", fontSize: "14px", fontWeight: 500,
+              border: "none", cursor: currentIndex === 0 ? "not-allowed" : "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+              minHeight: "48px", touchAction: "manipulation", userSelect: "none",
+            }}>
             <ChevronLeft size={18} /> 上一题
           </motion.button>
           <motion.button whileTap={{ scale: 0.95 }} onClick={handleNext}
-            style={{ flex: 1, padding: "14px", borderRadius: "12px", background: "#00d4ff", color: "#1a1a1a", fontSize: "14px", fontWeight: 600, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-            {currentIndex < totalQuestions - 1 ? <>下一题 <ChevronRight size={18} /></> : <>提交练习 <ChevronRight size={18} /></>}
+            style={{
+              flex: 1, padding: "14px", borderRadius: "12px", background: "#00d4ff",
+              color: "#1a1a1a", fontSize: "14px", fontWeight: 600, border: "none",
+              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+              minHeight: "48px", touchAction: "manipulation", userSelect: "none",
+            }}>
+            {currentIndex < totalQuestions - 1 ? <>下一题 <ChevronRight size={18} /></> : <>完成练习 <ChevronRight size={18} /></>}
           </motion.button>
         </div>
       </div>
@@ -499,13 +595,13 @@ function TrainingSession({ bankId: rawBankId, chapterId: rawChapterId }: { bankI
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               <motion.button whileTap={{ scale: 0.95 }}
-                onClick={() => { setCurrentIndex(0); setAnswers(questions.map(() => ({ selected: [], submitted: false }))); setShowSummary(false); }}
-                style={{ padding: "14px", borderRadius: "12px", background: "#00d4ff", color: "#1a1a1a", fontSize: "14px", fontWeight: 600, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                onClick={() => { setCurrentIndex(0); setAnswers(questions.map(() => ({ selected: [], submitted: false }))); setShowSummary(false); restoredRef.current = false; }}
+                style={{ padding: "14px", borderRadius: "12px", background: "#00d4ff", color: "#1a1a1a", fontSize: "14px", fontWeight: 600, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", minHeight: "48px", touchAction: "manipulation" }}>
                 <RotateCcw size={16} /> 再来一组
               </motion.button>
               <div style={{ display: "flex", gap: "10px" }}>
-                <motion.button whileTap={{ scale: 0.95 }} onClick={() => navigate("/")} style={{ flex: 1, padding: "14px", borderRadius: "12px", background: "#2a2a2a", color: "#fff", fontSize: "14px", border: "none", cursor: "pointer" }}><Home size={16} /> 首页</motion.button>
-                <motion.button whileTap={{ scale: 0.95 }} onClick={() => navigate("/training")} style={{ flex: 1, padding: "14px", borderRadius: "12px", background: "#2a2a2a", color: "#fff", fontSize: "14px", border: "none", cursor: "pointer" }}><BookOpen size={16} /> 换题库</motion.button>
+                <motion.button whileTap={{ scale: 0.95 }} onClick={() => navigate("/")} style={{ flex: 1, padding: "14px", borderRadius: "12px", background: "#2a2a2a", color: "#fff", fontSize: "14px", border: "none", cursor: "pointer", minHeight: "48px", touchAction: "manipulation" }}><Home size={16} /> 首页</motion.button>
+                <motion.button whileTap={{ scale: 0.95 }} onClick={() => navigate("/training")} style={{ flex: 1, padding: "14px", borderRadius: "12px", background: "#2a2a2a", color: "#fff", fontSize: "14px", border: "none", cursor: "pointer", minHeight: "48px", touchAction: "manipulation" }}><BookOpen size={16} /> 换题库</motion.button>
               </div>
             </div>
           </motion.div>
@@ -518,17 +614,34 @@ function TrainingSession({ bankId: rawBankId, chapterId: rawChapterId }: { bankI
 // ========== Entry Point ==========
 export default function TrainingPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const navState = location.state as { bankId?: number; chapterId?: number } | null;
   const bankId = navState?.bankId;
   const chapterId = navState?.chapterId;
 
-  // If we have a bankId and chapterId (or no chapters), show training session
-  // If we have a bankId but no chapterId yet, show chapter selector first
-  const [selectedChapter, setSelectedChapter] = useState<number | undefined>(chapterId);
+  // Persist selectedChapter in sessionStorage for page refresh
+  const [selectedChapter, setSelectedChapter] = useState<number | undefined>(() => {
+    const saved = sessionStorage.getItem("zenith-training-chapter");
+    return saved ? Number(saved) : chapterId;
+  });
 
-  if (!bankId) return <TrainingSelector onSelect={(id) => { window.history.replaceState({ bankId: id }, ""); }} />;
+  // Persist to sessionStorage when changed
+  useEffect(() => {
+    if (selectedChapter !== undefined) {
+      sessionStorage.setItem("zenith-training-chapter", String(selectedChapter));
+    } else {
+      sessionStorage.removeItem("zenith-training-chapter");
+    }
+  }, [selectedChapter]);
 
-  // If no chapter selected yet, show chapter selector
+  // Wrap navigate in useCallback to pass to TrainingSelector
+  const handleSelectBank = useCallback((id: number) => {
+    navigate("/training", { state: { bankId: id } });
+  }, [navigate]);
+
+  if (!bankId) return <TrainingSelector onSelect={handleSelectBank} />;
+
+  // If no chapter selected yet, show chapter selector first
   if (selectedChapter === undefined && chapterId === undefined) {
     return <ChapterSelector bankId={bankId} onSelectChapter={(chId) => setSelectedChapter(chId)} />;
   }

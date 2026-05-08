@@ -1,10 +1,7 @@
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { trpc } from "@/providers/trpc";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Zap, Eye, EyeOff } from "lucide-react";
 
 export default function Login() {
@@ -14,6 +11,16 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+
+  // Detect iOS keyboard open/close
+  useEffect(() => {
+    const handleResize = () => {
+      setIsKeyboardOpen(window.visualViewport ? window.visualViewport.height < window.innerHeight * 0.8 : false);
+    };
+    window.visualViewport?.addEventListener("resize", handleResize);
+    return () => window.visualViewport?.removeEventListener("resize", handleResize);
+  }, []);
 
   const loginMutation = trpc.simpleAuth.login.useMutation({
     onSuccess: async (data) => {
@@ -29,26 +36,35 @@ export default function Login() {
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = useCallback((e?: React.FormEvent) => {
+    e?.preventDefault();
     setError("");
     if (!username.trim() || !password.trim()) {
       setError("请输入账号和密码");
       return;
     }
     loginMutation.mutate({ username: username.trim(), password });
-  };
+  }, [username, password, loginMutation]);
+
+  // Quick account fill for test accounts
+  const fillAccount = useCallback((u: string, p: string) => {
+    setUsername(u);
+    setPassword(p);
+    setError("");
+  }, []);
 
   return (
     <div
       style={{
-        minHeight: "100vh",
+        minHeight: "100dvh",
         background: "#1a1a1a",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        justifyContent: "center",
+        justifyContent: isKeyboardOpen ? "flex-start" : "center",
         padding: "20px",
+        paddingTop: isKeyboardOpen ? "40px" : "20px",
+        transition: "padding-top 0.3s ease",
       }}
     >
       <motion.div
@@ -61,7 +77,7 @@ export default function Login() {
         }}
       >
         {/* Logo */}
-        <div style={{ textAlign: "center", marginBottom: "32px" }}>
+        <div style={{ textAlign: "center", marginBottom: isKeyboardOpen ? "16px" : "32px", transition: "margin 0.3s ease" }}>
           <div
             style={{
               width: "64px",
@@ -95,39 +111,48 @@ export default function Login() {
         {/* Form */}
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: "16px" }}>
-            <Label
+            <label
               htmlFor="username"
               style={{ color: "#a0a0a0", fontSize: "13px", marginBottom: "6px", display: "block" }}
             >
               账号
-            </Label>
-            <Input
+            </label>
+            <input
               id="username"
               type="text"
+              inputMode="numeric"
               placeholder="输入账号 (1, 2, 3)"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               autoComplete="username"
+              autoFocus
               style={{
+                width: "100%",
+                boxSizing: "border-box",
                 background: "#222",
                 border: "1px solid rgba(255,255,255,0.1)",
                 color: "#fff",
                 borderRadius: "12px",
                 height: "48px",
-                fontSize: "15px",
+                fontSize: "16px",
+                padding: "0 14px",
+                outline: "none",
+                transition: "border-color 0.2s",
               }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = "#00d4ff"; }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }}
             />
           </div>
 
           <div style={{ marginBottom: "20px" }}>
-            <Label
+            <label
               htmlFor="password"
               style={{ color: "#a0a0a0", fontSize: "13px", marginBottom: "6px", display: "block" }}
             >
               密码
-            </Label>
+            </label>
             <div style={{ position: "relative" }}>
-              <Input
+              <input
                 id="password"
                 type={showPassword ? "text" : "password"}
                 placeholder="输入密码"
@@ -135,14 +160,20 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
                 style={{
+                  width: "100%",
+                  boxSizing: "border-box",
                   background: "#222",
                   border: "1px solid rgba(255,255,255,0.1)",
                   color: "#fff",
                   borderRadius: "12px",
                   height: "48px",
-                  fontSize: "15px",
-                  paddingRight: "44px",
+                  fontSize: "16px",
+                  padding: "0 44px 0 14px",
+                  outline: "none",
+                  transition: "border-color 0.2s",
                 }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = "#00d4ff"; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }}
               />
               <button
                 type="button"
@@ -155,8 +186,13 @@ export default function Login() {
                   background: "none",
                   border: "none",
                   cursor: "pointer",
-                  padding: "4px",
+                  padding: "8px",
                   color: "#666",
+                  minWidth: "44px",
+                  minHeight: "44px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -164,25 +200,30 @@ export default function Login() {
             </div>
           </div>
 
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              style={{
-                background: "rgba(239,68,68,0.1)",
-                border: "1px solid rgba(239,68,68,0.3)",
-                borderRadius: "10px",
-                padding: "10px 14px",
-                marginBottom: "16px",
-                fontSize: "13px",
-                color: "#ef4444",
-              }}
-            >
-              {error}
-            </motion.div>
-          )}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                key="error"
+                initial={{ opacity: 0, y: -10, height: 0 }}
+                animate={{ opacity: 1, y: 0, height: "auto" }}
+                exit={{ opacity: 0, y: -10, height: 0 }}
+                style={{
+                  background: "rgba(239,68,68,0.1)",
+                  border: "1px solid rgba(239,68,68,0.3)",
+                  borderRadius: "10px",
+                  padding: "10px 14px",
+                  marginBottom: "16px",
+                  fontSize: "13px",
+                  color: "#ef4444",
+                  overflow: "hidden",
+                }}
+              >
+                {error}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          <Button
+          <button
             type="submit"
             disabled={loginMutation.isPending}
             style={{
@@ -191,27 +232,55 @@ export default function Login() {
               borderRadius: "12px",
               background: "#00d4ff",
               color: "#1a1a1a",
-              fontSize: "15px",
+              fontSize: "16px",
               fontWeight: 600,
               border: "none",
               cursor: loginMutation.isPending ? "not-allowed" : "pointer",
               opacity: loginMutation.isPending ? 0.7 : 1,
+              transition: "opacity 0.2s, transform 0.15s",
+              WebkitTapHighlightColor: "transparent",
             }}
           >
             {loginMutation.isPending ? "登录中..." : "登录"}
-          </Button>
+          </button>
         </form>
 
-        <p
+        {/* Quick fill test accounts */}
+        <div
           style={{
-            textAlign: "center",
+            display: "flex",
+            justifyContent: "center",
+            gap: "8px",
             marginTop: "20px",
-            fontSize: "12px",
-            color: "#555",
           }}
         >
-          测试账号: 1 / a &nbsp;·&nbsp; 2 / b &nbsp;·&nbsp; 3 / c
-        </p>
+          {[
+            { u: "1", p: "a", label: "账号1" },
+            { u: "2", p: "b", label: "账号2" },
+            { u: "3", p: "c", label: "账号3" },
+          ].map((acc) => (
+            <button
+              key={acc.u}
+              type="button"
+              onClick={() => fillAccount(acc.u, acc.p)}
+              style={{
+                padding: "8px 16px",
+                borderRadius: "10px",
+                background: "#222",
+                border: "1px solid rgba(255,255,255,0.08)",
+                color: "#a0a0a0",
+                fontSize: "13px",
+                cursor: "pointer",
+                transition: "all 0.2s",
+                minHeight: "44px",
+              }}
+              onMouseDown={(e) => { e.currentTarget.style.background = "#2a2a2a"; e.currentTarget.style.color = "#fff"; }}
+              onMouseUp={(e) => { e.currentTarget.style.background = "#222"; e.currentTarget.style.color = "#a0a0a0"; }}
+            >
+              {acc.label}
+            </button>
+          ))}
+        </div>
       </motion.div>
     </div>
   );

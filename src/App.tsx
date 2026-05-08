@@ -135,10 +135,14 @@ export default function App() {
         style={{
           maxWidth: "430px",
           margin: "0 auto",
-          minHeight: "100vh",
+          minHeight: "100dvh",
           background: "#1a1a1a",
           position: "relative",
           overflow: "hidden",
+          WebkitOverflowScrolling: "touch",
+          overscrollBehaviorY: "none",
+          userSelect: "none",
+          WebkitUserSelect: "none",
         }}
       >
         <Routes>

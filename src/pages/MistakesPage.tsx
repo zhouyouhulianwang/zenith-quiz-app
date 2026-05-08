@@ -37,7 +37,13 @@ export default function MistakesPage() {
   const filtered = useMemo(() => filterBankId ? targetRecords.filter((r) => r.bankId === filterBankId) : targetRecords, [targetRecords, filterBankId]);
   const current = filtered[currentIndex];
   const bank = current ? banks?.find((b) => b.id === current.bankId) : null;
-  const question = current ? (JSON.parse(bank?.questionsJson || "[]") as Array<{ id: number; question: string; options: string[]; correct: number[]; explanation: string }>).find((q) => q.id === current.questionId) : null;
+  // Memoize parsed questions to avoid re-parsing on every render
+  const bankQuestions = useMemo(() => {
+    if (!bank?.questionsJson) return [];
+    try { return JSON.parse(bank.questionsJson) as Array<{ id: number; question: string; options: string[]; correct: number[]; explanation: string }>; }
+    catch { return []; }
+  }, [bank?.questionsJson]);
+  const question = current ? bankQuestions.find((q) => q.id === current.questionId) : null;
 
   const handlePrev = () => { if (currentIndex > 0) setCurrentIndex((p) => p - 1); };
   const handleNext = () => { if (currentIndex < filtered.length - 1) setCurrentIndex((p) => p + 1); };
@@ -62,8 +68,8 @@ export default function MistakesPage() {
       <ParticleBackground />
       <div style={{ position: "relative", zIndex: 1 }}>
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-          <button onClick={() => navigate(-1)} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px" }}><ArrowLeft size={24} color="#fff" /></button>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", paddingTop: "max(12px, env(safe-area-inset-top))", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+          <button onClick={() => navigate(-1)} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px", minWidth: "44px", minHeight: "44px", display: "flex", alignItems: "center", justifyContent: "center" }}><ArrowLeft size={24} color="#fff" /></button>
           <div style={{ fontSize: "17px", fontWeight: 600, color: "#fff" }}>{isWrongMode ? "错题回顾" : "正确回顾"}</div>
           <div style={{ fontSize: "13px", color: isWrongMode ? "#ef4444" : "#10b981", fontWeight: 600 }}>{currentIndex + 1} / {filtered.length}</div>
         </div>
@@ -125,9 +131,9 @@ export default function MistakesPage() {
         </div>
 
         {/* Bottom Nav */}
-        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, padding: "12px 16px", paddingBottom: "calc(12px + env(safe-area-inset-bottom))", background: "rgba(26,26,26,0.95)", backdropFilter: "blur(20px)", borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", gap: "12px", zIndex: 40 }}>
-          <motion.button whileTap={{ scale: 0.95 }} onClick={handlePrev} disabled={currentIndex === 0} style={{ padding: "14px 20px", borderRadius: "12px", background: "#2a2a2a", color: currentIndex === 0 ? "#666" : "#fff", fontSize: "14px", border: "none", cursor: currentIndex === 0 ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "6px" }}><ChevronLeft size={18} /> 上一题</motion.button>
-          <motion.button whileTap={{ scale: 0.95 }} onClick={handleNext} disabled={currentIndex >= filtered.length - 1} style={{ flex: 1, padding: "14px 20px", borderRadius: "12px", background: currentIndex >= filtered.length - 1 ? "#2a2a2a" : "#00d4ff", color: currentIndex >= filtered.length - 1 ? "#666" : "#1a1a1a", fontSize: "14px", fontWeight: 600, border: "none", cursor: currentIndex >= filtered.length - 1 ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>下一题 <ChevronRight size={18} /></motion.button>
+        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, padding: "12px 16px", paddingBottom: "max(12px, env(safe-area-inset-bottom))", background: "rgba(26,26,26,0.95)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", gap: "12px", zIndex: 40 }}>
+          <motion.button whileTap={{ scale: 0.95 }} onClick={handlePrev} disabled={currentIndex === 0} style={{ padding: "14px 20px", borderRadius: "12px", background: "#2a2a2a", color: currentIndex === 0 ? "#666" : "#fff", fontSize: "14px", border: "none", cursor: currentIndex === 0 ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "6px", minHeight: "48px", touchAction: "manipulation", userSelect: "none" }}><ChevronLeft size={18} /> 上一题</motion.button>
+          <motion.button whileTap={{ scale: 0.95 }} onClick={handleNext} disabled={currentIndex >= filtered.length - 1} style={{ flex: 1, padding: "14px 20px", borderRadius: "12px", background: currentIndex >= filtered.length - 1 ? "#2a2a2a" : "#00d4ff", color: currentIndex >= filtered.length - 1 ? "#666" : "#1a1a1a", fontSize: "14px", fontWeight: 600, border: "none", cursor: currentIndex >= filtered.length - 1 ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", minHeight: "48px", touchAction: "manipulation", userSelect: "none" }}>下一题 <ChevronRight size={18} /></motion.button>
         </div>
       </div>
     </div>

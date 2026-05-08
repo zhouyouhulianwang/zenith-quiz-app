@@ -14,8 +14,15 @@
     <link rel="icon" type="image/png" href="/icon-192.png" />
     <title>ZENITH 自适应训练平台</title>
     <style>
-      body { background: #0d0d0d; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
-      #root { background: #1a1a1a; min-height: 100vh; }
+      html, body { background: #0d0d0d; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+      #root { background: #1a1a1a; min-height: 100vh; min-height: 100dvh; }
+      /* iOS optimizations */
+      * { -webkit-touch-callout: none; touch-action: manipulation; }
+      input, textarea, [contenteditable] { -webkit-touch-callout: default; touch-action: auto; user-select: text; }
+      input { font-size: 16px !important; }
+      /* Prevent pull-to-refresh but allow vertical scroll on content */
+      body { overscroll-behavior-y: none; }
+      .scrollable { overscroll-behavior-y: auto; -webkit-overflow-scrolling: touch; }
     </style>
   </head>
   <body>
