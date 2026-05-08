@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "framer-motion";
 import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle, XCircle, Clock, BookOpen, Filter, Calendar } from "lucide-react";
@@ -30,6 +30,20 @@ export default function RecordsPage() {
   const handleNext = () => { if (currentIndex < total - 1) setCurrentIndex((p) => p + 1); };
   const formatDate = (ts: Date | number) => { const d = new Date(ts); return `${d.getMonth() + 1}月${d.getDate()}日 ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; };
 
+  // Swipe gesture - horizontal only
+  const tsX = useRef<number | null>(null);
+  const tsY = useRef<number | null>(null);
+  const handleTouchStart = (e: React.TouchEvent) => { tsX.current = e.touches[0].clientX; tsY.current = e.touches[0].clientY; };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (tsX.current === null || tsY.current === null) return;
+    const dx = e.changedTouches[0].clientX - tsX.current;
+    const dy = e.changedTouches[0].clientY - tsY.current;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) {
+      if (dx > 0) handlePrev(); else handleNext();
+    }
+    tsX.current = null; tsY.current = null;
+  };
+
   if ((records || []).length === 0) {
     return (
       <div style={{ position: "relative", minHeight: "100vh", background: "#1a1a1a", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -44,11 +58,11 @@ export default function RecordsPage() {
   }
 
   return (
-    <div style={{ position: "relative", minHeight: "100vh", background: "#1a1a1a" }}>
+    <div style={{ position: "relative", minHeight: "100dvh", background: "#1a1a1a" }}>
       <ParticleBackground />
       <div style={{ position: "relative", zIndex: 1 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-          <button onClick={() => navigate(-1)} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px" }}><ArrowLeft size={24} color="#fff" /></button>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", paddingTop: "max(12px, env(safe-area-inset-top))", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+          <button onClick={() => navigate("/")} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px", minWidth: "44px", minHeight: "44px", display: "flex", alignItems: "center", justifyContent: "center" }}><ArrowLeft size={24} color="#fff" /></button>
           <div style={{ fontSize: "17px", fontWeight: 600, color: "#fff" }}>练习记录</div>
           <div style={{ fontSize: "13px", color: "#a0a0a0" }}>{currentIndex + 1} / {total}</div>
         </div>
@@ -69,7 +83,7 @@ export default function RecordsPage() {
         </div>
 
         {/* Detail */}
-        <div style={{ padding: "0 16px 100px" }}>
+        <div style={{ padding: "0 16px calc(140px + env(safe-area-inset-bottom))" }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
           {current && question && (
             <motion.div key={`${current.bankId}-${current.questionId}-${current.createdAt.getTime()}`} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.25 }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px", flexWrap: "wrap" }}>
@@ -99,9 +113,9 @@ export default function RecordsPage() {
           )}
         </div>
 
-        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, padding: "12px 16px", paddingBottom: "calc(12px + env(safe-area-inset-bottom))", background: "rgba(26,26,26,0.95)", backdropFilter: "blur(20px)", borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", gap: "12px", zIndex: 40 }}>
-          <motion.button whileTap={{ scale: 0.95 }} onClick={handlePrev} disabled={currentIndex === 0} style={{ padding: "14px 20px", borderRadius: "12px", background: "#2a2a2a", color: currentIndex === 0 ? "#666" : "#fff", fontSize: "14px", border: "none", cursor: currentIndex === 0 ? "not-allowed" : "pointer" }}><ChevronLeft size={18} /> 上一条</motion.button>
-          <motion.button whileTap={{ scale: 0.95 }} onClick={handleNext} disabled={currentIndex >= total - 1} style={{ flex: 1, padding: "14px 20px", borderRadius: "12px", background: currentIndex >= total - 1 ? "#2a2a2a" : "#00d4ff", color: currentIndex >= total - 1 ? "#666" : "#1a1a1a", fontSize: "14px", fontWeight: 600, border: "none", cursor: currentIndex >= total - 1 ? "not-allowed" : "pointer" }}>下一条 <ChevronRight size={18} /></motion.button>
+        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, padding: "12px 16px", paddingBottom: "max(16px, env(safe-area-inset-bottom))", background: "rgba(26,26,26,0.98)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", gap: "12px", zIndex: 100 }}>
+          <motion.button whileTap={{ scale: 0.95 }} onClick={handlePrev} disabled={currentIndex === 0} style={{ padding: "14px 20px", borderRadius: "12px", background: "#2a2a2a", color: currentIndex === 0 ? "#666" : "#fff", fontSize: "14px", border: "none", cursor: currentIndex === 0 ? "not-allowed" : "pointer", minHeight: "48px", touchAction: "manipulation", userSelect: "none", display: "flex", alignItems: "center", gap: "6px" }}><ChevronLeft size={18} /> 上一条</motion.button>
+          <motion.button whileTap={{ scale: 0.95 }} onClick={handleNext} disabled={currentIndex >= total - 1} style={{ flex: 1, padding: "14px 20px", borderRadius: "12px", background: currentIndex >= total - 1 ? "#2a2a2a" : "#00d4ff", color: currentIndex >= total - 1 ? "#666" : "#1a1a1a", fontSize: "14px", fontWeight: 600, border: "none", cursor: currentIndex >= total - 1 ? "not-allowed" : "pointer", minHeight: "48px", touchAction: "manipulation", userSelect: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>下一条 <ChevronRight size={18} /></motion.button>
         </div>
       </div>
     </div>

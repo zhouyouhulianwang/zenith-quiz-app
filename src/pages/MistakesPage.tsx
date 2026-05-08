@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useNavigate, useLocation } from "react-router";
 import { motion } from "framer-motion";
 import { ArrowLeft, XCircle, CheckCircle, ChevronLeft, ChevronRight, RotateCcw, Filter, AlertCircle, BookOpen, Clock } from "lucide-react";
@@ -47,6 +47,20 @@ export default function MistakesPage() {
 
   const handlePrev = () => { if (currentIndex > 0) setCurrentIndex((p) => p - 1); };
   const handleNext = () => { if (currentIndex < filtered.length - 1) setCurrentIndex((p) => p + 1); };
+
+  // Swipe gesture - horizontal only
+  const tsX = useRef<number | null>(null);
+  const tsY = useRef<number | null>(null);
+  const handleTouchStart = (e: React.TouchEvent) => { tsX.current = e.touches[0].clientX; tsY.current = e.touches[0].clientY; };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (tsX.current === null || tsY.current === null) return;
+    const dx = e.changedTouches[0].clientX - tsX.current;
+    const dy = e.changedTouches[0].clientY - tsY.current;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) {
+      if (dx > 0) handlePrev(); else handleNext();
+    }
+    tsX.current = null; tsY.current = null;
+  };
   const formatDate = (ts: Date | number) => { const d = new Date(ts); return `${d.getMonth() + 1}月${d.getDate()}日 ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; };
 
   if (targetRecords.length === 0) {
@@ -84,7 +98,7 @@ export default function MistakesPage() {
         )}
 
         {/* Detail */}
-        <div style={{ padding: "0 16px calc(140px + env(safe-area-inset-bottom))" }}>
+        <div style={{ padding: "0 16px calc(140px + env(safe-area-inset-bottom))" }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
           {current && question && (
             <motion.div key={`${current.bankId}-${current.questionId}-${current.createdAt.getTime()}`} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.25 }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px", flexWrap: "wrap" }}>
