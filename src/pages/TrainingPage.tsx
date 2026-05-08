@@ -344,7 +344,7 @@ function ChapterBar({
 // ========== Training Session ==========
 function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { bankId: number; chapterId?: number }) {
   const navigate = useNavigate();
-  const { settings } = useAppSettings();
+  const { settings, setSettings } = useAppSettings();
   const utils = trpc.useUtils();
 
   const { data: bankData } = trpc.bank.get.useQuery({ id: rawBankId });
@@ -545,9 +545,23 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
             {bankData.title}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <span style={{ display: "flex", alignItems: "center", gap: "4px", background: "rgba(0,212,255,0.15)", border: "1px solid rgba(0,212,255,0.3)", borderRadius: "8px", padding: "4px 10px", color: "#00d4ff", fontSize: "12px", fontWeight: 600 }}>
+            <button
+              onClick={() => {
+                const langs: Array<"entc" | "zh" | "en" | "both" | "tc"> = ["entc", "zh", "en", "both", "tc"];
+                const idx = langs.indexOf(lang as "entc" | "zh" | "en" | "both" | "tc");
+                setSettings({ questionLanguage: langs[(idx + 1) % langs.length] });
+              }}
+              style={{
+                display: "flex", alignItems: "center", gap: "4px",
+                background: "rgba(0,212,255,0.15)", border: "1px solid rgba(0,212,255,0.3)",
+                borderRadius: "8px", padding: "6px 10px", color: "#00d4ff",
+                fontSize: "12px", fontWeight: 600, cursor: "pointer",
+                minHeight: "32px", touchAction: "manipulation",
+                userSelect: "none", WebkitTapHighlightColor: "transparent",
+              }}
+            >
               <Languages size={14} /> {langLabelText}
-            </span>
+            </button>
             <span style={{ fontSize: "12px", color: "#a0a0a0" }}>{currentIndex + 1} / {totalQuestions}</span>
           </div>
         </div>
