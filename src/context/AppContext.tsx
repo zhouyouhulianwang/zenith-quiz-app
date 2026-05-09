@@ -61,6 +61,8 @@ const AppContext = createContext<AppContextType>({
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [settings, setSettingsState] = useState<AppSettings>(() => {
+    // Default to "system" theme to avoid being stuck in dark mode.
+    // The actual user preference is loaded from database after login.
     try {
       const saved = localStorage.getItem("zenith-settings");
       if (saved) {
@@ -71,7 +73,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           difficulty: parsed.difficulty ?? defaultSettings.difficulty,
           fontSize: parsed.fontSize ?? defaultSettings.fontSize,
           questionLanguage: parsed.questionLanguage ?? defaultSettings.questionLanguage,
-          theme: parsed.theme ?? defaultSettings.theme,
+          theme: defaultSettings.theme,
         };
       }
     } catch { /* ignore */ }

@@ -11,13 +11,10 @@
     <title>ZENITH - 智能题库训练</title>
     <script>
       (function() {
+        // Default to "system" to avoid stuck in dark mode.
+        // React app loads actual user preference from database after login.
         try {
-          var saved = localStorage.getItem('zenith-settings');
           var theme = 'system';
-          if (saved) {
-            var s = JSON.parse(saved);
-            if (s.theme) theme = s.theme;
-          }
           if (theme === 'dark') {
             document.documentElement.classList.add('dark');
           } else if (theme === 'light') {
