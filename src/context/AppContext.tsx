@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { trpc } from "@/providers/trpc";
 
 export interface Question {
   id: number;
@@ -77,13 +78,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return defaultSettings;
   });
 
+  // Fetch settings from database (overrides localStorage if user is logged in)
+  const dbSettings = trpc.settings.get.useQuery(undefined, {
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  // Sync DB settings to state when available
+  useEffect(() => {
+    if (dbSettings.data) {
+      setSettingsState((prev) => {
+        const merged = { ...prev, ...dbSettings.data };
+        localStorage.setItem("zenith-settings", JSON.stringify(merged));
+        return merged;
+      });
+    }
+  }, [dbSettings.data]);
+
+  const updateDbSettings = trpc.settings.update.useMutation();
+
   const setSettings = useCallback((partial: Partial<AppSettings>) => {
     setSettingsState((prev) => {
       const next = { ...prev, ...partial };
       localStorage.setItem("zenith-settings", JSON.stringify(next));
+      // Also sync to database (fire and forget, will retry on next login if fails)
+      try {
+        updateDbSettings.mutate(partial);
+      } catch { /* ignore DB errors */ }
       return next;
     });
-  }, []);
+  }, [updateDbSettings]);
 
   return (
     <AppContext.Provider value={{ settings, setSettings }}>
