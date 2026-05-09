@@ -120,7 +120,7 @@ function CollapsibleSection({
           <Icon size={18} color={color} />
           <span style={{ fontSize: "15px", fontWeight: 600, color: "var(--text-primary)" }}>{title}</span>
         </div>
-        {open ? <ChevronUp size={18} color="var(--text-tertiary)" /> : <ChevronDown size={18} color="var(--text-tertiary)" />}
+        {open ? <ChevronUp size={18} color="#666" /> : <ChevronDown size={18} color="#666" />}
       </button>
       {open && <div style={{ padding: "0 0 12px" }}>{children}</div>}
     </div>
@@ -182,7 +182,7 @@ export default function AdminPage() {
             onClick={() => navigate("/profile")}
             style={{ background: "none", border: "none", cursor: "pointer", padding: "4px" }}
           >
-            <ArrowLeft size={24} color="var(--text-primary)" />
+            <ArrowLeft size={24} color="#fff" />
           </button>
           <div style={{ flex: 1 }}>
             <h1 style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
@@ -191,7 +191,7 @@ export default function AdminPage() {
             </h1>
             <p style={{ fontSize: "12px", color: "var(--text-tertiary)", margin: "2px 0 0" }}>数据库管理面板</p>
           </div>
-          <Database size={20} color="var(--accent-color)" />
+          <Database size={20} color="#00d4ff" />
         </div>
 
         {/* Stats Cards */}
@@ -203,8 +203,8 @@ export default function AdminPage() {
             marginBottom: "20px",
           }}
         >
-          <StatCard icon={Users} label="用户" value={stats?.users ?? 0} color="var(--accent-color)" />
-          <StatCard icon={BookOpen} label="题库" value={stats?.banks ?? 0} color="var(--success)" />
+          <StatCard icon={Users} label="用户" value={stats?.users ?? 0} color="#00d4ff" />
+          <StatCard icon={BookOpen} label="题库" value={stats?.banks ?? 0} color="#10b981" />
           <StatCard
             icon={ClipboardList}
             label="练习记录"
@@ -215,7 +215,7 @@ export default function AdminPage() {
         </div>
 
         {/* Users Table */}
-        <CollapsibleSection title="用户列表" icon={Users} color="var(--accent-color)" defaultOpen={true}>
+        <CollapsibleSection title="用户列表" icon={Users} color="#00d4ff" defaultOpen={true}>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
@@ -283,7 +283,7 @@ export default function AdminPage() {
         </CollapsibleSection>
 
         {/* Banks Table */}
-        <CollapsibleSection title="题库列表" icon={BookOpen} color="var(--success)">
+        <CollapsibleSection title="题库列表" icon={BookOpen} color="#10b981">
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>

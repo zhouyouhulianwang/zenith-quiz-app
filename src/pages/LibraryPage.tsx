@@ -177,7 +177,7 @@ export default function LibraryPage() {
 
         {/* Search */}
         <div style={{ display: "flex", alignItems: "center", background: "var(--card-bg-secondary)", borderRadius: "12px", padding: "12px 16px", gap: "10px", marginBottom: "16px" }}>
-          <Search size={18} color="var(--text-tertiary)" />
+          <Search size={18} color="#666" />
           <input
             type="text"
             placeholder="搜索题库..."
@@ -185,7 +185,7 @@ export default function LibraryPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{ flex: 1, background: "none", border: "none", color: "var(--text-primary)", fontSize: "14px", outline: "none" }}
           />
-          {searchQuery && <button onClick={() => setSearchQuery("")} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={16} color="var(--text-tertiary)" /></button>}
+          {searchQuery && <button onClick={() => setSearchQuery("")} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={16} color="#666" /></button>}
         </div>
 
         {/* Category Filter */}
@@ -216,7 +216,7 @@ export default function LibraryPage() {
           border: "2px dashed rgba(0,212,255,0.3)", borderRadius: "12px", padding: "24px",
           textAlign: "center", marginBottom: "20px", cursor: "pointer", background: "rgba(0,212,255,0.03)",
         }}>
-          <Upload size={28} color="var(--accent-color)" style={{ marginBottom: "8px" }} />
+          <Upload size={28} color="#00d4ff" style={{ marginBottom: "8px" }} />
           <div style={{ fontSize: "14px", color: "var(--text-secondary)" }}>点击导入 JSON 或 TXT 题库文件</div>
         </motion.div>
         <input ref={fileInputRef} type="file" accept=".json,.txt" onChange={handleFileImport} style={{ display: "none" }} />

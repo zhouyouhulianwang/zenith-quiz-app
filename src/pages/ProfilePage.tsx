@@ -42,7 +42,7 @@ export default function ProfilePage() {
         <ParticleBackground />
         <div style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "20px" }}>
           <div style={{ width: "80px", height: "80px", borderRadius: "50%", background: "var(--card-bg-secondary)", margin: "0 auto 16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <UserIcon size={32} color="var(--text-tertiary)" />
+            <UserIcon size={32} color="#666" />
           </div>
           <p style={{ color: "var(--text-secondary)", marginBottom: "20px" }}>登录后同步你的练习数据</p>
           <a href="/api/oauth/authorize" style={{ display: "inline-block", padding: "14px 32px", background: "var(--accent-color)", color: "var(--page-bg)", borderRadius: "12px", fontSize: "15px", fontWeight: 600, textDecoration: "none" }}>
@@ -149,7 +149,7 @@ export default function ProfilePage() {
               <div style={{ background: "var(--card-bg)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden" }}>
                 <SettingRow icon={HelpCircle} label="帮助与反馈" value="" onClick={() => alert("请发送邮件至 support@zenith.app")} />
                 <SettingRow icon={FileText} label="隐私政策" value="" onClick={() => alert("所有数据存储在云端服务器，我们严格保护您的隐私。")} />
-                <div style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: "12px" }}><Calendar size={18} color="var(--text-tertiary)" /><span style={{ fontSize: "14px", color: "var(--text-primary)", flex: 1 }}>版本号</span><span style={{ fontSize: "14px", color: "var(--text-tertiary)" }}>v2.0.0</span></div>
+                <div style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: "12px" }}><Calendar size={18} color="#666" /><span style={{ fontSize: "14px", color: "var(--text-primary)", flex: 1 }}>版本号</span><span style={{ fontSize: "14px", color: "var(--text-tertiary)" }}>v2.0.0</span></div>
               </div>
             </div>
           </div>

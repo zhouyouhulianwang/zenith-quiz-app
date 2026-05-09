@@ -53,7 +53,7 @@ export default function RecordsPage() {
       <div style={{ position: "relative", minHeight: "100vh", background: "var(--page-bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <ParticleBackground />
         <div style={{ position: "relative", zIndex: 1, textAlign: "center" }}>
-          <Calendar size={64} color="var(--text-tertiary)" />
+          <Calendar size={64} color="#666" />
           <p style={{ color: "var(--text-secondary)", marginTop: "16px" }}>暂无练习记录</p>
           <motion.button whileTap={{ scale: 0.95 }} onClick={() => navigate("/library")} style={{ marginTop: "24px", padding: "12px 28px", background: "var(--accent-color)", color: "var(--page-bg)", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}>前往题库</motion.button>
         </div>
@@ -66,7 +66,7 @@ export default function RecordsPage() {
       <ParticleBackground />
       <div style={{ position: "relative", zIndex: 1 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", paddingTop: "max(12px, env(safe-area-inset-top))", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-          <button onClick={() => navigate("/")} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px", minWidth: "44px", minHeight: "44px", display: "flex", alignItems: "center", justifyContent: "center" }}><ArrowLeft size={24} color="var(--text-primary)" /></button>
+          <button onClick={() => navigate("/")} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px", minWidth: "44px", minHeight: "44px", display: "flex", alignItems: "center", justifyContent: "center" }}><ArrowLeft size={24} color="#fff" /></button>
           <div style={{ fontSize: "17px", fontWeight: 600, color: "var(--text-primary)" }}>练习记录</div>
           <div style={{ fontSize: "13px", color: "var(--text-secondary)" }}>{currentIndex + 1} / {total}</div>
         </div>

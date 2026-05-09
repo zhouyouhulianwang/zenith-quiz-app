@@ -100,9 +100,9 @@ export default function StatsPage() {
           ].map((m, i) => (
             <motion.div key={m.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
               style={{ minWidth: "130px", background: "var(--card-bg)", borderRadius: "12px", padding: "14px", border: "1px solid rgba(255,255,255,0.08)" }}>
-              <m.icon size={18} color="var(--accent-color)" />
+              <m.icon size={18} color="#00d4ff" />
               <div style={{ fontSize: "22px", fontWeight: 700, color: "var(--text-primary)", marginTop: "8px" }}>{m.value}</div>
-              <div style={{ display: "flex", alignItems: "center", gap: "3px", marginTop: "4px" }}>{m.up ? <TrendingUp size={12} color="var(--success)" /> : <TrendingDown size={12} color="var(--error)" />}<span style={{ fontSize: "11px", color: m.up ? "var(--success)" : "var(--error)" }}>{m.trend}</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: "3px", marginTop: "4px" }}>{m.up ? <TrendingUp size={12} color="#10b981" /> : <TrendingDown size={12} color="#ef4444" />}<span style={{ fontSize: "11px", color: m.up ? "var(--success)" : "var(--error)" }}>{m.trend}</span></div>
               <div style={{ fontSize: "11px", color: "var(--text-tertiary)", marginTop: "2px" }}>{m.label}</div>
             </motion.div>
           ))}
@@ -140,7 +140,7 @@ export default function StatsPage() {
                       <FileText size={16} color={bank.bankColor} />
                       <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)" }}>{bank.bankTitle}</span>
                     </div>
-                    {expandedBank === bank.bankId ? <ChevronUp size={16} color="var(--text-tertiary)" /> : <ChevronDown size={16} color="var(--text-tertiary)" />}
+                    {expandedBank === bank.bankId ? <ChevronUp size={16} color="#666" /> : <ChevronDown size={16} color="#666" />}
                   </button>
                   {expandedBank === bank.bankId && (
                     <div style={{ padding: "0 16px 12px" }}>

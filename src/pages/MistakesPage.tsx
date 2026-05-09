@@ -73,7 +73,7 @@ export default function MistakesPage() {
       <div style={{ position: "relative", minHeight: "100vh", background: "var(--page-bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <ParticleBackground />
         <div style={{ position: "relative", zIndex: 1, textAlign: "center" }}>
-          <AlertCircle size={64} color="var(--text-tertiary)" />
+          <AlertCircle size={64} color="#666" />
           <p style={{ color: "var(--text-secondary)", marginTop: "16px" }}>{isWrongMode ? "暂无错题记录" : "暂无正确记录"}</p>
           <motion.button whileTap={{ scale: 0.95 }} onClick={() => navigate("/library")} style={{ marginTop: "24px", padding: "12px 28px", background: themeColor, color: "var(--text-primary)", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}>前往题库</motion.button>
         </div>
@@ -87,7 +87,7 @@ export default function MistakesPage() {
       <div style={{ position: "relative", zIndex: 1 }}>
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", paddingTop: "max(12px, env(safe-area-inset-top))", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-          <button onClick={() => navigate("/")} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px", minWidth: "44px", minHeight: "44px", display: "flex", alignItems: "center", justifyContent: "center" }}><ArrowLeft size={24} color="var(--text-primary)" /></button>
+          <button onClick={() => navigate("/")} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px", minWidth: "44px", minHeight: "44px", display: "flex", alignItems: "center", justifyContent: "center" }}><ArrowLeft size={24} color="#fff" /></button>
           <div style={{ fontSize: "17px", fontWeight: 600, color: "var(--text-primary)" }}>{isWrongMode ? "错题回顾" : "正确回顾"}</div>
           <div style={{ fontSize: "13px", color: isWrongMode ? "var(--error)" : "var(--success)", fontWeight: 600 }}>{currentIndex + 1} / {filtered.length}</div>
         </div>

@@ -62,7 +62,7 @@ function TrainingSelector({ onSelect }: { onSelect: (id: number) => void }) {
       <div style={{ position: "relative", zIndex: 1, padding: "16px", paddingBottom: "100px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "4px" }}>
           <button onClick={() => navigate("/")} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px", minWidth: "44px", minHeight: "44px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <ArrowLeft size={24} color="var(--text-primary)" />
+            <ArrowLeft size={24} color="#fff" />
           </button>
           <div>
             <h1 style={{ fontSize: "22px", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>开始训练</h1>
@@ -80,13 +80,13 @@ function TrainingSelector({ onSelect }: { onSelect: (id: number) => void }) {
               display: "flex", alignItems: "center", gap: "12px", cursor: "pointer",
             }}>
             <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: "rgba(239,68,68,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <AlertCircle size={22} color="var(--error)" />
+              <AlertCircle size={22} color="#ef4444" />
             </div>
             <div style={{ flex: 1, textAlign: "left" }}>
               <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--error)" }}>错题重练</div>
               <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "2px" }}>共 {totalWrong} 道错题待复习</div>
             </div>
-            <ChevronRight size={18} color="var(--error)" />
+            <ChevronRight size={18} color="#ef4444" />
           </motion.button>
         )}
 
@@ -113,7 +113,7 @@ function TrainingSelector({ onSelect }: { onSelect: (id: number) => void }) {
 
         {(!banks || banks.length === 0) && (
           <div style={{ textAlign: "center", padding: "60px 20px" }}>
-            <BookOpen size={56} color="var(--text-tertiary)" />
+            <BookOpen size={56} color="#666" />
             <p style={{ color: "var(--text-tertiary)", marginTop: "16px", fontSize: "15px" }}>暂无题库</p>
             <motion.button whileTap={{ scale: 0.95 }} onClick={() => navigate("/library")}
               style={{ marginTop: "20px", padding: "12px 28px", background: "var(--accent-color)", color: "var(--page-bg)", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}>
@@ -159,8 +159,8 @@ function BankCard({ bank, onSelect }: { bank: { id: number; title: string; color
         </div>
       </div>
       {bank.wrongCount > 0 && <span style={{ fontSize: "11px", padding: "3px 8px", borderRadius: "8px", background: "rgba(239,68,68,0.12)", color: "var(--error)", fontWeight: 500, flexShrink: 0 }}>{bank.wrongCount} 错题</span>}
-      {bank.progress >= 100 && <Trophy size={16} color="var(--success)" />}
-      {bank.recCount === 0 && <Zap size={16} color="var(--accent-color)" />}
+      {bank.progress >= 100 && <Trophy size={16} color="#10b981" />}
+      {bank.recCount === 0 && <Zap size={16} color="#00d4ff" />}
     </motion.div>
   );
 }
@@ -200,7 +200,7 @@ function ChapterSelector({ bankId, onSelectChapter }: { bankId: number; onSelect
       <div style={{ position: "relative", zIndex: 1, padding: "16px", paddingBottom: "100px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
           <button onClick={() => navigate("/training")} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px", minWidth: "44px", minHeight: "44px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <ArrowLeft size={24} color="var(--text-primary)" />
+            <ArrowLeft size={24} color="#fff" />
           </button>
           <div style={{ flex: 1 }}>
             <h1 style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>{bank.title}</h1>
@@ -220,13 +220,13 @@ function ChapterSelector({ bankId, onSelectChapter }: { bankId: number; onSelect
           }}
         >
           <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: "rgba(0,212,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <BookOpen size={22} color="var(--accent-color)" />
+            <BookOpen size={22} color="#00d4ff" />
           </div>
           <div style={{ flex: 1, textAlign: "left" }}>
             <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--text-primary)" }}>全部章节</div>
             <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "2px" }}>{allQuestions.length} 题</div>
           </div>
-          <ChevronRight size={18} color="var(--accent-color)" />
+          <ChevronRight size={18} color="#00d4ff" />
         </motion.button>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -257,7 +257,7 @@ function ChapterSelector({ bankId, onSelectChapter }: { bankId: number; onSelect
                   )}
                 </div>
               </div>
-              <ChevronRight size={16} color="var(--text-tertiary)" />
+              <ChevronRight size={16} color="#666" />
             </motion.button>
           ))}
         </div>
@@ -539,7 +539,7 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
         {/* Top Bar */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", paddingTop: "max(12px, env(safe-area-inset-top))", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
           <button onClick={() => navigate("/training")} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px", minWidth: "44px", minHeight: "44px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <ArrowLeft size={24} color="var(--text-primary)" />
+            <ArrowLeft size={24} color="#fff" />
           </button>
           <div style={{ fontSize: "14px", fontWeight: 500, color: "var(--text-primary)", flex: 1, textAlign: "center", margin: "0 8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {bankData.title}
@@ -651,8 +651,8 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
                       {lang === "both" && currentQuestion?.enOptions?.[index] && <div style={{ fontSize: "13px", color: "var(--text-secondary)", marginTop: "4px", userSelect: "text", WebkitUserSelect: "text" }}>{currentQuestion.enOptions[index]}</div>}
                       {lang === "entc" && secondaryOptions?.[index] && <div style={{ fontSize: "15px", color: "#d0d0d0", marginTop: "4px", userSelect: "text", WebkitUserSelect: "text" }}>{secondaryOptions[index]}</div>}
                     </div>
-                    {submitted && isCorrect && <Check size={20} color="var(--success)" style={{ flexShrink: 0, marginTop: "2px" }} />}
-                    {submitted && isSelected && !isCorrect && <X size={20} color="var(--error)" style={{ flexShrink: 0, marginTop: "2px" }} />}
+                    {submitted && isCorrect && <Check size={20} color="#10b981" style={{ flexShrink: 0, marginTop: "2px" }} />}
+                    {submitted && isSelected && !isCorrect && <X size={20} color="#ef4444" style={{ flexShrink: 0, marginTop: "2px" }} />}
                   </motion.button>
                 );
               })}

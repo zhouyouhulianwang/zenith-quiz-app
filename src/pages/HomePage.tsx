@@ -207,11 +207,11 @@ export default function HomePage() {
               }}
             >
               <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "rgba(0,212,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <item.icon size={24} color="var(--accent-color)" />
+                <item.icon size={24} color="#00d4ff" />
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                 <span style={{ fontSize: "14px", fontWeight: 500, color: "var(--text-primary)" }}>{item.label}</span>
-                <ChevronRight size={14} color="var(--text-tertiary)" />
+                <ChevronRight size={14} color="#666" />
               </div>
             </motion.button>
           ))}
