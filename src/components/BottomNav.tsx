@@ -57,11 +57,11 @@ export default function BottomNav() {
               animate={isActive ? { scale: [0.8, 1.1, 1] } : { scale: 1 }}
               transition={{ duration: 0.25, ease: "easeOut" }}
             >
-              <tab.icon size={22} color={isActive ? "var(--accent-color)" : "var(--text-tertiary)"} strokeWidth={isActive ? 2.5 : 1.5} />
+              <tab.icon size={22} color={isActive ? "#00d4ff" : "#666"} strokeWidth={isActive ? 2.5 : 1.5} />
             </motion.div>
             <span style={{
               fontSize: "10px",
-              color: isActive ? "var(--accent-color)" : "var(--text-tertiary)",
+              color: isActive ? "#00d4ff" : "#666",
               fontWeight: isActive ? 600 : 400,
             }}>
               {tab.label}

@@ -38,14 +38,14 @@ export default function ProfilePage() {
 
   if (!isAuthenticated) {
     return (
-      <div style={{ position: "relative", minHeight: "100vh", background: "var(--page-bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ position: "relative", minHeight: "100vh", background: "#1a1a1a", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <ParticleBackground />
         <div style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "20px" }}>
-          <div style={{ width: "80px", height: "80px", borderRadius: "50%", background: "var(--card-bg-secondary)", margin: "0 auto 16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ width: "80px", height: "80px", borderRadius: "50%", background: "#2a2a2a", margin: "0 auto 16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <UserIcon size={32} color="#666" />
           </div>
-          <p style={{ color: "var(--text-secondary)", marginBottom: "20px" }}>登录后同步你的练习数据</p>
-          <a href="/api/oauth/authorize" style={{ display: "inline-block", padding: "14px 32px", background: "var(--accent-color)", color: "var(--page-bg)", borderRadius: "12px", fontSize: "15px", fontWeight: 600, textDecoration: "none" }}>
+          <p style={{ color: "#a0a0a0", marginBottom: "20px" }}>登录后同步你的练习数据</p>
+          <a href="/api/oauth/authorize" style={{ display: "inline-block", padding: "14px 32px", background: "#00d4ff", color: "#1a1a1a", borderRadius: "12px", fontSize: "15px", fontWeight: 600, textDecoration: "none" }}>
             立即登录
           </a>
         </div>
@@ -54,7 +54,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div style={{ position: "relative", minHeight: "100vh", background: "var(--page-bg)", overflowX: "hidden" }}>
+    <div style={{ position: "relative", minHeight: "100vh", background: "#1a1a1a", overflowX: "hidden" }}>
       <ParticleBackground />
       <div style={{ position: "relative", zIndex: 1, paddingBottom: "100px" }}>
         {/* User Card */}
@@ -62,23 +62,23 @@ export default function ProfilePage() {
           <div style={{ width: "80px", height: "80px", borderRadius: "50%", border: "3px solid rgba(255,255,255,0.3)", overflow: "hidden", margin: "0 auto 12px", background: "rgba(0,0,0,0.2)" }}>
             <img src={user?.avatar || "/avatar-default.png"} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { (e.target as HTMLImageElement).src = "/avatar-default.png"; }} />
           </div>
-          <div style={{ fontSize: "18px", fontWeight: 700, color: "var(--text-primary)" }}>{user?.name || "学习者"}</div>
+          <div style={{ fontSize: "18px", fontWeight: 700, color: "#fff" }}>{user?.name || "学习者"}</div>
           <div style={{ fontSize: "14px", color: "rgba(255,255,255,0.7)", marginTop: "4px" }}>{user?.email || ""}</div>
           <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "20px" }}>
-            <div><div style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-primary)" }}>{joinDays}</div><div style={{ fontSize: "11px", color: "rgba(255,255,255,0.7)" }}>加入天数</div></div>
-            <div><div style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-primary)" }}>{totalQ}</div><div style={{ fontSize: "11px", color: "rgba(255,255,255,0.7)" }}>总练习数</div></div>
+            <div><div style={{ fontSize: "20px", fontWeight: 700, color: "#fff" }}>{joinDays}</div><div style={{ fontSize: "11px", color: "rgba(255,255,255,0.7)" }}>加入天数</div></div>
+            <div><div style={{ fontSize: "20px", fontWeight: 700, color: "#fff" }}>{totalQ}</div><div style={{ fontSize: "11px", color: "rgba(255,255,255,0.7)" }}>总练习数</div></div>
             <div onClick={() => correctQ > 0 && navigate("/mistakes", { state: { mode: "correct" } })} style={{ cursor: correctQ > 0 ? "pointer" : "default" }}>
-              <div style={{ fontSize: "20px", fontWeight: 700, color: correctQ > 0 ? "var(--success)" : "var(--text-primary)" }}>{correctQ}</div>
-              <div style={{ fontSize: "11px", color: correctQ > 0 ? "var(--success)" : "rgba(255,255,255,0.7)" }}>正确数</div>
+              <div style={{ fontSize: "20px", fontWeight: 700, color: correctQ > 0 ? "#10b981" : "#fff" }}>{correctQ}</div>
+              <div style={{ fontSize: "11px", color: correctQ > 0 ? "#10b981" : "rgba(255,255,255,0.7)" }}>正确数</div>
             </div>
             <div onClick={() => wrongQ > 0 && navigate("/mistakes", { state: { mode: "wrong" } })} style={{ cursor: wrongQ > 0 ? "pointer" : "default" }}>
-              <div style={{ fontSize: "20px", fontWeight: 700, color: wrongQ > 0 ? "var(--error)" : "var(--text-primary)" }}>{wrongQ}</div>
-              <div style={{ fontSize: "11px", color: wrongQ > 0 ? "var(--error)" : "rgba(255,255,255,0.7)" }}>错题数</div>
+              <div style={{ fontSize: "20px", fontWeight: 700, color: wrongQ > 0 ? "#ef4444" : "#fff" }}>{wrongQ}</div>
+              <div style={{ fontSize: "11px", color: wrongQ > 0 ? "#ef4444" : "rgba(255,255,255,0.7)" }}>错题数</div>
             </div>
-            <div><div style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-primary)" }}>{banks?.length || 0}</div><div style={{ fontSize: "11px", color: "rgba(255,255,255,0.7)" }}>题库数</div></div>
+            <div><div style={{ fontSize: "20px", fontWeight: 700, color: "#fff" }}>{banks?.length || 0}</div><div style={{ fontSize: "11px", color: "rgba(255,255,255,0.7)" }}>题库数</div></div>
           </div>
           <motion.button whileTap={{ scale: 0.95 }} onClick={logout}
-            style={{ marginTop: "16px", padding: "8px 20px", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "20px", color: "var(--text-primary)", fontSize: "13px", cursor: "pointer" }}>
+            style={{ marginTop: "16px", padding: "8px 20px", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "20px", color: "#fff", fontSize: "13px", cursor: "pointer" }}>
             退出登录
           </motion.button>
         </div>
@@ -86,7 +86,7 @@ export default function ProfilePage() {
         <div style={{ padding: "16px" }}>
           {/* Badges */}
           <div style={{ marginBottom: "20px" }}>
-            <h2 style={{ fontSize: "16px", fontWeight: 600, color: "var(--text-primary)", margin: "0 0 12px 0" }}>成就徽章</h2>
+            <h2 style={{ fontSize: "16px", fontWeight: 600, color: "#fff", margin: "0 0 12px 0" }}>成就徽章</h2>
             <div style={{ display: "flex", gap: "12px", overflowX: "auto" }}>
               {[
                 { id: "first", name: "初次练习", icon: BookOpen, earned: totalQ > 0 },
@@ -97,10 +97,10 @@ export default function ProfilePage() {
                 { id: "perfect", name: "全对一次", icon: Award, earned: records?.some((r) => r.isCorrect) || false },
               ].map((badge, i) => (
                 <motion.div key={badge.id} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }} style={{ minWidth: "80px", textAlign: "center", opacity: badge.earned ? 1 : 0.4 }}>
-                  <div style={{ width: "56px", height: "56px", borderRadius: "50%", background: badge.earned ? "rgba(0,212,255,0.2)" : "var(--card-bg-secondary)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 6px", border: badge.earned ? "1px solid rgba(0,212,255,0.3)" : "1px solid rgba(255,255,255,0.05)" }}>
-                    <badge.icon size={24} color={badge.earned ? "var(--accent-color)" : "var(--text-tertiary)"} />
+                  <div style={{ width: "56px", height: "56px", borderRadius: "50%", background: badge.earned ? "rgba(0,212,255,0.2)" : "#2a2a2a", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 6px", border: badge.earned ? "1px solid rgba(0,212,255,0.3)" : "1px solid rgba(255,255,255,0.05)" }}>
+                    <badge.icon size={24} color={badge.earned ? "#00d4ff" : "#666"} />
                   </div>
-                  <div style={{ fontSize: "12px", color: badge.earned ? "var(--text-primary)" : "var(--text-tertiary)" }}>{badge.name}</div>
+                  <div style={{ fontSize: "12px", color: badge.earned ? "#fff" : "#666" }}>{badge.name}</div>
                 </motion.div>
               ))}
             </div>
@@ -109,8 +109,8 @@ export default function ProfilePage() {
           {/* Settings */}
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             <div>
-              <div style={{ fontSize: "12px", color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px", paddingLeft: "4px" }}>学习设置</div>
-              <div style={{ background: "var(--card-bg)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden" }}>
+              <div style={{ fontSize: "12px", color: "#666", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px", paddingLeft: "4px" }}>学习设置</div>
+              <div style={{ background: "#222", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden" }}>
                 <SettingRow icon={Target} label="每日目标" value={`${settings.dailyGoal}题`} onClick={() => { const v = prompt("设置每日目标题数:", String(settings.dailyGoal)); if (v && !isNaN(Number(v))) setSettings({ dailyGoal: Number(v) }); }} />
                 <SettingRow icon={Bell} label="提醒时间" value={settings.reminderTime} onClick={() => { const v = prompt("设置提醒时间 (HH:MM):", settings.reminderTime); if (v && /^\d{2}:\d{2}$/.test(v)) setSettings({ reminderTime: v }); }} />
                 <SettingRow icon={Type} label="难度偏好" value={`${"★".repeat(settings.difficulty)}${"☆".repeat(5 - settings.difficulty)}`} onClick={() => { const v = prompt("设置难度偏好 (1-5):", String(settings.difficulty)); if (v) setSettings({ difficulty: Math.max(1, Math.min(5, Number(v))) }); }} />
@@ -119,8 +119,8 @@ export default function ProfilePage() {
             </div>
 
             <div>
-              <div style={{ fontSize: "12px", color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px", paddingLeft: "4px" }}>数据管理</div>
-              <div style={{ background: "var(--card-bg)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden" }}>
+              <div style={{ fontSize: "12px", color: "#666", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px", paddingLeft: "4px" }}>数据管理</div>
+              <div style={{ background: "#222", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden" }}>
                 <SettingRow icon={Download} label="导出数据" value="JSON" onClick={handleExport} />
                 <SettingRow icon={RotateCcw} label="按卷清空记录" value={`${banks?.length || 0} 套题库`} onClick={() => setShowBankReset(true)} />
                 <SettingRow icon={Trash2} label="清空所有记录" value="" danger onClick={() => setShowResetConfirm(true)} />
@@ -129,27 +129,27 @@ export default function ProfilePage() {
 
             {user?.role === "admin" && (
               <div>
-                <div style={{ fontSize: "12px", color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px", paddingLeft: "4px" }}>管理</div>
-                <div style={{ background: "var(--card-bg)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden" }}>
+                <div style={{ fontSize: "12px", color: "#666", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px", paddingLeft: "4px" }}>管理</div>
+                <div style={{ background: "#222", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden" }}>
                   <SettingRow icon={Shield} label="管理后台" value="查看数据库" onClick={() => navigate("/admin")} />
                 </div>
               </div>
             )}
 
             <div>
-              <div style={{ fontSize: "12px", color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px", paddingLeft: "4px" }}>应用设置</div>
-              <div style={{ background: "var(--card-bg)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden" }}>
+              <div style={{ fontSize: "12px", color: "#666", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px", paddingLeft: "4px" }}>应用设置</div>
+              <div style={{ background: "#222", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden" }}>
                 <SettingRow icon={settings.theme === "light" ? Sun : settings.theme === "system" ? Monitor : Moon} label="外观" value={{ system: "跟随系统", dark: "深色", light: "浅色" }[settings.theme] || "跟随系统"} onClick={() => { const themes: Array<"system" | "dark" | "light"> = ["system", "dark", "light"]; const idx = themes.indexOf(settings.theme); setSettings({ theme: themes[(idx + 1) % themes.length] }); }} />
                 <SettingRow icon={Type} label="字体大小" value={settings.fontSize === "small" ? "小" : settings.fontSize === "large" ? "大" : "中"} onClick={() => { const sizes: Array<"small" | "medium" | "large"> = ["small", "medium", "large"]; const idx = sizes.indexOf(settings.fontSize); setSettings({ fontSize: sizes[(idx + 1) % sizes.length] }); }} />
               </div>
             </div>
 
             <div>
-              <div style={{ fontSize: "12px", color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px", paddingLeft: "4px" }}>关于</div>
-              <div style={{ background: "var(--card-bg)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden" }}>
+              <div style={{ fontSize: "12px", color: "#666", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px", paddingLeft: "4px" }}>关于</div>
+              <div style={{ background: "#222", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden" }}>
                 <SettingRow icon={HelpCircle} label="帮助与反馈" value="" onClick={() => alert("请发送邮件至 support@zenith.app")} />
                 <SettingRow icon={FileText} label="隐私政策" value="" onClick={() => alert("所有数据存储在云端服务器，我们严格保护您的隐私。")} />
-                <div style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: "12px" }}><Calendar size={18} color="#666" /><span style={{ fontSize: "14px", color: "var(--text-primary)", flex: 1 }}>版本号</span><span style={{ fontSize: "14px", color: "var(--text-tertiary)" }}>v2.0.0</span></div>
+                <div style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: "12px" }}><Calendar size={18} color="#666" /><span style={{ fontSize: "14px", color: "#fff", flex: 1 }}>版本号</span><span style={{ fontSize: "14px", color: "#666" }}>v2.0.0</span></div>
               </div>
             </div>
           </div>
@@ -159,20 +159,20 @@ export default function ProfilePage() {
       {/* Bank Reset Modal */}
       {showBankReset && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
-          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} style={{ background: "var(--card-bg)", borderRadius: "16px", padding: "20px", width: "100%", maxWidth: "340px", border: "1px solid rgba(255,255,255,0.1)", maxHeight: "80vh", overflowY: "auto" }}>
-            <h3 style={{ fontSize: "18px", fontWeight: 600, color: "var(--text-primary)", margin: "0 0 4px 0" }}>选择要清空的题库</h3>
+          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} style={{ background: "#222", borderRadius: "16px", padding: "20px", width: "100%", maxWidth: "340px", border: "1px solid rgba(255,255,255,0.1)", maxHeight: "80vh", overflowY: "auto" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: 600, color: "#fff", margin: "0 0 4px 0" }}>选择要清空的题库</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "12px" }}>
               {(banks || []).map((bank) => (
                 <button key={bank.id} onClick={() => setResetBankId(bank.id === resetBankId ? null : bank.id)}
-                  style={{ display: "flex", alignItems: "center", gap: "10px", padding: "12px", borderRadius: "10px", background: resetBankId === bank.id ? "rgba(239,68,68,0.15)" : "var(--card-bg-secondary)", border: resetBankId === bank.id ? "1px solid rgba(239,68,68,0.4)" : "1px solid rgba(255,255,255,0.05)", cursor: "pointer", width: "100%", textAlign: "left" }}>
-                  <div style={{ width: "4px", height: "36px", borderRadius: "2px", background: bank.color || "var(--accent-color)" }} />
-                  <div style={{ flex: 1 }}><div style={{ fontSize: "14px", color: "var(--text-primary)" }}>{bank.title}</div></div>
+                  style={{ display: "flex", alignItems: "center", gap: "10px", padding: "12px", borderRadius: "10px", background: resetBankId === bank.id ? "rgba(239,68,68,0.15)" : "#2a2a2a", border: resetBankId === bank.id ? "1px solid rgba(239,68,68,0.4)" : "1px solid rgba(255,255,255,0.05)", cursor: "pointer", width: "100%", textAlign: "left" }}>
+                  <div style={{ width: "4px", height: "36px", borderRadius: "2px", background: bank.color || "#00d4ff" }} />
+                  <div style={{ flex: 1 }}><div style={{ fontSize: "14px", color: "#fff" }}>{bank.title}</div></div>
                 </button>
               ))}
             </div>
             <div style={{ display: "flex", gap: "10px", marginTop: "16px" }}>
-              <button onClick={() => { setShowBankReset(false); setResetBankId(null); }} style={{ flex: 1, padding: "12px", borderRadius: "10px", background: "var(--card-bg-secondary)", color: "var(--text-primary)", border: "none", cursor: "pointer" }}>取消</button>
-              <button onClick={() => { if (resetBankId) deleteBank.mutate({ id: resetBankId }); setShowBankReset(false); }} disabled={!resetBankId} style={{ flex: 1, padding: "12px", borderRadius: "10px", background: resetBankId ? "var(--error)" : "var(--card-bg-secondary)", color: "var(--text-primary)", border: "none", cursor: resetBankId ? "pointer" : "not-allowed" }}>确认清空</button>
+              <button onClick={() => { setShowBankReset(false); setResetBankId(null); }} style={{ flex: 1, padding: "12px", borderRadius: "10px", background: "#2a2a2a", color: "#fff", border: "none", cursor: "pointer" }}>取消</button>
+              <button onClick={() => { if (resetBankId) deleteBank.mutate({ id: resetBankId }); setShowBankReset(false); }} disabled={!resetBankId} style={{ flex: 1, padding: "12px", borderRadius: "10px", background: resetBankId ? "#ef4444" : "#2a2a2a", color: "#fff", border: "none", cursor: resetBankId ? "pointer" : "not-allowed" }}>确认清空</button>
             </div>
           </motion.div>
         </motion.div>
@@ -181,12 +181,12 @@ export default function ProfilePage() {
       {/* Reset All Confirm */}
       {showResetConfirm && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
-          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} style={{ background: "var(--card-bg)", borderRadius: "16px", padding: "24px", width: "100%", maxWidth: "300px", border: "1px solid rgba(255,255,255,0.1)" }}>
-            <h3 style={{ fontSize: "18px", fontWeight: 600, color: "var(--text-primary)", margin: "0 0 8px 0" }}>确认全部清空</h3>
-            <p style={{ fontSize: "14px", color: "var(--text-secondary)", margin: "0 0 20px 0" }}>此操作将删除所有题库和练习记录，无法恢复。</p>
+          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} style={{ background: "#222", borderRadius: "16px", padding: "24px", width: "100%", maxWidth: "300px", border: "1px solid rgba(255,255,255,0.1)" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: 600, color: "#fff", margin: "0 0 8px 0" }}>确认全部清空</h3>
+            <p style={{ fontSize: "14px", color: "#a0a0a0", margin: "0 0 20px 0" }}>此操作将删除所有题库和练习记录，无法恢复。</p>
             <div style={{ display: "flex", gap: "10px" }}>
-              <button onClick={() => setShowResetConfirm(false)} style={{ flex: 1, padding: "12px", borderRadius: "10px", background: "var(--card-bg-secondary)", color: "var(--text-primary)", border: "none", cursor: "pointer" }}>取消</button>
-              <button onClick={() => { (banks || []).forEach((b) => deleteBank.mutate({ id: b.id })); setShowResetConfirm(false); }} style={{ flex: 1, padding: "12px", borderRadius: "10px", background: "var(--error)", color: "var(--text-primary)", border: "none", cursor: "pointer", fontWeight: 600 }}>确认清空</button>
+              <button onClick={() => setShowResetConfirm(false)} style={{ flex: 1, padding: "12px", borderRadius: "10px", background: "#2a2a2a", color: "#fff", border: "none", cursor: "pointer" }}>取消</button>
+              <button onClick={() => { (banks || []).forEach((b) => deleteBank.mutate({ id: b.id })); setShowResetConfirm(false); }} style={{ flex: 1, padding: "12px", borderRadius: "10px", background: "#ef4444", color: "#fff", border: "none", cursor: "pointer", fontWeight: 600 }}>确认清空</button>
             </div>
           </motion.div>
         </motion.div>
@@ -206,9 +206,9 @@ function UserIcon({ size, color }: { size: number; color: string }) {
 function SettingRow({ icon: Icon, label, value, onClick, danger }: { icon: typeof Settings; label: string; value: React.ReactNode; onClick?: () => void; danger?: boolean }) {
   return (
     <button onClick={onClick} style={{ width: "100%", padding: "14px 16px", display: "flex", alignItems: "center", gap: "12px", background: "none", border: "none", borderBottom: "1px solid rgba(255,255,255,0.05)", cursor: onClick ? "pointer" : "default", textAlign: "left" }}>
-      <Icon size={18} color={danger ? "var(--error)" : "var(--text-tertiary)"} />
-      <span style={{ fontSize: "14px", color: danger ? "var(--error)" : "var(--text-primary)", flex: 1 }}>{label}</span>
-      {typeof value === "string" ? <span style={{ fontSize: "14px", color: "var(--text-secondary)" }}>{value}</span> : value}
+      <Icon size={18} color={danger ? "#ef4444" : "#666"} />
+      <span style={{ fontSize: "14px", color: danger ? "#ef4444" : "#fff", flex: 1 }}>{label}</span>
+      {typeof value === "string" ? <span style={{ fontSize: "14px", color: "#a0a0a0" }}>{value}</span> : value}
     </button>
   );
 }

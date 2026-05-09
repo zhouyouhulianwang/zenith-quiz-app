@@ -45,7 +45,7 @@ export default function Login() {
     <div
       style={{
         minHeight: "100dvh",
-        background: "var(--page-bg)",
+        background: "#1a1a1a",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -78,10 +78,10 @@ export default function Login() {
           >
             <Zap size={32} color="#fff" />
           </div>
-          <h1 style={{ fontSize: "24px", fontWeight: 700, color: "var(--text-primary)", margin: "0 0 6px 0" }}>
+          <h1 style={{ fontSize: "24px", fontWeight: 700, color: "#fff", margin: "0 0 6px 0" }}>
             ZENITH
           </h1>
-          <p style={{ fontSize: "14px", color: "var(--text-secondary)", margin: 0 }}>
+          <p style={{ fontSize: "14px", color: "#a0a0a0", margin: 0 }}>
             智能题库训练平台
           </p>
         </div>
@@ -89,7 +89,7 @@ export default function Login() {
         {/* Form */}
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: "16px" }}>
-            <label htmlFor="username" style={{ color: "var(--text-secondary)", fontSize: "13px", marginBottom: "6px", display: "block" }}>
+            <label htmlFor="username" style={{ color: "#a0a0a0", fontSize: "13px", marginBottom: "6px", display: "block" }}>
               账号
             </label>
             <input
@@ -104,9 +104,9 @@ export default function Login() {
               style={{
                 width: "100%",
                 boxSizing: "border-box",
-                background: "var(--card-bg-secondary)",
+                background: "#2a2a2a",
                 border: "1px solid var(--border-color)",
-                color: "var(--text-primary)",
+                color: "#fff",
                 borderRadius: "12px",
                 height: "48px",
                 fontSize: "16px",
@@ -114,13 +114,13 @@ export default function Login() {
                 outline: "none",
                 transition: "border-color 0.2s, background 0.3s",
               }}
-              onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent-color)"; }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = "#00d4ff"; }}
               onBlur={(e) => { e.currentTarget.style.borderColor = "var(--border-color)"; }}
             />
           </div>
 
           <div style={{ marginBottom: "20px" }}>
-            <label htmlFor="password" style={{ color: "var(--text-secondary)", fontSize: "13px", marginBottom: "6px", display: "block" }}>
+            <label htmlFor="password" style={{ color: "#a0a0a0", fontSize: "13px", marginBottom: "6px", display: "block" }}>
               密码
             </label>
             <div style={{ position: "relative" }}>
@@ -134,9 +134,9 @@ export default function Login() {
                 style={{
                   width: "100%",
                   boxSizing: "border-box",
-                  background: "var(--card-bg-secondary)",
+                  background: "#2a2a2a",
                   border: "1px solid var(--border-color)",
-                  color: "var(--text-primary)",
+                  color: "#fff",
                   borderRadius: "12px",
                   height: "48px",
                   fontSize: "16px",
@@ -144,7 +144,7 @@ export default function Login() {
                   outline: "none",
                   transition: "border-color 0.2s, background 0.3s",
                 }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent-color)"; }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = "#00d4ff"; }}
                 onBlur={(e) => { e.currentTarget.style.borderColor = "var(--border-color)"; }}
               />
               <button
@@ -159,7 +159,7 @@ export default function Login() {
                   border: "none",
                   cursor: "pointer",
                   padding: "8px",
-                  color: "var(--text-tertiary)",
+                  color: "#666",
                   minWidth: "44px",
                   minHeight: "44px",
                   display: "flex",
@@ -186,7 +186,7 @@ export default function Login() {
                   padding: "10px 14px",
                   marginBottom: "16px",
                   fontSize: "13px",
-                  color: "var(--error)",
+                  color: "#ef4444",
                   overflow: "hidden",
                 }}
               >
@@ -202,7 +202,7 @@ export default function Login() {
               width: "100%",
               height: "48px",
               borderRadius: "12px",
-              background: "var(--accent-color)",
+              background: "#00d4ff",
               color: "#ffffff",
               fontSize: "16px",
               fontWeight: 600,
@@ -217,7 +217,7 @@ export default function Login() {
           </button>
         </form>
 
-        <p style={{ textAlign: "center", marginTop: "24px", fontSize: "12px", color: "var(--text-tertiary)" }}>
+        <p style={{ textAlign: "center", marginTop: "24px", fontSize: "12px", color: "#666" }}>
           请输入您的账号和密码登录
         </p>
       </motion.div>

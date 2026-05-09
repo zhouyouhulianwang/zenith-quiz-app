@@ -54,7 +54,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center" style={{ minHeight: "100dvh", background: "var(--page-bg)", color: "var(--text-tertiary)" }}>
+      <div className="flex items-center justify-center" style={{ minHeight: "100dvh", background: "#1a1a1a", color: "#666" }}>
         加载中...
       </div>
     );
@@ -73,7 +73,7 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center" style={{ minHeight: "100dvh", background: "var(--page-bg)", color: "var(--text-tertiary)" }}>
+      <div className="flex items-center justify-center" style={{ minHeight: "100dvh", background: "#1a1a1a", color: "#666" }}>
         加载中...
       </div>
     );
@@ -81,13 +81,13 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
 
   if (!user || user.role !== "admin") {
     return (
-      <div className="flex flex-col items-center justify-center gap-3" style={{ minHeight: "100dvh", background: "var(--page-bg)", color: "var(--error)", padding: "20px" }}>
+      <div className="flex flex-col items-center justify-center gap-3" style={{ minHeight: "100dvh", background: "#1a1a1a", color: "#ef4444", padding: "20px" }}>
         <Shield size={48} />
         <p>权限不足，需要管理员角色</p>
         <button
           onClick={() => navigate("/")}
           className="px-6 py-2.5 rounded-lg font-semibold"
-          style={{ background: "var(--accent-color)", color: "var(--page-bg)", border: "none", cursor: "pointer" }}
+          style={{ background: "#00d4ff", color: "#1a1a1a", border: "none", cursor: "pointer" }}
         >
           返回首页
         </button>
@@ -136,7 +136,7 @@ export default function App() {
           maxWidth: "430px",
           margin: "0 auto",
           minHeight: "100dvh",
-          background: "var(--page-bg)",
+          background: "#1a1a1a",
           position: "relative",
           overflow: "hidden",
           WebkitOverflowScrolling: "touch",

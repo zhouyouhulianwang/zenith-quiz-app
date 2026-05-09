@@ -68,36 +68,36 @@ export default function MistakesPage() {
   const formatDate = (ts: Date | number) => { const d = new Date(ts); return `${d.getMonth() + 1}月${d.getDate()}日 ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; };
 
   if (targetRecords.length === 0) {
-    const themeColor = isWrongMode ? "var(--error)" : "var(--success)";
+    const themeColor = isWrongMode ? "#ef4444" : "#10b981";
     return (
-      <div style={{ position: "relative", minHeight: "100vh", background: "var(--page-bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ position: "relative", minHeight: "100vh", background: "#1a1a1a", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <ParticleBackground />
         <div style={{ position: "relative", zIndex: 1, textAlign: "center" }}>
           <AlertCircle size={64} color="#666" />
-          <p style={{ color: "var(--text-secondary)", marginTop: "16px" }}>{isWrongMode ? "暂无错题记录" : "暂无正确记录"}</p>
-          <motion.button whileTap={{ scale: 0.95 }} onClick={() => navigate("/library")} style={{ marginTop: "24px", padding: "12px 28px", background: themeColor, color: "var(--text-primary)", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}>前往题库</motion.button>
+          <p style={{ color: "#a0a0a0", marginTop: "16px" }}>{isWrongMode ? "暂无错题记录" : "暂无正确记录"}</p>
+          <motion.button whileTap={{ scale: 0.95 }} onClick={() => navigate("/library")} style={{ marginTop: "24px", padding: "12px 28px", background: themeColor, color: "#fff", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}>前往题库</motion.button>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ position: "relative", minHeight: "100vh", background: "var(--page-bg)" }}>
+    <div style={{ position: "relative", minHeight: "100vh", background: "#1a1a1a" }}>
       <ParticleBackground />
       <div style={{ position: "relative", zIndex: 1 }}>
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", paddingTop: "max(12px, env(safe-area-inset-top))", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
           <button onClick={() => navigate("/")} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px", minWidth: "44px", minHeight: "44px", display: "flex", alignItems: "center", justifyContent: "center" }}><ArrowLeft size={24} color="#fff" /></button>
-          <div style={{ fontSize: "17px", fontWeight: 600, color: "var(--text-primary)" }}>{isWrongMode ? "错题回顾" : "正确回顾"}</div>
-          <div style={{ fontSize: "13px", color: isWrongMode ? "var(--error)" : "var(--success)", fontWeight: 600 }}>{currentIndex + 1} / {filtered.length}</div>
+          <div style={{ fontSize: "17px", fontWeight: 600, color: "#fff" }}>{isWrongMode ? "错题回顾" : "正确回顾"}</div>
+          <div style={{ fontSize: "13px", color: isWrongMode ? "#ef4444" : "#10b981", fontWeight: 600 }}>{currentIndex + 1} / {filtered.length}</div>
         </div>
-        <div style={{ width: "100%", height: "3px", background: "var(--card-bg-secondary)" }}><motion.div animate={{ width: `${filtered.length > 0 ? ((currentIndex + 1) / filtered.length) * 100 : 0}%` }} transition={{ duration: 0.3 }} style={{ height: "100%", background: isWrongMode ? "var(--error)" : "var(--success)" }} /></div>
+        <div style={{ width: "100%", height: "3px", background: "#2a2a2a" }}><motion.div animate={{ width: `${filtered.length > 0 ? ((currentIndex + 1) / filtered.length) * 100 : 0}%` }} transition={{ duration: 0.3 }} style={{ height: "100%", background: isWrongMode ? "#ef4444" : "#10b981" }} /></div>
 
         {/* Filter */}
         {bankOptions.length > 1 && (
           <div style={{ padding: "10px 16px", display: "flex", gap: "8px", overflowX: "auto" }}>
-            <button onClick={() => { setFilterBankId(null); setCurrentIndex(0); }} style={{ padding: "5px 12px", borderRadius: "16px", fontSize: "12px", border: "none", cursor: "pointer", whiteSpace: "nowrap", background: filterBankId === null ? (isWrongMode ? "var(--error)" : "var(--success)") : "var(--card-bg-secondary)", color: filterBankId === null ? "var(--text-primary)" : "var(--text-secondary)" }}><Filter size={11} style={{ display: "inline", marginRight: "3px", verticalAlign: "middle" }} /> 全部 {targetRecords.length}题</button>
-            {bankOptions.map((b) => <button key={b.id} onClick={() => { setFilterBankId(b.id); setCurrentIndex(0); }} style={{ padding: "5px 12px", borderRadius: "16px", fontSize: "12px", border: "none", cursor: "pointer", whiteSpace: "nowrap", background: filterBankId === b.id ? b.color || "var(--accent-color)" : "var(--card-bg-secondary)", color: filterBankId === b.id ? "var(--page-bg)" : "var(--text-secondary)" }}>{b.title.length > 6 ? b.title.slice(0, 6) + "..." : b.title}</button>)}
+            <button onClick={() => { setFilterBankId(null); setCurrentIndex(0); }} style={{ padding: "5px 12px", borderRadius: "16px", fontSize: "12px", border: "none", cursor: "pointer", whiteSpace: "nowrap", background: filterBankId === null ? (isWrongMode ? "#ef4444" : "#10b981") : "#2a2a2a", color: filterBankId === null ? "#fff" : "#a0a0a0" }}><Filter size={11} style={{ display: "inline", marginRight: "3px", verticalAlign: "middle" }} /> 全部 {targetRecords.length}题</button>
+            {bankOptions.map((b) => <button key={b.id} onClick={() => { setFilterBankId(b.id); setCurrentIndex(0); }} style={{ padding: "5px 12px", borderRadius: "16px", fontSize: "12px", border: "none", cursor: "pointer", whiteSpace: "nowrap", background: filterBankId === b.id ? b.color || "#00d4ff" : "#2a2a2a", color: filterBankId === b.id ? "#1a1a1a" : "#a0a0a0" }}>{b.title.length > 6 ? b.title.slice(0, 6) + "..." : b.title}</button>)}
           </div>
         )}
 
@@ -108,26 +108,26 @@ export default function MistakesPage() {
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px", flexWrap: "wrap" }}>
                 {bank && <span style={{ fontSize: "11px", padding: "3px 10px", borderRadius: "6px", background: `${bank.color}20`, color: bank.color, fontWeight: 500 }}><BookOpen size={10} style={{ display: "inline", marginRight: "3px", verticalAlign: "middle" }} />{bank.title.length > 12 ? bank.title.slice(0, 12) + "..." : bank.title}</span>}
                 {isWrongMode ? (
-                  <span style={{ fontSize: "11px", padding: "3px 10px", borderRadius: "6px", background: "rgba(239,68,68,0.15)", color: "var(--error)", fontWeight: 500, display: "flex", alignItems: "center", gap: "3px" }}><XCircle size={10} /> 错题</span>
+                  <span style={{ fontSize: "11px", padding: "3px 10px", borderRadius: "6px", background: "rgba(239,68,68,0.15)", color: "#ef4444", fontWeight: 500, display: "flex", alignItems: "center", gap: "3px" }}><XCircle size={10} /> 错题</span>
                 ) : (
-                  <span style={{ fontSize: "11px", padding: "3px 10px", borderRadius: "6px", background: "rgba(16,185,129,0.15)", color: "var(--success)", fontWeight: 500, display: "flex", alignItems: "center", gap: "3px" }}><CheckCircle size={10} /> 正确</span>
+                  <span style={{ fontSize: "11px", padding: "3px 10px", borderRadius: "6px", background: "rgba(16,185,129,0.15)", color: "#10b981", fontWeight: 500, display: "flex", alignItems: "center", gap: "3px" }}><CheckCircle size={10} /> 正确</span>
                 )}
-                <span style={{ fontSize: "11px", color: "var(--text-tertiary)", display: "flex", alignItems: "center", gap: "3px" }}><Clock size={10} />{formatDate(current.createdAt)}</span>
+                <span style={{ fontSize: "11px", color: "#666", display: "flex", alignItems: "center", gap: "3px" }}><Clock size={10} />{formatDate(current.createdAt)}</span>
               </div>
-              <div style={{ background: "var(--card-bg)", borderRadius: "16px", padding: "20px", border: "1px solid rgba(255,255,255,0.08)", marginBottom: "16px" }}>
-                <div style={{ fontSize: "17px", fontWeight: 500, color: "var(--text-primary)", lineHeight: 1.6, marginBottom: "16px" }}>{showTc ? toTraditional(question.question) : question.question}</div>
+              <div style={{ background: "#222", borderRadius: "16px", padding: "20px", border: "1px solid rgba(255,255,255,0.08)", marginBottom: "16px" }}>
+                <div style={{ fontSize: "17px", fontWeight: 500, color: "#fff", lineHeight: 1.6, marginBottom: "16px" }}>{showTc ? toTraditional(question.question) : question.question}</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   {question.options.map((opt, idx) => {
                     const displayOpt = showTc ? toTraditional(opt) : opt;
                     const isCorrect = question.correct.includes(idx);
                     const isSelected = current.selected.includes(idx);
                     const isWrong = isSelected && !isCorrect;
-                    const bg = isCorrect ? "rgba(16,185,129,0.12)" : isWrong ? "rgba(239,68,68,0.12)" : isSelected ? "rgba(16,185,129,0.08)" : "var(--card-bg-secondary)";
+                    const bg = isCorrect ? "rgba(16,185,129,0.12)" : isWrong ? "rgba(239,68,68,0.12)" : isSelected ? "rgba(16,185,129,0.08)" : "#2a2a2a";
                     const border = isCorrect ? "1px solid rgba(16,185,129,0.3)" : isWrong ? "1px solid rgba(239,68,68,0.3)" : isSelected ? "1px solid rgba(16,185,129,0.2)" : "1px solid rgba(255,255,255,0.05)";
-                    const color = isCorrect ? "var(--success)" : isWrong ? "var(--error)" : isSelected ? "var(--text-secondary)" : "var(--text-secondary)";
+                    const color = isCorrect ? "#10b981" : isWrong ? "#ef4444" : isSelected ? "#a0a0a0" : "#a0a0a0";
                     return (
                       <div key={idx} style={{ padding: "10px 12px", borderRadius: "8px", background: bg, border, fontSize: "14px", color, display: "flex", alignItems: "center", gap: "8px" }}>
-                        <span style={{ width: "22px", height: "22px", borderRadius: "50%", background: isCorrect ? "var(--success)" : isWrong ? "var(--error)" : isSelected ? "var(--accent-color)" : "var(--text-tertiary)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 600, color: "var(--text-primary)", flexShrink: 0 }}>{String.fromCharCode(65 + idx)}</span>
+                        <span style={{ width: "22px", height: "22px", borderRadius: "50%", background: isCorrect ? "#10b981" : isWrong ? "#ef4444" : isSelected ? "#00d4ff" : "#666", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 600, color: "#fff", flexShrink: 0 }}>{String.fromCharCode(65 + idx)}</span>
                         <span>{displayOpt}</span>
                         {isCorrect && <span style={{ fontSize: "11px", marginLeft: "auto" }}>正确答案</span>}
                         {!isCorrect && isSelected && <span style={{ fontSize: "11px", marginLeft: "auto" }}>你的选择</span>}
@@ -136,13 +136,13 @@ export default function MistakesPage() {
                   })}
                 </div>
                 <div style={{ marginTop: "16px", display: "flex", gap: "12px" }}>
-                  <div style={{ flex: 1, padding: "10px", borderRadius: "8px", background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.15)" }}><div style={{ fontSize: "11px", color: "var(--success)" }}>正确答案</div><div style={{ fontSize: "16px", fontWeight: 700, color: "var(--success)" }}>{question.correct.map((c) => String.fromCharCode(65 + c)).join(", ")}</div></div>
-                  <div style={{ flex: 1, padding: "10px", borderRadius: "8px", background: isWrongMode ? "rgba(239,68,68,0.08)" : "rgba(16,185,129,0.08)", border: isWrongMode ? "1px solid rgba(239,68,68,0.15)" : "1px solid rgba(16,185,129,0.15)" }}><div style={{ fontSize: "11px", color: isWrongMode ? "var(--error)" : "var(--success)" }}>你的答案</div><div style={{ fontSize: "16px", fontWeight: 700, color: isWrongMode ? "var(--error)" : "var(--success)" }}>{current.selected.map((c) => String.fromCharCode(65 + c)).join(", ") || "-"}</div></div>
+                  <div style={{ flex: 1, padding: "10px", borderRadius: "8px", background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.15)" }}><div style={{ fontSize: "11px", color: "#10b981" }}>正确答案</div><div style={{ fontSize: "16px", fontWeight: 700, color: "#10b981" }}>{question.correct.map((c) => String.fromCharCode(65 + c)).join(", ")}</div></div>
+                  <div style={{ flex: 1, padding: "10px", borderRadius: "8px", background: isWrongMode ? "rgba(239,68,68,0.08)" : "rgba(16,185,129,0.08)", border: isWrongMode ? "1px solid rgba(239,68,68,0.15)" : "1px solid rgba(16,185,129,0.15)" }}><div style={{ fontSize: "11px", color: isWrongMode ? "#ef4444" : "#10b981" }}>你的答案</div><div style={{ fontSize: "16px", fontWeight: 700, color: isWrongMode ? "#ef4444" : "#10b981" }}>{current.selected.map((c) => String.fromCharCode(65 + c)).join(", ") || "-"}</div></div>
                 </div>
-                {question.explanation && <div style={{ marginTop: "16px", padding: "12px", borderRadius: "10px", background: "var(--page-bg)" }}><div style={{ fontSize: "12px", color: "var(--text-tertiary)", marginBottom: "4px" }}>解析</div><div style={{ fontSize: "13px", color: "var(--text-secondary)", lineHeight: 1.6 }}>{question.explanation}</div></div>}
+                {question.explanation && <div style={{ marginTop: "16px", padding: "12px", borderRadius: "10px", background: "#1a1a1a" }}><div style={{ fontSize: "12px", color: "#666", marginBottom: "4px" }}>解析</div><div style={{ fontSize: "13px", color: "#a0a0a0", lineHeight: 1.6 }}>{question.explanation}</div></div>}
               </div>
               <motion.button whileTap={{ scale: 0.95 }} onClick={() => navigate("/training", { state: { bankId: current.bankId } })}
-                style={{ width: "100%", padding: "12px", borderRadius: "10px", background: "var(--accent-color)", color: "var(--page-bg)", fontSize: "14px", fontWeight: 600, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                style={{ width: "100%", padding: "12px", borderRadius: "10px", background: "#00d4ff", color: "#1a1a1a", fontSize: "14px", fontWeight: 600, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
                 <RotateCcw size={16} /> 重新练习该题库
               </motion.button>
             </motion.div>
@@ -151,8 +151,8 @@ export default function MistakesPage() {
 
         {/* Bottom Nav */}
         <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, padding: "12px 16px", paddingBottom: "max(16px, env(safe-area-inset-bottom))", background: "rgba(26,26,26,0.98)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", gap: "12px", zIndex: 100 }}>
-          <motion.button whileTap={{ scale: 0.95 }} onClick={handlePrev} disabled={currentIndex === 0} style={{ padding: "14px 20px", borderRadius: "12px", background: "var(--card-bg-secondary)", color: currentIndex === 0 ? "var(--text-tertiary)" : "var(--text-primary)", fontSize: "14px", border: "none", cursor: currentIndex === 0 ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "6px", minHeight: "48px", touchAction: "manipulation", userSelect: "none" }}><ChevronLeft size={18} /> 上一题</motion.button>
-          <motion.button whileTap={{ scale: 0.95 }} onClick={handleNext} disabled={currentIndex >= filtered.length - 1} style={{ flex: 1, padding: "14px 20px", borderRadius: "12px", background: currentIndex >= filtered.length - 1 ? "var(--card-bg-secondary)" : "var(--accent-color)", color: currentIndex >= filtered.length - 1 ? "var(--text-tertiary)" : "var(--page-bg)", fontSize: "14px", fontWeight: 600, border: "none", cursor: currentIndex >= filtered.length - 1 ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", minHeight: "48px", touchAction: "manipulation", userSelect: "none" }}>下一题 <ChevronRight size={18} /></motion.button>
+          <motion.button whileTap={{ scale: 0.95 }} onClick={handlePrev} disabled={currentIndex === 0} style={{ padding: "14px 20px", borderRadius: "12px", background: "#2a2a2a", color: currentIndex === 0 ? "#666" : "#fff", fontSize: "14px", border: "none", cursor: currentIndex === 0 ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "6px", minHeight: "48px", touchAction: "manipulation", userSelect: "none" }}><ChevronLeft size={18} /> 上一题</motion.button>
+          <motion.button whileTap={{ scale: 0.95 }} onClick={handleNext} disabled={currentIndex >= filtered.length - 1} style={{ flex: 1, padding: "14px 20px", borderRadius: "12px", background: currentIndex >= filtered.length - 1 ? "#2a2a2a" : "#00d4ff", color: currentIndex >= filtered.length - 1 ? "#666" : "#1a1a1a", fontSize: "14px", fontWeight: 600, border: "none", cursor: currentIndex >= filtered.length - 1 ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", minHeight: "48px", touchAction: "manipulation", userSelect: "none" }}>下一题 <ChevronRight size={18} /></motion.button>
         </div>
       </div>
     </div>

@@ -145,7 +145,7 @@ export default function LibraryPage() {
             ({ title, questions } = parseTxtToBank(text));
           }
 
-          await createBank.mutateAsync({ title, questions, chapters, category: "证券从业", color: "var(--accent-color)" });
+          await createBank.mutateAsync({ title, questions, chapters, category: "证券从业", color: "#00d4ff" });
           setImportSuccess(`成功导入「${title}」，共 ${questions.length} 题`);
           setTimeout(() => setImportSuccess(""), 3000);
         } catch (err) {
@@ -161,29 +161,29 @@ export default function LibraryPage() {
 
   if (!isAuthenticated) {
     return (
-      <div style={{ minHeight: "100vh", background: "var(--page-bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ minHeight: "100vh", background: "#1a1a1a", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div style={{ textAlign: "center" }}>
-          <p style={{ color: "var(--text-secondary)" }}>请先登录以管理题库</p>
+          <p style={{ color: "#a0a0a0" }}>请先登录以管理题库</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ position: "relative", minHeight: "100vh", background: "var(--page-bg)", overflowX: "hidden" }}>
+    <div style={{ position: "relative", minHeight: "100vh", background: "#1a1a1a", overflowX: "hidden" }}>
       <ParticleBackground />
       <div style={{ position: "relative", zIndex: 1, padding: "16px", paddingBottom: "100px" }}>
-        <h1 style={{ fontSize: "24px", fontWeight: 700, color: "var(--text-primary)", margin: "0 0 16px 0" }}>题库管理</h1>
+        <h1 style={{ fontSize: "24px", fontWeight: 700, color: "#fff", margin: "0 0 16px 0" }}>题库管理</h1>
 
         {/* Search */}
-        <div style={{ display: "flex", alignItems: "center", background: "var(--card-bg-secondary)", borderRadius: "12px", padding: "12px 16px", gap: "10px", marginBottom: "16px" }}>
+        <div style={{ display: "flex", alignItems: "center", background: "#2a2a2a", borderRadius: "12px", padding: "12px 16px", gap: "10px", marginBottom: "16px" }}>
           <Search size={18} color="#666" />
           <input
             type="text"
             placeholder="搜索题库..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ flex: 1, background: "none", border: "none", color: "var(--text-primary)", fontSize: "14px", outline: "none" }}
+            style={{ flex: 1, background: "none", border: "none", color: "#fff", fontSize: "14px", outline: "none" }}
           />
           {searchQuery && <button onClick={() => setSearchQuery("")} style={{ background: "none", border: "none", cursor: "pointer" }}><X size={16} color="#666" /></button>}
         </div>
@@ -202,8 +202,8 @@ export default function LibraryPage() {
                 border: "none",
                 cursor: "pointer",
                 whiteSpace: "nowrap",
-                background: activeCategory === cat ? "var(--accent-color)" : "var(--card-bg-secondary)",
-                color: activeCategory === cat ? "var(--page-bg)" : "var(--text-secondary)",
+                background: activeCategory === cat ? "#00d4ff" : "#2a2a2a",
+                color: activeCategory === cat ? "#1a1a1a" : "#a0a0a0",
               }}
             >
               {cat}
@@ -217,7 +217,7 @@ export default function LibraryPage() {
           textAlign: "center", marginBottom: "20px", cursor: "pointer", background: "rgba(0,212,255,0.03)",
         }}>
           <Upload size={28} color="#00d4ff" style={{ marginBottom: "8px" }} />
-          <div style={{ fontSize: "14px", color: "var(--text-secondary)" }}>点击导入 JSON 或 TXT 题库文件</div>
+          <div style={{ fontSize: "14px", color: "#a0a0a0" }}>点击导入 JSON 或 TXT 题库文件</div>
         </motion.div>
         <input ref={fileInputRef} type="file" accept=".json,.txt" onChange={handleFileImport} style={{ display: "none" }} />
 
@@ -225,13 +225,13 @@ export default function LibraryPage() {
         <AnimatePresence>
           {importError && (
             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "8px", padding: "10px 14px", marginBottom: "12px", fontSize: "13px", color: "var(--error)" }}>
+              style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "8px", padding: "10px 14px", marginBottom: "12px", fontSize: "13px", color: "#ef4444" }}>
               {importError}
             </motion.div>
           )}
           {importSuccess && (
             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: "8px", padding: "10px 14px", marginBottom: "12px", fontSize: "13px", color: "var(--success)" }}>
+              style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: "8px", padding: "10px 14px", marginBottom: "12px", fontSize: "13px", color: "#10b981" }}>
               {importSuccess}
             </motion.div>
           )}
@@ -240,39 +240,39 @@ export default function LibraryPage() {
         {/* Bank List */}
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {isLoading ? (
-            <div style={{ color: "var(--text-tertiary)", textAlign: "center", padding: "40px" }}>加载中...</div>
+            <div style={{ color: "#666", textAlign: "center", padding: "40px" }}>加载中...</div>
           ) : filteredBanks.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--text-tertiary)" }}>暂无题库，请导入</div>
+            <div style={{ textAlign: "center", padding: "40px 20px", color: "#666" }}>暂无题库，请导入</div>
           ) : (
             filteredBanks.map((bank, i) => (
               <motion.div key={bank.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                style={{ background: "var(--card-bg)", borderRadius: "12px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)" }}>
-                <div style={{ height: "4px", background: bank.color || "var(--accent-color)" }} />
+                style={{ background: "#222", borderRadius: "12px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)" }}>
+                <div style={{ height: "4px", background: bank.color || "#00d4ff" }} />
                 <div style={{ padding: "14px 16px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "6px" }}>
-                    <h3 style={{ fontSize: "16px", fontWeight: 600, color: "var(--text-primary)", margin: 0, flex: 1 }}>{bank.title}</h3>
-                    <span style={{ fontSize: "11px", padding: "3px 10px", borderRadius: "10px", background: "rgba(0,212,255,0.15)", color: "var(--accent-color)", whiteSpace: "nowrap" }}>
+                    <h3 style={{ fontSize: "16px", fontWeight: 600, color: "#fff", margin: 0, flex: 1 }}>{bank.title}</h3>
+                    <span style={{ fontSize: "11px", padding: "3px 10px", borderRadius: "10px", background: "rgba(0,212,255,0.15)", color: "#00d4ff", whiteSpace: "nowrap" }}>
                       {JSON.parse(bank.questionsJson).length}题
                     </span>
                   </div>
-                  <p style={{ fontSize: "13px", color: "var(--text-secondary)", margin: "0 0 10px 0", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                  <p style={{ fontSize: "13px", color: "#a0a0a0", margin: "0 0 10px 0", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                     {bank.description || ""}
                   </p>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", fontSize: "12px", color: "var(--text-tertiary)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", fontSize: "12px", color: "#666" }}>
                     <span style={{ display: "flex", alignItems: "center", gap: "3px" }}><Tag size={12} /> {bank.category}</span>
                     <span style={{ display: "flex", alignItems: "center", gap: "3px" }}><Clock size={12} /> {bank.lastPracticedAt ? new Date(bank.lastPracticedAt).toLocaleDateString("zh-CN", { month: "short", day: "numeric" }) : "未练习"}</span>
                   </div>
-                  <div style={{ width: "100%", height: "3px", background: "var(--card-bg-secondary)", borderRadius: "2px", marginBottom: "12px" }}>
+                  <div style={{ width: "100%", height: "3px", background: "#2a2a2a", borderRadius: "2px", marginBottom: "12px" }}>
                     <motion.div initial={{ width: 0 }} animate={{ width: `${bank.progress}%` }} transition={{ duration: 0.8, delay: i * 0.1 }}
-                      style={{ height: "100%", background: bank.color || "var(--accent-color)", borderRadius: "2px" }} />
+                      style={{ height: "100%", background: bank.color || "#00d4ff", borderRadius: "2px" }} />
                   </div>
                   <div style={{ display: "flex", gap: "8px" }}>
                     <motion.button whileTap={{ scale: 0.95 }} onClick={() => navigate("/training", { state: { bankId: bank.id } })}
-                      style={{ flex: 1, padding: "10px", borderRadius: "8px", background: "var(--accent-color)", color: "var(--page-bg)", fontSize: "13px", fontWeight: 600, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
+                      style={{ flex: 1, padding: "10px", borderRadius: "8px", background: "#00d4ff", color: "#1a1a1a", fontSize: "13px", fontWeight: 600, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
                       开始训练 <ChevronRight size={14} />
                     </motion.button>
                     <motion.button whileTap={{ scale: 0.95 }} onClick={() => deleteBank.mutate({ id: bank.id })}
-                      style={{ padding: "10px", borderRadius: "8px", background: "var(--card-bg-secondary)", color: "var(--error)", border: "none", cursor: "pointer" }}>
+                      style={{ padding: "10px", borderRadius: "8px", background: "#2a2a2a", color: "#ef4444", border: "none", cursor: "pointer" }}>
                       <Trash2 size={16} />
                     </motion.button>
                   </div>
