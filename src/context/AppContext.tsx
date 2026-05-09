@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { trpc } from "@/providers/trpc";
 
 export interface Question {
@@ -83,17 +83,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return defaultSettings;
   });
 
-  // Fetch settings from database (overrides localStorage if user is logged in)
+  // Fetch settings from database (only sync on first load)
   const dbSettings = trpc.settings.get.useQuery(undefined, {
     retry: false,
     refetchOnWindowFocus: false,
   });
+  const hasSyncedDb = useRef(false);
 
-  // Sync DB settings to state when available
+  // Sync DB settings to state ONLY ONCE on initial load
   useEffect(() => {
-    if (dbSettings.data) {
+    if (dbSettings.data && !hasSyncedDb.current) {
+      hasSyncedDb.current = true;
       setSettingsState((prev) => {
-        const merged = { ...prev, ...dbSettings.data };
+        // Only sync fields that haven't been set locally
+        const merged = { ...dbSettings.data, ...prev };
         localStorage.setItem("zenith-settings", JSON.stringify(merged));
         return merged;
       });
