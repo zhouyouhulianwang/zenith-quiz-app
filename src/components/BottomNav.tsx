@@ -22,10 +22,10 @@ export default function BottomNav() {
         left: 0,
         right: 0,
         height: "64px",
-        background: "rgba(26, 26, 26, 0.95)",
+        background: "var(--nav-bg)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
-        borderTop: "1px solid rgba(255,255,255,0.08)",
+        borderTop: "1px solid var(--border-color)",
         zIndex: 50,
         display: "flex",
         alignItems: "center",
@@ -57,7 +57,7 @@ export default function BottomNav() {
               animate={isActive ? { scale: [0.8, 1.1, 1] } : { scale: 1 }}
               transition={{ duration: 0.25, ease: "easeOut" }}
             >
-              <tab.icon size={22} color={isActive ? "#00d4ff" : "#666"} strokeWidth={isActive ? 2.5 : 1.5} />
+              <tab.icon size={22} color={isActive ? "var(--accent-color)" : "var(--text-tertiary)"} strokeWidth={isActive ? 2.5 : 1.5} />
             </motion.div>
             <span style={{
               fontSize: "10px",
