@@ -51,7 +51,7 @@ const defaultSettings: AppSettings = {
   difficulty: 3,
   fontSize: "medium",
   questionLanguage: "entc",
-  theme: "system",
+  theme: "light",
 };
 
 const AppContext = createContext<AppContextType>({
@@ -61,19 +61,22 @@ const AppContext = createContext<AppContextType>({
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [settings, setSettingsState] = useState<AppSettings>(() => {
-    // Default to "system" theme to avoid being stuck in dark mode.
-    // The actual user preference is loaded from database after login.
+    // Load from localStorage if valid; default is "light" (not "system").
     try {
       const saved = localStorage.getItem("zenith-settings");
       if (saved) {
         const parsed = JSON.parse(saved);
+        const validTheme =
+          parsed.theme === "dark" || parsed.theme === "light" || parsed.theme === "system"
+            ? parsed.theme
+            : "light";
         return {
           dailyGoal: parsed.dailyGoal ?? defaultSettings.dailyGoal,
           reminderTime: parsed.reminderTime ?? defaultSettings.reminderTime,
           difficulty: parsed.difficulty ?? defaultSettings.difficulty,
           fontSize: parsed.fontSize ?? defaultSettings.fontSize,
           questionLanguage: parsed.questionLanguage ?? defaultSettings.questionLanguage,
-          theme: defaultSettings.theme,
+          theme: validTheme,
         };
       }
     } catch { /* ignore */ }

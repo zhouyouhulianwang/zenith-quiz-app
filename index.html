@@ -11,18 +11,21 @@
     <title>ZENITH - 智能题库训练</title>
     <script>
       (function() {
-        // Default to "system" to avoid stuck in dark mode.
-        // React app loads actual user preference from database after login.
         try {
-          var theme = 'system';
+          var saved = localStorage.getItem('zenith-settings');
+          var theme = 'light'; // default to light
+          if (saved) {
+            var s = JSON.parse(saved);
+            if (s.theme === 'dark' || s.theme === 'light' || s.theme === 'system') {
+              theme = s.theme;
+            }
+          }
           if (theme === 'dark') {
             document.documentElement.classList.add('dark');
           } else if (theme === 'light') {
             document.documentElement.classList.remove('dark');
-          } else {
-            if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-              document.documentElement.classList.add('dark');
-            }
+          } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
           }
         } catch(e) {}
       })();

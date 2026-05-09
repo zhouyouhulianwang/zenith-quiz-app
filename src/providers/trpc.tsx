@@ -7,24 +7,13 @@ import type { ReactNode } from "react";
 
 export const trpc = createTRPCReact<AppRouter>();
 
-// Get API URL from localStorage config or use default
-function getApiUrl(): string {
-  try {
-    const saved = localStorage.getItem("zenith-server-config");
-    if (saved) {
-      const config = JSON.parse(saved);
-      if (config.apiUrl) return config.apiUrl;
-    }
-  } catch { /* ignore */ }
-  // Default: same-origin relative path
-  return "/api/trpc";
-}
+// API URL: same-origin (works when frontend & backend are served from same domain)
 
 const queryClient = new QueryClient();
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      url: getApiUrl(),
+      url: "/api/trpc",
       transformer: superjson,
       fetch(input, init) {
         return globalThis.fetch(input, {
