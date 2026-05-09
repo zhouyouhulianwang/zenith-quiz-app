@@ -51,7 +51,7 @@ const defaultSettings: AppSettings = {
   difficulty: 3,
   fontSize: "medium",
   questionLanguage: "entc",
-  theme: "light",
+  theme: "system",
 };
 
 const AppContext = createContext<AppContextType>({
