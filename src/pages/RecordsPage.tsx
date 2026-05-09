@@ -105,7 +105,7 @@ export default function RecordsPage() {
                     const bg = isCorrect ? "rgba(16,185,129,0.12)" : isSelected && !isCorrect ? "rgba(239,68,68,0.12)" : "var(--card-bg-secondary)";
                     const color = isCorrect ? "#10b981" : isSelected && !isCorrect ? "#ef4444" : "var(--text-secondary)";
                     return (
-                      <div key={idx} style={{ padding: "10px 12px", borderRadius: "8px", background: bg, border: `1px solid ${isCorrect ? "rgba(16,185,129,0.3)" : isSelected && !isCorrect ? "rgba(239,68,68,0.3)" : "rgba(255,255,255,0.05)"}`, fontSize: "14px", color, display: "flex", alignItems: "center", gap: "8px" }}>
+                      <div key={idx} style={{ padding: "10px 12px", borderRadius: "8px", background: bg, border: `1px solid ${isCorrect ? "rgba(16,185,129,0.3)" : isSelected && !isCorrect ? "rgba(239,68,68,0.3)" : "var(--border-color)"}`, fontSize: "14px", color, display: "flex", alignItems: "center", gap: "8px" }}>
                         <span style={{ width: "22px", height: "22px", borderRadius: "50%", background: isCorrect ? "#10b981" : isSelected ? "#ef4444" : "var(--text-tertiary)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 600, color: "var(--text-primary)" }}>{String.fromCharCode(65 + idx)}</span>
                         <span>{displayOpt}</span>
                       </div>
@@ -118,7 +118,7 @@ export default function RecordsPage() {
           )}
         </div>
 
-        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, padding: "12px 16px", paddingBottom: "max(16px, env(safe-area-inset-bottom))", background: "rgba(26,26,26,0.98)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", gap: "12px", zIndex: 100 }}>
+        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, padding: "12px 16px", paddingBottom: "max(16px, env(safe-area-inset-bottom))", background: "var(--nav-bg)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderTop: "1px solid var(--border-color)", display: "flex", gap: "12px", zIndex: 100 }}>
           <motion.button whileTap={{ scale: 0.95 }} onClick={handlePrev} disabled={currentIndex === 0} style={{ padding: "14px 20px", borderRadius: "12px", background: "var(--card-bg-secondary)", color: currentIndex === 0 ? "var(--text-tertiary)" : "var(--text-primary)", fontSize: "14px", border: "none", cursor: currentIndex === 0 ? "not-allowed" : "pointer", minHeight: "48px", touchAction: "manipulation", userSelect: "none", display: "flex", alignItems: "center", gap: "6px" }}><ChevronLeft size={18} /> 上一条</motion.button>
           <motion.button whileTap={{ scale: 0.95 }} onClick={handleNext} disabled={currentIndex >= total - 1} style={{ flex: 1, padding: "14px 20px", borderRadius: "12px", background: currentIndex >= total - 1 ? "var(--card-bg-secondary)" : "#00d4ff", color: currentIndex >= total - 1 ? "var(--text-tertiary)" : "var(--page-bg)", fontSize: "14px", fontWeight: 600, border: "none", cursor: currentIndex >= total - 1 ? "not-allowed" : "pointer", minHeight: "48px", touchAction: "manipulation", userSelect: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>下一条 <ChevronRight size={18} /></motion.button>
         </div>

@@ -63,19 +63,19 @@ export default function ProfilePage() {
             <img src={user?.avatar || "/avatar-default.png"} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { (e.target as HTMLImageElement).src = "/avatar-default.png"; }} />
           </div>
           <div style={{ fontSize: "18px", fontWeight: 700, color: "var(--text-primary)" }}>{user?.name || "学习者"}</div>
-          <div style={{ fontSize: "14px", color: "rgba(255,255,255,0.7)", marginTop: "4px" }}>{user?.email || ""}</div>
+          <div style={{ fontSize: "14px", color: "var(--text-secondary)", marginTop: "4px" }}>{user?.email || ""}</div>
           <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "20px" }}>
-            <div><div style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-primary)" }}>{joinDays}</div><div style={{ fontSize: "11px", color: "rgba(255,255,255,0.7)" }}>加入天数</div></div>
-            <div><div style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-primary)" }}>{totalQ}</div><div style={{ fontSize: "11px", color: "rgba(255,255,255,0.7)" }}>总练习数</div></div>
+            <div><div style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-primary)" }}>{joinDays}</div><div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>加入天数</div></div>
+            <div><div style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-primary)" }}>{totalQ}</div><div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>总练习数</div></div>
             <div onClick={() => correctQ > 0 && navigate("/mistakes", { state: { mode: "correct" } })} style={{ cursor: correctQ > 0 ? "pointer" : "default" }}>
               <div style={{ fontSize: "20px", fontWeight: 700, color: correctQ > 0 ? "#10b981" : "var(--text-primary)" }}>{correctQ}</div>
-              <div style={{ fontSize: "11px", color: correctQ > 0 ? "#10b981" : "rgba(255,255,255,0.7)" }}>正确数</div>
+              <div style={{ fontSize: "11px", color: correctQ > 0 ? "#10b981" : "var(--text-secondary)" }}>正确数</div>
             </div>
             <div onClick={() => wrongQ > 0 && navigate("/mistakes", { state: { mode: "wrong" } })} style={{ cursor: wrongQ > 0 ? "pointer" : "default" }}>
               <div style={{ fontSize: "20px", fontWeight: 700, color: wrongQ > 0 ? "#ef4444" : "var(--text-primary)" }}>{wrongQ}</div>
-              <div style={{ fontSize: "11px", color: wrongQ > 0 ? "#ef4444" : "rgba(255,255,255,0.7)" }}>错题数</div>
+              <div style={{ fontSize: "11px", color: wrongQ > 0 ? "#ef4444" : "var(--text-secondary)" }}>错题数</div>
             </div>
-            <div><div style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-primary)" }}>{banks?.length || 0}</div><div style={{ fontSize: "11px", color: "rgba(255,255,255,0.7)" }}>题库数</div></div>
+            <div><div style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-primary)" }}>{banks?.length || 0}</div><div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>题库数</div></div>
           </div>
           <motion.button whileTap={{ scale: 0.95 }} onClick={logout}
             style={{ marginTop: "16px", padding: "8px 20px", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "20px", color: "var(--text-primary)", fontSize: "13px", cursor: "pointer" }}>
@@ -98,7 +98,7 @@ export default function ProfilePage() {
               ].map((badge, i) => (
                 <motion.div key={badge.id} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }} style={{ minWidth: "80px", textAlign: "center", opacity: badge.earned ? 1 : 0.4 }}>
                   <div style={{ width: "56px", height: "56px", borderRadius: "50%", background: badge.earned ? "rgba(0,212,255,0.2)" : "var(--card-bg-secondary)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 6px", border: badge.earned ? "1px solid rgba(0,212,255,0.3)" : "1px solid rgba(255,255,255,0.05)" }}>
-                    <badge.icon size={24} color={badge.earned ? "#00d4ff" : "var(--text-tertiary)"} />
+                    <badge.icon size={24} color={badge.earned ? "#00d4ff" : "#666"} />
                   </div>
                   <div style={{ fontSize: "12px", color: badge.earned ? "var(--text-primary)" : "var(--text-tertiary)" }}>{badge.name}</div>
                 </motion.div>
@@ -206,7 +206,7 @@ function UserIcon({ size, color }: { size: number; color: string }) {
 function SettingRow({ icon: Icon, label, value, onClick, danger }: { icon: typeof Settings; label: string; value: React.ReactNode; onClick?: () => void; danger?: boolean }) {
   return (
     <button onClick={onClick} style={{ width: "100%", padding: "14px 16px", display: "flex", alignItems: "center", gap: "12px", background: "none", border: "none", borderBottom: "1px solid rgba(255,255,255,0.05)", cursor: onClick ? "pointer" : "default", textAlign: "left" }}>
-      <Icon size={18} color={danger ? "#ef4444" : "var(--text-tertiary)"} />
+      <Icon size={18} color={danger ? "#ef4444" : "#666"} />
       <span style={{ fontSize: "14px", color: danger ? "#ef4444" : "var(--text-primary)", flex: 1 }}>{label}</span>
       {typeof value === "string" ? <span style={{ fontSize: "14px", color: "var(--text-secondary)" }}>{value}</span> : value}
     </button>

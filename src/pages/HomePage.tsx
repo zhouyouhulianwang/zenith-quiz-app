@@ -88,12 +88,12 @@ export default function HomePage() {
               <div style={{ fontSize: "32px", color: "#00d4ff" }}><AnimatedNumber value={todayCount} /></div>
               <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "4px" }}>今日练习</div>
             </div>
-            <div style={{ width: "1px", height: "40px", background: "rgba(255,255,255,0.1)" }} />
+            <div style={{ width: "1px", height: "40px", background: "var(--border-color)" }} />
             <div style={{ textAlign: "center", flex: 1 }}>
               <div style={{ fontSize: "32px", color: "#00d4ff" }}><AnimatedNumber value={accuracy} suffix="%" /></div>
               <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "4px" }}>正确率</div>
             </div>
-            <div style={{ width: "1px", height: "40px", background: "rgba(255,255,255,0.1)" }} />
+            <div style={{ width: "1px", height: "40px", background: "var(--border-color)" }} />
             <div style={{ textAlign: "center", flex: 1 }}>
               <div style={{ fontSize: "32px", color: "#00d4ff", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
                 <AnimatedNumber value={7} /><Flame size={20} color="#f59e0b" />
