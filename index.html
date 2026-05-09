@@ -9,8 +9,29 @@
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0d0d0d" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>ZENITH - 智能题库训练</title>
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('zenith-settings');
+          var theme = 'system';
+          if (saved) {
+            var s = JSON.parse(saved);
+            if (s.theme) theme = s.theme;
+          }
+          if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else if (theme === 'light') {
+            document.documentElement.classList.remove('dark');
+          } else {
+            if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+              document.documentElement.classList.add('dark');
+            }
+          }
+        } catch(e) {}
+      })();
+    </script>
   </head>
-  <body style="margin:0; padding:0; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none;">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
