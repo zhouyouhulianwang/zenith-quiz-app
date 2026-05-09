@@ -62,10 +62,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [settings, setSettingsState] = useState<AppSettings>(() => {
     try {
       const saved = localStorage.getItem("zenith-settings");
-      return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
-    } catch {
-      return defaultSettings;
-    }
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          dailyGoal: parsed.dailyGoal ?? defaultSettings.dailyGoal,
+          reminderTime: parsed.reminderTime ?? defaultSettings.reminderTime,
+          difficulty: parsed.difficulty ?? defaultSettings.difficulty,
+          fontSize: parsed.fontSize ?? defaultSettings.fontSize,
+          questionLanguage: parsed.questionLanguage ?? defaultSettings.questionLanguage,
+          theme: parsed.theme ?? defaultSettings.theme,
+        };
+      }
+    } catch { /* ignore */ }
+    return defaultSettings;
   });
 
   const setSettings = useCallback((partial: Partial<AppSettings>) => {

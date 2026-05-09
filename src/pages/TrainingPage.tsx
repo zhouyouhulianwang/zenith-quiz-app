@@ -644,7 +644,7 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
                       WebkitTapHighlightColor: "transparent", userSelect: "none", touchAction: "manipulation",
                     }}>
                     <div style={{ width: "22px", height: "22px", borderRadius: currentQuestion?.type === "multiple" ? "4px" : "50%", border: `2px solid ${circleColor}`, background: isSelected ? circleColor : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: "1px" }}>
-                      {isSelected && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>{currentQuestion?.type === "multiple" ? <Check size={14} color="#1a1a1a" strokeWidth={3} /> : <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--page-bg)" }} />}</motion.div>}
+                      {isSelected && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>{currentQuestion?.type === "multiple" ? <Check size={14} color="#1a1a1a" strokeWidth={3} /> : <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#1a1a1a" }} />}</motion.div>}
                     </div>
                     <div style={{ flex: 1 }}>
                       <span style={{ fontSize: "16px", color: "var(--text-primary)", lineHeight: 1.5, userSelect: "text", WebkitUserSelect: "text" }}>{option}</span>

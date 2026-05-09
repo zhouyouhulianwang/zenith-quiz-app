@@ -49,7 +49,8 @@ export default function ParticleBackground() {
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
+        const isDark = document.documentElement.classList.contains("dark");
+        ctx.fillStyle = isDark ? `rgba(255, 255, 255, ${p.alpha})` : `rgba(0, 0, 0, ${p.alpha * 0.6})`;
         ctx.fill();
 
         for (let j = i + 1; j < particles.length; j++) {
@@ -61,7 +62,8 @@ export default function ParticleBackground() {
             ctx.beginPath();
             ctx.moveTo(p.x, p.y);
             ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.strokeStyle = `rgba(0, 212, 255, ${alpha})`;
+            const isDarkLine = document.documentElement.classList.contains("dark");
+            ctx.strokeStyle = isDarkLine ? `rgba(0, 212, 255, ${alpha})` : `rgba(0, 120, 160, ${alpha * 0.8})`;
             ctx.lineWidth = 0.5;
             ctx.stroke();
           }
