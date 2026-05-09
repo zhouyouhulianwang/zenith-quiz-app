@@ -621,7 +621,7 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
               </div>
               <div style={{ fontSize: "18px", fontWeight: 500, color: "var(--text-primary)", lineHeight: 1.6, whiteSpace: "pre-wrap", userSelect: "text", WebkitUserSelect: "text" }}>{displayQuestion}</div>
               {lang === "both" && currentQuestion?.enQuestion && <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: "14px", color: "var(--text-secondary)", lineHeight: 1.6, userSelect: "text", WebkitUserSelect: "text" }}>{currentQuestion.enQuestion}</div>}
-              {lang === "entc" && secondaryQuestion && <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: "16px", color: "#d0d0d0", lineHeight: 1.6, userSelect: "text", WebkitUserSelect: "text" }}>{secondaryQuestion}</div>}
+              {lang === "entc" && secondaryQuestion && <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid var(--border-color)", fontSize: "16px", color: "var(--text-secondary)", lineHeight: 1.6, userSelect: "text", WebkitUserSelect: "text" }}>{secondaryQuestion}</div>}
             </div>
 
             {/* Options */}
@@ -649,7 +649,7 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
                     <div style={{ flex: 1 }}>
                       <span style={{ fontSize: "16px", color: "var(--text-primary)", lineHeight: 1.5, userSelect: "text", WebkitUserSelect: "text" }}>{option}</span>
                       {lang === "both" && currentQuestion?.enOptions?.[index] && <div style={{ fontSize: "13px", color: "var(--text-secondary)", marginTop: "4px", userSelect: "text", WebkitUserSelect: "text" }}>{currentQuestion.enOptions[index]}</div>}
-                      {lang === "entc" && secondaryOptions?.[index] && <div style={{ fontSize: "15px", color: "#d0d0d0", marginTop: "4px", userSelect: "text", WebkitUserSelect: "text" }}>{secondaryOptions[index]}</div>}
+                      {lang === "entc" && secondaryOptions?.[index] && <div style={{ fontSize: "15px", color: "var(--text-secondary)", marginTop: "4px", userSelect: "text", WebkitUserSelect: "text" }}>{secondaryOptions[index]}</div>}
                     </div>
                     {submitted && isCorrect && <Check size={20} color="#10b981" style={{ flexShrink: 0, marginTop: "2px" }} />}
                     {submitted && isSelected && !isCorrect && <X size={20} color="#ef4444" style={{ flexShrink: 0, marginTop: "2px" }} />}
