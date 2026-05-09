@@ -78,14 +78,14 @@ export default function StatsPage() {
   }, [banks, records]);
 
   return (
-    <div style={{ position: "relative", minHeight: "100vh", background: "#1a1a1a", overflowX: "hidden" }}>
+    <div style={{ position: "relative", minHeight: "100vh", background: "var(--page-bg)", overflowX: "hidden" }}>
       <ParticleBackground />
       <div style={{ position: "relative", zIndex: 1, padding: "16px", paddingBottom: "100px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-          <h1 style={{ fontSize: "24px", fontWeight: 700, color: "#fff", margin: 0 }}>数据洞察</h1>
+          <h1 style={{ fontSize: "24px", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>数据洞察</h1>
           <div style={{ display: "flex", gap: "6px" }}>
             {["本周", "本月", "全部"].map((r) => (
-              <button key={r} onClick={() => setTimeRange(r)} style={{ padding: "5px 12px", borderRadius: "16px", fontSize: "12px", border: "none", cursor: "pointer", background: timeRange === r ? "#00d4ff" : "#2a2a2a", color: timeRange === r ? "#1a1a1a" : "#a0a0a0" }}>{r}</button>
+              <button key={r} onClick={() => setTimeRange(r)} style={{ padding: "5px 12px", borderRadius: "16px", fontSize: "12px", border: "none", cursor: "pointer", background: timeRange === r ? "var(--accent-color)" : "var(--card-bg-secondary)", color: timeRange === r ? "var(--page-bg)" : "var(--text-secondary)" }}>{r}</button>
             ))}
           </div>
         </div>
@@ -99,26 +99,26 @@ export default function StatsPage() {
             { icon: Brain, label: "题库数", value: `${banks?.length || 0}`, trend: "+2", up: true },
           ].map((m, i) => (
             <motion.div key={m.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-              style={{ minWidth: "130px", background: "#222", borderRadius: "12px", padding: "14px", border: "1px solid rgba(255,255,255,0.08)" }}>
-              <m.icon size={18} color="#00d4ff" />
-              <div style={{ fontSize: "22px", fontWeight: 700, color: "#fff", marginTop: "8px" }}>{m.value}</div>
-              <div style={{ display: "flex", alignItems: "center", gap: "3px", marginTop: "4px" }}>{m.up ? <TrendingUp size={12} color="#10b981" /> : <TrendingDown size={12} color="#ef4444" />}<span style={{ fontSize: "11px", color: m.up ? "#10b981" : "#ef4444" }}>{m.trend}</span></div>
-              <div style={{ fontSize: "11px", color: "#666", marginTop: "2px" }}>{m.label}</div>
+              style={{ minWidth: "130px", background: "var(--card-bg)", borderRadius: "12px", padding: "14px", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <m.icon size={18} color="var(--accent-color)" />
+              <div style={{ fontSize: "22px", fontWeight: 700, color: "var(--text-primary)", marginTop: "8px" }}>{m.value}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: "3px", marginTop: "4px" }}>{m.up ? <TrendingUp size={12} color="var(--success)" /> : <TrendingDown size={12} color="var(--error)" />}<span style={{ fontSize: "11px", color: m.up ? "var(--success)" : "var(--error)" }}>{m.trend}</span></div>
+              <div style={{ fontSize: "11px", color: "var(--text-tertiary)", marginTop: "2px" }}>{m.label}</div>
             </motion.div>
           ))}
         </div>
 
         {/* Bar Chart */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} style={{ background: "#222", borderRadius: "16px", padding: "16px", border: "1px solid rgba(255,255,255,0.08)", marginBottom: "16px" }}>
-          <h2 style={{ fontSize: "16px", fontWeight: 600, color: "#fff", margin: "0 0 12px 0" }}>各题型表现</h2>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} style={{ background: "var(--card-bg)", borderRadius: "16px", padding: "16px", border: "1px solid rgba(255,255,255,0.08)", marginBottom: "16px" }}>
+          <h2 style={{ fontSize: "16px", fontWeight: 600, color: "var(--text-primary)", margin: "0 0 12px 0" }}>各题型表现</h2>
           <div style={{ display: "flex", alignItems: "flex-end", gap: "16px", height: "160px" }}>
             {barData.map((d, i) => {
-              const color = d.accuracy >= 80 ? "#10b981" : d.accuracy >= 60 ? "#00d4ff" : "#ef4444";
+              const color = d.accuracy >= 80 ? "var(--success)" : d.accuracy >= 60 ? "var(--accent-color)" : "var(--error)";
               return (
                 <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
                   <div style={{ fontSize: "12px", color }}>{d.accuracy}%</div>
                   <div style={{ width: "100%", height: `${d.accuracy * 1.2}px`, background: color, borderRadius: "6px 6px 0 0", minHeight: "8px" }} />
-                  <div style={{ fontSize: "11px", color: "#a0a0a0" }}>{d.name}</div>
+                  <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>{d.name}</div>
                 </div>
               );
             })}
@@ -128,36 +128,36 @@ export default function StatsPage() {
         {/* Chapter Stats */}
         {bankChapterStats.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} style={{ marginBottom: "16px" }}>
-            <h2 style={{ fontSize: "16px", fontWeight: 600, color: "#fff", margin: "0 0 12px 0" }}>章节统计</h2>
+            <h2 style={{ fontSize: "16px", fontWeight: 600, color: "var(--text-primary)", margin: "0 0 12px 0" }}>章节统计</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {bankChapterStats.map((bank) => (
-                <div key={bank.bankId} style={{ background: "#222", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden" }}>
+                <div key={bank.bankId} style={{ background: "var(--card-bg)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden" }}>
                   <button
                     onClick={() => setExpandedBank(expandedBank === bank.bankId ? null : bank.bankId)}
                     style={{ width: "100%", padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "none", border: "none", cursor: "pointer" }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                       <FileText size={16} color={bank.bankColor} />
-                      <span style={{ fontSize: "14px", fontWeight: 600, color: "#fff" }}>{bank.bankTitle}</span>
+                      <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)" }}>{bank.bankTitle}</span>
                     </div>
-                    {expandedBank === bank.bankId ? <ChevronUp size={16} color="#666" /> : <ChevronDown size={16} color="#666" />}
+                    {expandedBank === bank.bankId ? <ChevronUp size={16} color="var(--text-tertiary)" /> : <ChevronDown size={16} color="var(--text-tertiary)" />}
                   </button>
                   {expandedBank === bank.bankId && (
                     <div style={{ padding: "0 16px 12px" }}>
                       {bank.chapters.map((ch, idx) => (
                         <div key={ch.chapterId} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: "13px", color: "#fff" }}>第{idx + 1}章</div>
+                            <div style={{ fontSize: "13px", color: "var(--text-primary)" }}>第{idx + 1}章</div>
                             <div style={{ display: "flex", gap: "12px", marginTop: "2px" }}>
-                              <span style={{ fontSize: "11px", color: "#666" }}>{ch.total} 题</span>
-                              <span style={{ fontSize: "11px", color: "#10b981" }}>{ch.correct} 正确</span>
-                              <span style={{ fontSize: "11px", color: "#ef4444" }}>{ch.wrong} 错误</span>
+                              <span style={{ fontSize: "11px", color: "var(--text-tertiary)" }}>{ch.total} 题</span>
+                              <span style={{ fontSize: "11px", color: "var(--success)" }}>{ch.correct} 正确</span>
+                              <span style={{ fontSize: "11px", color: "var(--error)" }}>{ch.wrong} 错误</span>
                             </div>
                           </div>
                           <div style={{ textAlign: "right", flexShrink: 0 }}>
-                            <div style={{ fontSize: "16px", fontWeight: 700, color: ch.accuracy >= 80 ? "#10b981" : ch.accuracy >= 60 ? "#00d4ff" : "#ef4444" }}>{ch.accuracy}%</div>
-                            <div style={{ width: "60px", height: "4px", background: "#2a2a2a", borderRadius: "2px", marginTop: "4px" }}>
-                              <div style={{ width: `${ch.accuracy}%`, height: "100%", background: ch.accuracy >= 80 ? "#10b981" : ch.accuracy >= 60 ? "#00d4ff" : "#ef4444", borderRadius: "2px" }} />
+                            <div style={{ fontSize: "16px", fontWeight: 700, color: ch.accuracy >= 80 ? "var(--success)" : ch.accuracy >= 60 ? "var(--accent-color)" : "var(--error)" }}>{ch.accuracy}%</div>
+                            <div style={{ width: "60px", height: "4px", background: "var(--card-bg-secondary)", borderRadius: "2px", marginTop: "4px" }}>
+                              <div style={{ width: `${ch.accuracy}%`, height: "100%", background: ch.accuracy >= 80 ? "var(--success)" : ch.accuracy >= 60 ? "var(--accent-color)" : "var(--error)", borderRadius: "2px" }} />
                             </div>
                           </div>
                         </div>
@@ -171,19 +171,19 @@ export default function StatsPage() {
         )}
 
         {/* Trend */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} style={{ background: "#222", borderRadius: "16px", padding: "16px", border: "1px solid rgba(255,255,255,0.08)", marginBottom: "16px" }}>
-          <h2 style={{ fontSize: "16px", fontWeight: 600, color: "#fff", margin: "0 0 12px 0" }}>学习趋势</h2>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} style={{ background: "var(--card-bg)", borderRadius: "16px", padding: "16px", border: "1px solid rgba(255,255,255,0.08)", marginBottom: "16px" }}>
+          <h2 style={{ fontSize: "16px", fontWeight: 600, color: "var(--text-primary)", margin: "0 0 12px 0" }}>学习趋势</h2>
           <div style={{ display: "flex", alignItems: "flex-end", gap: "4px", height: "140px" }}>
             {(dailyRecords || []).slice(-14).map((d, i) => {
               const maxVal = Math.max(...(dailyRecords || []).slice(-14).map((x) => x.count), 1);
               return (
                 <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}>
-                  <div style={{ fontSize: "9px", color: "#a0a0a0" }}>{d.correct}</div>
+                  <div style={{ fontSize: "9px", color: "var(--text-secondary)" }}>{d.correct}</div>
                   <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "1px" }}>
                     <div style={{ width: "100%", height: `${(d.count / maxVal) * 60}px`, background: "rgba(0,212,255,0.3)", borderRadius: "2px 2px 0 0", minHeight: "2px" }} />
-                    <div style={{ width: "100%", height: `${(d.correct / maxVal) * 60}px`, background: "#10b981", borderRadius: "0 0 2px 2px", minHeight: "2px" }} />
+                    <div style={{ width: "100%", height: `${(d.correct / maxVal) * 60}px`, background: "var(--success)", borderRadius: "0 0 2px 2px", minHeight: "2px" }} />
                   </div>
-                  <div style={{ fontSize: "9px", color: "#666" }}>{d.date.slice(5)}</div>
+                  <div style={{ fontSize: "9px", color: "var(--text-tertiary)" }}>{d.date.slice(5)}</div>
                 </div>
               );
             })}
@@ -191,15 +191,15 @@ export default function StatsPage() {
         </motion.div>
 
         {/* Heatmap */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} style={{ background: "#222", borderRadius: "16px", padding: "16px", border: "1px solid rgba(255,255,255,0.08)" }}>
-          <h2 style={{ fontSize: "16px", fontWeight: 600, color: "#fff", margin: "0 0 12px 0" }}>每日练习热力</h2>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} style={{ background: "var(--card-bg)", borderRadius: "16px", padding: "16px", border: "1px solid rgba(255,255,255,0.08)" }}>
+          <h2 style={{ fontSize: "16px", fontWeight: 600, color: "var(--text-primary)", margin: "0 0 12px 0" }}>每日练习热力</h2>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "3px" }}>
             {heatmapData.map((c, i) => {
-              const colors = ["#2a2a2a", "rgba(0,212,255,0.2)", "rgba(0,212,255,0.4)", "rgba(0,212,255,0.6)", "rgba(0,212,255,0.8)"];
+              const colors = ["var(--card-bg-secondary)", "rgba(0,212,255,0.2)", "rgba(0,212,255,0.4)", "rgba(0,212,255,0.6)", "rgba(0,212,255,0.8)"];
               return <div key={i} title={`${c.date}: ${c.count}题`} style={{ width: "10px", height: "10px", borderRadius: "2px", background: colors[c.level], cursor: "pointer" }} />;
             })}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "12px", fontSize: "11px", color: "#666" }}><span>少</span><div style={{ display: "flex", gap: "3px" }}>{["#2a2a2a", "rgba(0,212,255,0.2)", "rgba(0,212,255,0.4)", "rgba(0,212,255,0.6)", "rgba(0,212,255,0.8)"].map((c, i) => <div key={i} style={{ width: "10px", height: "10px", borderRadius: "2px", background: c }} />)}</div><span>多</span></div>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "12px", fontSize: "11px", color: "var(--text-tertiary)" }}><span>少</span><div style={{ display: "flex", gap: "3px" }}>{["var(--card-bg-secondary)", "rgba(0,212,255,0.2)", "rgba(0,212,255,0.4)", "rgba(0,212,255,0.6)", "rgba(0,212,255,0.8)"].map((c, i) => <div key={i} style={{ width: "10px", height: "10px", borderRadius: "2px", background: c }} />)}</div><span>多</span></div>
         </motion.div>
       </div>
     </div>

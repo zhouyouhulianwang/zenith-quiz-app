@@ -21,14 +21,14 @@ const tableHeaderStyle: React.CSSProperties = {
   textAlign: "left",
   fontSize: "12px",
   fontWeight: 600,
-  color: "#a0a0a0",
+  color: "var(--text-secondary)",
   borderBottom: "1px solid rgba(255,255,255,0.08)",
 };
 
 const tableCellStyle: React.CSSProperties = {
   padding: "10px 12px",
   fontSize: "13px",
-  color: "#fff",
+  color: "var(--text-primary)",
   borderBottom: "1px solid rgba(255,255,255,0.04)",
 };
 
@@ -48,7 +48,7 @@ function StatCard({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       style={{
-        background: "#222",
+        background: "var(--card-bg)",
         borderRadius: "12px",
         padding: "16px",
         border: "1px solid rgba(255,255,255,0.08)",
@@ -72,8 +72,8 @@ function StatCard({
         <Icon size={22} color={color} />
       </div>
       <div>
-        <div style={{ fontSize: "22px", fontWeight: 700, color: "#fff" }}>{value}</div>
-        <div style={{ fontSize: "12px", color: "#a0a0a0" }}>{label}</div>
+        <div style={{ fontSize: "22px", fontWeight: 700, color: "var(--text-primary)" }}>{value}</div>
+        <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{label}</div>
       </div>
     </motion.div>
   );
@@ -96,7 +96,7 @@ function CollapsibleSection({
   return (
     <div
       style={{
-        background: "#222",
+        background: "var(--card-bg)",
         borderRadius: "12px",
         border: "1px solid rgba(255,255,255,0.08)",
         marginBottom: "12px",
@@ -118,9 +118,9 @@ function CollapsibleSection({
       >
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <Icon size={18} color={color} />
-          <span style={{ fontSize: "15px", fontWeight: 600, color: "#fff" }}>{title}</span>
+          <span style={{ fontSize: "15px", fontWeight: 600, color: "var(--text-primary)" }}>{title}</span>
         </div>
-        {open ? <ChevronUp size={18} color="#666" /> : <ChevronDown size={18} color="#666" />}
+        {open ? <ChevronUp size={18} color="var(--text-tertiary)" /> : <ChevronDown size={18} color="var(--text-tertiary)" />}
       </button>
       {open && <div style={{ padding: "0 0 12px" }}>{children}</div>}
     </div>
@@ -163,7 +163,7 @@ export default function AdminPage() {
       style={{
         position: "relative",
         minHeight: "100vh",
-        background: "#1a1a1a",
+        background: "var(--page-bg)",
         overflowX: "hidden",
       }}
     >
@@ -182,16 +182,16 @@ export default function AdminPage() {
             onClick={() => navigate("/profile")}
             style={{ background: "none", border: "none", cursor: "pointer", padding: "4px" }}
           >
-            <ArrowLeft size={24} color="#fff" />
+            <ArrowLeft size={24} color="var(--text-primary)" />
           </button>
           <div style={{ flex: 1 }}>
-            <h1 style={{ fontSize: "20px", fontWeight: 700, color: "#fff", margin: 0 }}>
+            <h1 style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
               <Shield size={20} style={{ display: "inline", marginRight: "6px" }} />
               管理后台
             </h1>
-            <p style={{ fontSize: "12px", color: "#666", margin: "2px 0 0" }}>数据库管理面板</p>
+            <p style={{ fontSize: "12px", color: "var(--text-tertiary)", margin: "2px 0 0" }}>数据库管理面板</p>
           </div>
-          <Database size={20} color="#00d4ff" />
+          <Database size={20} color="var(--accent-color)" />
         </div>
 
         {/* Stats Cards */}
@@ -203,8 +203,8 @@ export default function AdminPage() {
             marginBottom: "20px",
           }}
         >
-          <StatCard icon={Users} label="用户" value={stats?.users ?? 0} color="#00d4ff" />
-          <StatCard icon={BookOpen} label="题库" value={stats?.banks ?? 0} color="#10b981" />
+          <StatCard icon={Users} label="用户" value={stats?.users ?? 0} color="var(--accent-color)" />
+          <StatCard icon={BookOpen} label="题库" value={stats?.banks ?? 0} color="var(--success)" />
           <StatCard
             icon={ClipboardList}
             label="练习记录"
@@ -215,7 +215,7 @@ export default function AdminPage() {
         </div>
 
         {/* Users Table */}
-        <CollapsibleSection title="用户列表" icon={Users} color="#00d4ff" defaultOpen={true}>
+        <CollapsibleSection title="用户列表" icon={Users} color="var(--accent-color)" defaultOpen={true}>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
@@ -242,7 +242,7 @@ export default function AdminPage() {
                           fontSize: "11px",
                           fontWeight: 600,
                           background: u.role === "admin" ? "rgba(239,68,68,0.2)" : "rgba(16,185,129,0.2)",
-                          color: u.role === "admin" ? "#ef4444" : "#10b981",
+                          color: u.role === "admin" ? "var(--error)" : "var(--success)",
                         }}
                       >
                         {u.role}
@@ -262,7 +262,7 @@ export default function AdminPage() {
                           border: "none",
                           cursor: "pointer",
                           padding: "4px",
-                          color: "#ef4444",
+                          color: "var(--error)",
                         }}
                       >
                         <Trash2 size={16} />
@@ -272,7 +272,7 @@ export default function AdminPage() {
                 ))}
                 {(!usersList || usersList.length === 0) && (
                   <tr>
-                    <td colSpan={6} style={{ ...tableCellStyle, textAlign: "center", color: "#666" }}>
+                    <td colSpan={6} style={{ ...tableCellStyle, textAlign: "center", color: "var(--text-tertiary)" }}>
                       暂无用户
                     </td>
                   </tr>
@@ -283,7 +283,7 @@ export default function AdminPage() {
         </CollapsibleSection>
 
         {/* Banks Table */}
-        <CollapsibleSection title="题库列表" icon={BookOpen} color="#10b981">
+        <CollapsibleSection title="题库列表" icon={BookOpen} color="var(--success)">
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
@@ -313,7 +313,7 @@ export default function AdminPage() {
                           style={{
                             flex: 1,
                             height: "4px",
-                            background: "#2a2a2a",
+                            background: "var(--card-bg-secondary)",
                             borderRadius: "2px",
                             maxWidth: "50px",
                           }}
@@ -322,12 +322,12 @@ export default function AdminPage() {
                             style={{
                               width: `${b.progress}%`,
                               height: "100%",
-                              background: b.color || "#00d4ff",
+                              background: b.color || "var(--accent-color)",
                               borderRadius: "2px",
                             }}
                           />
                         </div>
-                        <span style={{ fontSize: "11px", color: "#a0a0a0" }}>{b.progress}%</span>
+                        <span style={{ fontSize: "11px", color: "var(--text-secondary)" }}>{b.progress}%</span>
                       </div>
                     </td>
                     <td style={tableCellStyle}>{formatDate(b.importedAt)}</td>
@@ -335,7 +335,7 @@ export default function AdminPage() {
                 ))}
                 {(!banksList || banksList.length === 0) && (
                   <tr>
-                    <td colSpan={7} style={{ ...tableCellStyle, textAlign: "center", color: "#666" }}>
+                    <td colSpan={7} style={{ ...tableCellStyle, textAlign: "center", color: "var(--text-tertiary)" }}>
                       暂无题库
                     </td>
                   </tr>
@@ -374,7 +374,7 @@ export default function AdminPage() {
                     <td style={tableCellStyle}>
                       <span
                         style={{
-                          color: r.isCorrect === 1 ? "#10b981" : "#ef4444",
+                          color: r.isCorrect === 1 ? "var(--success)" : "var(--error)",
                           fontWeight: 600,
                         }}
                       >
@@ -387,7 +387,7 @@ export default function AdminPage() {
                 ))}
                 {(!recordsList || recordsList.length === 0) && (
                   <tr>
-                    <td colSpan={8} style={{ ...tableCellStyle, textAlign: "center", color: "#666" }}>
+                    <td colSpan={8} style={{ ...tableCellStyle, textAlign: "center", color: "var(--text-tertiary)" }}>
                       暂无记录
                     </td>
                   </tr>
@@ -426,7 +426,7 @@ export default function AdminPage() {
                 ))}
                 {(!dailyList || dailyList.length === 0) && (
                   <tr>
-                    <td colSpan={6} style={{ ...tableCellStyle, textAlign: "center", color: "#666" }}>
+                    <td colSpan={6} style={{ ...tableCellStyle, textAlign: "center", color: "var(--text-tertiary)" }}>
                       暂无记录
                     </td>
                   </tr>

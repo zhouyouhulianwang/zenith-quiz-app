@@ -1,7 +1,8 @@
+import { useEffect } from "react";
 import { Routes, Route, useLocation, useNavigate } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { Shield } from "lucide-react";
-import { AppProvider } from "@/context/AppContext";
+import { AppProvider, useAppSettings } from "@/context/AppContext";
 import BottomNav from "@/components/BottomNav";
 import HomePage from "@/pages/HomePage";
 import LibraryPage from "@/pages/LibraryPage";
@@ -14,6 +15,37 @@ import AdminPage from "@/pages/AdminPage";
 import Login from "@/pages/Login";
 import { useAuth } from "@/hooks/useAuth";
 
+/* ── Theme Manager ───────────────────────────── */
+function ThemeManager() {
+  const { settings } = useAppSettings();
+
+  useEffect(() => {
+    const apply = () => {
+      const root = document.documentElement;
+      if (settings.theme === "dark") {
+        root.classList.add("dark");
+      } else if (settings.theme === "light") {
+        root.classList.remove("dark");
+      } else {
+        // system
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        root.classList.toggle("dark", prefersDark);
+      }
+    };
+    apply();
+
+    if (settings.theme === "system") {
+      const mq = window.matchMedia("(prefers-color-scheme: dark)");
+      const handler = () => apply();
+      mq.addEventListener("change", handler);
+      return () => mq.removeEventListener("change", handler);
+    }
+  }, [settings.theme]);
+
+  return null;
+}
+
+/* ── Guards ──────────────────────────────────── */
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth({
     redirectOnUnauthenticated: true,
@@ -22,16 +54,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          background: "#1a1a1a",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "#666",
-        }}
-      >
+      <div className="flex items-center justify-center" style={{ minHeight: "100dvh", background: "var(--page-bg)", color: "var(--text-tertiary)" }}>
         加载中...
       </div>
     );
@@ -50,16 +73,7 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          background: "#1a1a1a",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "#666",
-        }}
-      >
+      <div className="flex items-center justify-center" style={{ minHeight: "100dvh", background: "var(--page-bg)", color: "var(--text-tertiary)" }}>
         加载中...
       </div>
     );
@@ -67,32 +81,13 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
 
   if (!user || user.role !== "admin") {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          background: "#1a1a1a",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "#ef4444",
-          padding: "20px",
-          gap: "12px",
-        }}
-      >
+      <div className="flex flex-col items-center justify-center gap-3" style={{ minHeight: "100dvh", background: "var(--page-bg)", color: "var(--error)", padding: "20px" }}>
         <Shield size={48} />
         <p>权限不足，需要管理员角色</p>
         <button
           onClick={() => navigate("/")}
-          style={{
-            padding: "10px 24px",
-            borderRadius: "8px",
-            background: "#00d4ff",
-            color: "#1a1a1a",
-            border: "none",
-            cursor: "pointer",
-            fontWeight: 600,
-          }}
+          className="px-6 py-2.5 rounded-lg font-semibold"
+          style={{ background: "var(--accent-color)", color: "var(--page-bg)", border: "none", cursor: "pointer" }}
         >
           返回首页
         </button>
@@ -135,18 +130,20 @@ function AnimatedRoutes() {
 export default function App() {
   return (
     <AppProvider>
+      <ThemeManager />
       <div
         style={{
           maxWidth: "430px",
           margin: "0 auto",
           minHeight: "100dvh",
-          background: "#1a1a1a",
+          background: "var(--page-bg)",
           position: "relative",
           overflow: "hidden",
           WebkitOverflowScrolling: "touch",
           overscrollBehaviorY: "none",
           userSelect: "none",
           WebkitUserSelect: "none",
+          transition: "background-color 0.3s ease",
         }}
       >
         <Routes>

@@ -3,8 +3,47 @@
 @tailwind utilities;
 
 @layer base {
+  /* Light theme (default) */
   :root {
-    --background: 0 0% 10%;
+    --background: 0 0% 96%;
+    --foreground: 0 0% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 10%;
+    --primary: 192 100% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 94%;
+    --secondary-foreground: 0 0% 20%;
+    --muted: 0 0% 92%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 0 0% 92%;
+    --accent-foreground: 0 0% 20%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 88%;
+    --input: 0 0% 92%;
+    --ring: 192 100% 45%;
+    --radius: 0.75rem;
+
+    /* App-specific semantic colors */
+    --page-bg: #f2f2f7;
+    --card-bg: #ffffff;
+    --card-bg-secondary: #f5f5f7;
+    --text-primary: #000000;
+    --text-secondary: #666666;
+    --text-tertiary: #999999;
+    --border-color: rgba(0,0,0,0.08);
+    --accent-color: #00a8cc;
+    --accent-glow: rgba(0,168,204,0.15);
+    --success: #10b981;
+    --error: #ef4444;
+    --nav-bg: rgba(242,242,247,0.95);
+  }
+
+  /* Dark theme */
+  .dark {
+    --background: 0 0% 7%;
     --foreground: 0 0% 100%;
     --card: 0 0% 13%;
     --card-foreground: 0 0% 100%;
@@ -23,15 +62,29 @@
     --border: 0 0% 20%;
     --input: 0 0% 16%;
     --ring: 192 100% 50%;
-    --radius: 0.75rem;
+
+    --page-bg: #0d0d0d;
+    --card-bg: #222222;
+    --card-bg-secondary: #2a2a2a;
+    --text-primary: #ffffff;
+    --text-secondary: #a0a0a0;
+    --text-tertiary: #666666;
+    --border-color: rgba(255,255,255,0.08);
+    --accent-color: #00d4ff;
+    --accent-glow: rgba(0,212,255,0.15);
+    --success: #10b981;
+    --error: #ef4444;
+    --nav-bg: rgba(13,13,13,0.95);
   }
 
   body {
-    @apply bg-[#0d0d0d] text-white;
+    background: var(--page-bg);
+    color: var(--text-primary);
     font-family: "PingFang SC", "Helvetica Neue", -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
     overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   * {

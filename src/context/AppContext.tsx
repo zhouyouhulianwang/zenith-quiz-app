@@ -36,6 +36,7 @@ interface AppSettings {
   difficulty: number;
   fontSize: "small" | "medium" | "large";
   questionLanguage: "zh" | "en" | "both" | "tc" | "entc";
+  theme: "system" | "dark" | "light";
 }
 
 interface AppContextType {
@@ -49,6 +50,7 @@ const defaultSettings: AppSettings = {
   difficulty: 3,
   fontSize: "medium",
   questionLanguage: "entc",
+  theme: "system",
 };
 
 const AppContext = createContext<AppContextType>({
