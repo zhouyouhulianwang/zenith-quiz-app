@@ -59,7 +59,7 @@ export default function ProfilePage() {
       <div style={{ position: "relative", zIndex: 1, paddingBottom: "100px" }}>
         {/* User Card */}
         <div style={{ background: "linear-gradient(135deg, #7c3aed, #00d4ff)", borderRadius: "0 0 24px 24px", padding: "32px 20px 24px", textAlign: "center" }}>
-          <div style={{ width: "80px", height: "80px", borderRadius: "50%", border: "3px solid rgba(255,255,255,0.3)", overflow: "hidden", margin: "0 auto 12px", background: "rgba(0,0,0,0.2)" }}>
+          <div style={{ width: "80px", height: "80px", borderRadius: "50%", border: "3px solid rgba(0,0,0,0.3)", overflow: "hidden", margin: "0 auto 12px", background: "rgba(0,0,0,0.2)" }}>
             <img src={user?.avatar || "/avatar-default.png"} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { (e.target as HTMLImageElement).src = "/avatar-default.png"; }} />
           </div>
           <div style={{ fontSize: "18px", fontWeight: 700, color: "var(--text-primary)" }}>{user?.name || "学习者"}</div>
@@ -78,7 +78,7 @@ export default function ProfilePage() {
             <div><div style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-primary)" }}>{banks?.length || 0}</div><div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>题库数</div></div>
           </div>
           <motion.button whileTap={{ scale: 0.95 }} onClick={logout}
-            style={{ marginTop: "16px", padding: "8px 20px", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "20px", color: "var(--text-primary)", fontSize: "13px", cursor: "pointer" }}>
+            style={{ marginTop: "16px", padding: "8px 20px", background: "rgba(0,0,0,0.15)", border: "1px solid var(--border-color)", borderRadius: "20px", color: "var(--text-primary)", fontSize: "13px", cursor: "pointer" }}>
             退出登录
           </motion.button>
         </div>
@@ -97,7 +97,7 @@ export default function ProfilePage() {
                 { id: "perfect", name: "全对一次", icon: Award, earned: records?.some((r) => r.isCorrect) || false },
               ].map((badge, i) => (
                 <motion.div key={badge.id} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }} style={{ minWidth: "80px", textAlign: "center", opacity: badge.earned ? 1 : 0.4 }}>
-                  <div style={{ width: "56px", height: "56px", borderRadius: "50%", background: badge.earned ? "rgba(0,212,255,0.2)" : "var(--card-bg-secondary)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 6px", border: badge.earned ? "1px solid rgba(0,212,255,0.3)" : "1px solid rgba(255,255,255,0.05)" }}>
+                  <div style={{ width: "56px", height: "56px", borderRadius: "50%", background: badge.earned ? "rgba(0,212,255,0.2)" : "var(--card-bg-secondary)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 6px", border: badge.earned ? "1px solid rgba(0,212,255,0.3)" : "1px solid var(--border-color)" }}>
                     <badge.icon size={24} color={badge.earned ? "#00d4ff" : "#666"} />
                   </div>
                   <div style={{ fontSize: "12px", color: badge.earned ? "var(--text-primary)" : "var(--text-tertiary)" }}>{badge.name}</div>
@@ -110,7 +110,7 @@ export default function ProfilePage() {
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             <div>
               <div style={{ fontSize: "12px", color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px", paddingLeft: "4px" }}>学习设置</div>
-              <div style={{ background: "var(--card-bg)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden" }}>
+              <div style={{ background: "var(--card-bg)", borderRadius: "12px", border: "1px solid var(--border-color)", overflow: "hidden" }}>
                 <SettingRow icon={Target} label="每日目标" value={`${settings.dailyGoal}题`} onClick={() => { const v = prompt("设置每日目标题数:", String(settings.dailyGoal)); if (v && !isNaN(Number(v))) setSettings({ dailyGoal: Number(v) }); }} />
                 <SettingRow icon={Bell} label="提醒时间" value={settings.reminderTime} onClick={() => { const v = prompt("设置提醒时间 (HH:MM):", settings.reminderTime); if (v && /^\d{2}:\d{2}$/.test(v)) setSettings({ reminderTime: v }); }} />
                 <SettingRow icon={Type} label="难度偏好" value={`${"★".repeat(settings.difficulty)}${"☆".repeat(5 - settings.difficulty)}`} onClick={() => { const v = prompt("设置难度偏好 (1-5):", String(settings.difficulty)); if (v) setSettings({ difficulty: Math.max(1, Math.min(5, Number(v))) }); }} />
@@ -120,7 +120,7 @@ export default function ProfilePage() {
 
             <div>
               <div style={{ fontSize: "12px", color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px", paddingLeft: "4px" }}>数据管理</div>
-              <div style={{ background: "var(--card-bg)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden" }}>
+              <div style={{ background: "var(--card-bg)", borderRadius: "12px", border: "1px solid var(--border-color)", overflow: "hidden" }}>
                 <SettingRow icon={Download} label="导出数据" value="JSON" onClick={handleExport} />
                 <SettingRow icon={RotateCcw} label="按卷清空记录" value={`${banks?.length || 0} 套题库`} onClick={() => setShowBankReset(true)} />
                 <SettingRow icon={Trash2} label="清空所有记录" value="" danger onClick={() => setShowResetConfirm(true)} />
@@ -130,7 +130,7 @@ export default function ProfilePage() {
             {user?.role === "admin" && (
               <div>
                 <div style={{ fontSize: "12px", color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px", paddingLeft: "4px" }}>管理</div>
-                <div style={{ background: "var(--card-bg)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden" }}>
+                <div style={{ background: "var(--card-bg)", borderRadius: "12px", border: "1px solid var(--border-color)", overflow: "hidden" }}>
                   <SettingRow icon={Shield} label="管理后台" value="查看数据库" onClick={() => navigate("/admin")} />
                 </div>
               </div>
@@ -138,7 +138,7 @@ export default function ProfilePage() {
 
             <div>
               <div style={{ fontSize: "12px", color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px", paddingLeft: "4px" }}>应用设置</div>
-              <div style={{ background: "var(--card-bg)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden" }}>
+              <div style={{ background: "var(--card-bg)", borderRadius: "12px", border: "1px solid var(--border-color)", overflow: "hidden" }}>
                 <SettingRow icon={settings.theme === "light" ? Sun : settings.theme === "system" ? Monitor : Moon} label="外观" value={{ system: "跟随系统", dark: "深色", light: "浅色" }[settings.theme] || "跟随系统"} onClick={() => { const themes: Array<"system" | "dark" | "light"> = ["system", "dark", "light"]; const idx = themes.indexOf(settings.theme); setSettings({ theme: themes[(idx + 1) % themes.length] }); }} />
                 <SettingRow icon={Type} label="字体大小" value={settings.fontSize === "small" ? "小" : settings.fontSize === "large" ? "大" : "中"} onClick={() => { const sizes: Array<"small" | "medium" | "large"> = ["small", "medium", "large"]; const idx = sizes.indexOf(settings.fontSize); setSettings({ fontSize: sizes[(idx + 1) % sizes.length] }); }} />
               </div>
@@ -146,7 +146,7 @@ export default function ProfilePage() {
 
             <div>
               <div style={{ fontSize: "12px", color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px", paddingLeft: "4px" }}>关于</div>
-              <div style={{ background: "var(--card-bg)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden" }}>
+              <div style={{ background: "var(--card-bg)", borderRadius: "12px", border: "1px solid var(--border-color)", overflow: "hidden" }}>
                 <SettingRow icon={HelpCircle} label="帮助与反馈" value="" onClick={() => alert("请发送邮件至 support@zenith.app")} />
                 <SettingRow icon={FileText} label="隐私政策" value="" onClick={() => alert("所有数据存储在云端服务器，我们严格保护您的隐私。")} />
                 <div style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: "12px" }}><Calendar size={18} color="#666" /><span style={{ fontSize: "14px", color: "var(--text-primary)", flex: 1 }}>版本号</span><span style={{ fontSize: "14px", color: "var(--text-tertiary)" }}>v2.0.0</span></div>
@@ -159,12 +159,12 @@ export default function ProfilePage() {
       {/* Bank Reset Modal */}
       {showBankReset && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
-          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} style={{ background: "var(--card-bg)", borderRadius: "16px", padding: "20px", width: "100%", maxWidth: "340px", border: "1px solid rgba(255,255,255,0.1)", maxHeight: "80vh", overflowY: "auto" }}>
+          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} style={{ background: "var(--card-bg)", borderRadius: "16px", padding: "20px", width: "100%", maxWidth: "340px", border: "1px solid var(--border-color)", maxHeight: "80vh", overflowY: "auto" }}>
             <h3 style={{ fontSize: "18px", fontWeight: 600, color: "var(--text-primary)", margin: "0 0 4px 0" }}>选择要清空的题库</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "12px" }}>
               {(banks || []).map((bank) => (
                 <button key={bank.id} onClick={() => setResetBankId(bank.id === resetBankId ? null : bank.id)}
-                  style={{ display: "flex", alignItems: "center", gap: "10px", padding: "12px", borderRadius: "10px", background: resetBankId === bank.id ? "rgba(239,68,68,0.15)" : "var(--card-bg-secondary)", border: resetBankId === bank.id ? "1px solid rgba(239,68,68,0.4)" : "1px solid rgba(255,255,255,0.05)", cursor: "pointer", width: "100%", textAlign: "left" }}>
+                  style={{ display: "flex", alignItems: "center", gap: "10px", padding: "12px", borderRadius: "10px", background: resetBankId === bank.id ? "rgba(239,68,68,0.15)" : "var(--card-bg-secondary)", border: resetBankId === bank.id ? "1px solid rgba(239,68,68,0.4)" : "1px solid var(--border-color)", cursor: "pointer", width: "100%", textAlign: "left" }}>
                   <div style={{ width: "4px", height: "36px", borderRadius: "2px", background: bank.color || "#00d4ff" }} />
                   <div style={{ flex: 1 }}><div style={{ fontSize: "14px", color: "var(--text-primary)" }}>{bank.title}</div></div>
                 </button>
@@ -181,7 +181,7 @@ export default function ProfilePage() {
       {/* Reset All Confirm */}
       {showResetConfirm && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
-          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} style={{ background: "var(--card-bg)", borderRadius: "16px", padding: "24px", width: "100%", maxWidth: "300px", border: "1px solid rgba(255,255,255,0.1)" }}>
+          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} style={{ background: "var(--card-bg)", borderRadius: "16px", padding: "24px", width: "100%", maxWidth: "300px", border: "1px solid var(--border-color)" }}>
             <h3 style={{ fontSize: "18px", fontWeight: 600, color: "var(--text-primary)", margin: "0 0 8px 0" }}>确认全部清空</h3>
             <p style={{ fontSize: "14px", color: "var(--text-secondary)", margin: "0 0 20px 0" }}>此操作将删除所有题库和练习记录，无法恢复。</p>
             <div style={{ display: "flex", gap: "10px" }}>
@@ -205,7 +205,7 @@ function UserIcon({ size, color }: { size: number; color: string }) {
 
 function SettingRow({ icon: Icon, label, value, onClick, danger }: { icon: typeof Settings; label: string; value: React.ReactNode; onClick?: () => void; danger?: boolean }) {
   return (
-    <button onClick={onClick} style={{ width: "100%", padding: "14px 16px", display: "flex", alignItems: "center", gap: "12px", background: "none", border: "none", borderBottom: "1px solid rgba(255,255,255,0.05)", cursor: onClick ? "pointer" : "default", textAlign: "left" }}>
+    <button onClick={onClick} style={{ width: "100%", padding: "14px 16px", display: "flex", alignItems: "center", gap: "12px", background: "none", border: "none", borderBottom: "1px solid var(--border-color)", cursor: onClick ? "pointer" : "default", textAlign: "left" }}>
       <Icon size={18} color={danger ? "#ef4444" : "#666"} />
       <span style={{ fontSize: "14px", color: danger ? "#ef4444" : "var(--text-primary)", flex: 1 }}>{label}</span>
       {typeof value === "string" ? <span style={{ fontSize: "14px", color: "var(--text-secondary)" }}>{value}</span> : value}

@@ -22,14 +22,14 @@ const tableHeaderStyle: React.CSSProperties = {
   fontSize: "12px",
   fontWeight: 600,
   color: "var(--text-secondary)",
-  borderBottom: "1px solid rgba(255,255,255,0.08)",
+  borderBottom: "1px solid var(--border-color)",
 };
 
 const tableCellStyle: React.CSSProperties = {
   padding: "10px 12px",
   fontSize: "13px",
   color: "var(--text-primary)",
-  borderBottom: "1px solid rgba(255,255,255,0.04)",
+  borderBottom: "1px solid var(--border-color)",
 };
 
 function StatCard({
@@ -51,7 +51,7 @@ function StatCard({
         background: "var(--card-bg)",
         borderRadius: "12px",
         padding: "16px",
-        border: "1px solid rgba(255,255,255,0.08)",
+        border: "1px solid var(--border-color)",
         display: "flex",
         alignItems: "center",
         gap: "12px",
@@ -98,7 +98,7 @@ function CollapsibleSection({
       style={{
         background: "var(--card-bg)",
         borderRadius: "12px",
-        border: "1px solid rgba(255,255,255,0.08)",
+        border: "1px solid var(--border-color)",
         marginBottom: "12px",
         overflow: "hidden",
       }}
@@ -182,7 +182,7 @@ export default function AdminPage() {
             onClick={() => navigate("/profile")}
             style={{ background: "none", border: "none", cursor: "pointer", padding: "4px" }}
           >
-            <ArrowLeft size={24} color="#fff" />
+            <ArrowLeft size={24} color="var(--text-primary)" />
           </button>
           <div style={{ flex: 1 }}>
             <h1 style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>

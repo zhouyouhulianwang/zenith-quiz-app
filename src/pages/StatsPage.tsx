@@ -99,7 +99,7 @@ export default function StatsPage() {
             { icon: Brain, label: "题库数", value: `${banks?.length || 0}`, trend: "+2", up: true },
           ].map((m, i) => (
             <motion.div key={m.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-              style={{ minWidth: "130px", background: "var(--card-bg)", borderRadius: "12px", padding: "14px", border: "1px solid rgba(255,255,255,0.08)" }}>
+              style={{ minWidth: "130px", background: "var(--card-bg)", borderRadius: "12px", padding: "14px", border: "1px solid var(--border-color)" }}>
               <m.icon size={18} color="#00d4ff" />
               <div style={{ fontSize: "22px", fontWeight: 700, color: "var(--text-primary)", marginTop: "8px" }}>{m.value}</div>
               <div style={{ display: "flex", alignItems: "center", gap: "3px", marginTop: "4px" }}>{m.up ? <TrendingUp size={12} color="#10b981" /> : <TrendingDown size={12} color="#ef4444" />}<span style={{ fontSize: "11px", color: m.up ? "#10b981" : "#ef4444" }}>{m.trend}</span></div>
@@ -109,7 +109,7 @@ export default function StatsPage() {
         </div>
 
         {/* Bar Chart */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} style={{ background: "var(--card-bg)", borderRadius: "16px", padding: "16px", border: "1px solid rgba(255,255,255,0.08)", marginBottom: "16px" }}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} style={{ background: "var(--card-bg)", borderRadius: "16px", padding: "16px", border: "1px solid var(--border-color)", marginBottom: "16px" }}>
           <h2 style={{ fontSize: "16px", fontWeight: 600, color: "var(--text-primary)", margin: "0 0 12px 0" }}>各题型表现</h2>
           <div style={{ display: "flex", alignItems: "flex-end", gap: "16px", height: "160px" }}>
             {barData.map((d, i) => {
@@ -131,7 +131,7 @@ export default function StatsPage() {
             <h2 style={{ fontSize: "16px", fontWeight: 600, color: "var(--text-primary)", margin: "0 0 12px 0" }}>章节统计</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {bankChapterStats.map((bank) => (
-                <div key={bank.bankId} style={{ background: "var(--card-bg)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden" }}>
+                <div key={bank.bankId} style={{ background: "var(--card-bg)", borderRadius: "12px", border: "1px solid var(--border-color)", overflow: "hidden" }}>
                   <button
                     onClick={() => setExpandedBank(expandedBank === bank.bankId ? null : bank.bankId)}
                     style={{ width: "100%", padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "none", border: "none", cursor: "pointer" }}
@@ -145,7 +145,7 @@ export default function StatsPage() {
                   {expandedBank === bank.bankId && (
                     <div style={{ padding: "0 16px 12px" }}>
                       {bank.chapters.map((ch, idx) => (
-                        <div key={ch.chapterId} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                        <div key={ch.chapterId} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 0", borderBottom: "1px solid var(--border-color)" }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: "13px", color: "var(--text-primary)" }}>第{idx + 1}章</div>
                             <div style={{ display: "flex", gap: "12px", marginTop: "2px" }}>
@@ -171,7 +171,7 @@ export default function StatsPage() {
         )}
 
         {/* Trend */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} style={{ background: "var(--card-bg)", borderRadius: "16px", padding: "16px", border: "1px solid rgba(255,255,255,0.08)", marginBottom: "16px" }}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} style={{ background: "var(--card-bg)", borderRadius: "16px", padding: "16px", border: "1px solid var(--border-color)", marginBottom: "16px" }}>
           <h2 style={{ fontSize: "16px", fontWeight: 600, color: "var(--text-primary)", margin: "0 0 12px 0" }}>学习趋势</h2>
           <div style={{ display: "flex", alignItems: "flex-end", gap: "4px", height: "140px" }}>
             {(dailyRecords || []).slice(-14).map((d, i) => {
@@ -191,7 +191,7 @@ export default function StatsPage() {
         </motion.div>
 
         {/* Heatmap */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} style={{ background: "var(--card-bg)", borderRadius: "16px", padding: "16px", border: "1px solid rgba(255,255,255,0.08)" }}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} style={{ background: "var(--card-bg)", borderRadius: "16px", padding: "16px", border: "1px solid var(--border-color)" }}>
           <h2 style={{ fontSize: "16px", fontWeight: 600, color: "var(--text-primary)", margin: "0 0 12px 0" }}>每日练习热力</h2>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "3px" }}>
             {heatmapData.map((c, i) => {

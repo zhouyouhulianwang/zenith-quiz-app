@@ -79,7 +79,7 @@ export default function HomePage() {
             background: "var(--card-bg)",
             borderRadius: "16px",
             padding: "20px",
-            border: "1px solid rgba(255,255,255,0.08)",
+            border: "1px solid var(--border-color)",
             marginBottom: "20px",
           }}
         >
@@ -127,7 +127,7 @@ export default function HomePage() {
                   overflow: "hidden",
                   cursor: "pointer",
                   background: "var(--card-bg)",
-                  border: "1px solid rgba(255,255,255,0.08)",
+                  border: "1px solid var(--border-color)",
                 }}
               >
                 <div style={{ padding: "12px" }}>
@@ -155,7 +155,7 @@ export default function HomePage() {
             background: "var(--card-bg)",
             borderRadius: "16px",
             padding: "16px",
-            border: "1px solid rgba(255,255,255,0.08)",
+            border: "1px solid var(--border-color)",
             marginBottom: "20px",
           }}
         >
@@ -196,7 +196,7 @@ export default function HomePage() {
               onClick={item.action}
               style={{
                 background: "var(--card-bg)",
-                border: "1px solid rgba(255,255,255,0.08)",
+                border: "1px solid var(--border-color)",
                 borderRadius: "12px",
                 padding: "16px",
                 display: "flex",

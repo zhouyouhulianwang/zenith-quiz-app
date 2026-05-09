@@ -246,7 +246,7 @@ export default function LibraryPage() {
           ) : (
             filteredBanks.map((bank, i) => (
               <motion.div key={bank.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                style={{ background: "var(--card-bg)", borderRadius: "12px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)" }}>
+                style={{ background: "var(--card-bg)", borderRadius: "12px", overflow: "hidden", border: "1px solid var(--border-color)" }}>
                 <div style={{ height: "4px", background: bank.color || "#00d4ff" }} />
                 <div style={{ padding: "14px 16px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "6px" }}>

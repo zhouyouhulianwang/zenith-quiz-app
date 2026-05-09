@@ -62,7 +62,7 @@ function TrainingSelector({ onSelect }: { onSelect: (id: number) => void }) {
       <div style={{ position: "relative", zIndex: 1, padding: "16px", paddingBottom: "100px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "4px" }}>
           <button onClick={() => navigate("/")} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px", minWidth: "44px", minHeight: "44px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <ArrowLeft size={24} color="#fff" />
+            <ArrowLeft size={24} color="var(--text-primary)" />
           </button>
           <div>
             <h1 style={{ fontSize: "22px", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>开始训练</h1>
@@ -84,7 +84,7 @@ function TrainingSelector({ onSelect }: { onSelect: (id: number) => void }) {
             </div>
             <div style={{ flex: 1, textAlign: "left" }}>
               <div style={{ fontSize: "15px", fontWeight: 600, color: "#ef4444" }}>错题重练</div>
-              <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "2px" }}>共 {totalWrong} 道错题待复习</div>
+              <div style={{ fontSize: "12px", color: "var(--text-primary)", marginTop: "2px" }}>共 {totalWrong} 道错题待复习</div>
             </div>
             <ChevronRight size={18} color="#ef4444" />
           </motion.button>
@@ -99,7 +99,7 @@ function TrainingSelector({ onSelect }: { onSelect: (id: number) => void }) {
           )}
           {unpracticed.length > 0 && (
             <div>
-              <div style={{ fontSize: "11px", fontWeight: 500, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: "8px", paddingLeft: "4px" }}>未练习 · {unpracticed.length}</div>
+              <div style={{ fontSize: "11px", fontWeight: 500, color: "var(--text-primary)", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: "8px", paddingLeft: "4px" }}>未练习 · {unpracticed.length}</div>
               {unpracticed.map((b) => <BankCard key={b.id} bank={b} onSelect={onSelect} />)}
             </div>
           )}
@@ -136,7 +136,7 @@ function BankCard({ bank, onSelect }: { bank: { id: number; title: string; color
       onClick={() => onSelect(bank.id)}
       style={{
         background: "var(--card-bg)", borderRadius: "12px", padding: "14px 16px",
-        border: "1px solid rgba(255,255,255,0.06)", marginBottom: "8px",
+        border: "1px solid var(--border-color)", marginBottom: "8px",
         cursor: "pointer", display: "flex", alignItems: "center", gap: "12px",
         WebkitTapHighlightColor: "transparent",
         userSelect: "none",
@@ -147,13 +147,13 @@ function BankCard({ bank, onSelect }: { bank: { id: number; title: string; color
         <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{bank.title}</div>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "3px" }}>
           <span style={{ fontSize: "12px", color: "var(--text-tertiary)" }}>{qCount} 题</span>
-          {chapters.length > 0 && <span style={{ fontSize: "11px", color: "var(--text-secondary)" }}>{chapters.length} 章</span>}
+          {chapters.length > 0 && <span style={{ fontSize: "11px", color: "var(--text-primary)" }}>{chapters.length} 章</span>}
           {bank.progress > 0 && bank.progress < 100 && (
             <>
               <div style={{ flex: 1, height: "3px", background: "var(--card-bg-secondary)", borderRadius: "2px", maxWidth: "80px" }}>
                 <div style={{ width: `${bank.progress}%`, height: "100%", background: bank.color || "#00d4ff", borderRadius: "2px" }} />
               </div>
-              <span style={{ fontSize: "11px", color: "var(--text-secondary)" }}>{bank.progress}%</span>
+              <span style={{ fontSize: "11px", color: "var(--text-primary)" }}>{bank.progress}%</span>
             </>
           )}
         </div>
@@ -200,7 +200,7 @@ function ChapterSelector({ bankId, onSelectChapter }: { bankId: number; onSelect
       <div style={{ position: "relative", zIndex: 1, padding: "16px", paddingBottom: "100px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
           <button onClick={() => navigate("/training")} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px", minWidth: "44px", minHeight: "44px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <ArrowLeft size={24} color="#fff" />
+            <ArrowLeft size={24} color="var(--text-primary)" />
           </button>
           <div style={{ flex: 1 }}>
             <h1 style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>{bank.title}</h1>
@@ -224,7 +224,7 @@ function ChapterSelector({ bankId, onSelectChapter }: { bankId: number; onSelect
           </div>
           <div style={{ flex: 1, textAlign: "left" }}>
             <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--text-primary)" }}>全部章节</div>
-            <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "2px" }}>{allQuestions.length} 题</div>
+            <div style={{ fontSize: "12px", color: "var(--text-primary)", marginTop: "2px" }}>{allQuestions.length} 题</div>
           </div>
           <ChevronRight size={18} color="#00d4ff" />
         </motion.button>
@@ -235,7 +235,7 @@ function ChapterSelector({ bankId, onSelectChapter }: { bankId: number; onSelect
               whileTap={{ scale: 0.98 }} onClick={() => onSelectChapter(ch.chapterId)}
               style={{
                 width: "100%", padding: "14px 16px", borderRadius: "12px",
-                background: "var(--card-bg)", border: "1px solid rgba(255,255,255,0.06)",
+                background: "var(--card-bg)", border: "1px solid var(--border-color)",
                 cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: "12px",
                 WebkitTapHighlightColor: "transparent",
                 userSelect: "none",
@@ -288,7 +288,7 @@ function ChapterBar({
         padding: "8px 16px",
         overflowX: "auto",
         WebkitOverflowScrolling: "touch",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
+        borderBottom: "1px solid var(--border-color)",
       }}
     >
       <button
@@ -303,7 +303,7 @@ function ChapterBar({
           whiteSpace: "nowrap",
           flexShrink: 0,
           background: currentChapterId === undefined ? bankColor || "#00d4ff" : "var(--card-bg-secondary)",
-          color: currentChapterId === undefined ? "var(--page-bg)" : "var(--text-secondary)",
+          color: currentChapterId === undefined ? "var(--page-bg)" : "var(--text-primary)",
           transition: "all 0.2s",
           touchAction: "manipulation",
           userSelect: "none",
@@ -327,7 +327,7 @@ function ChapterBar({
             whiteSpace: "nowrap",
             flexShrink: 0,
             background: currentChapterId === ch.chapterId ? bankColor || "#00d4ff" : "var(--card-bg-secondary)",
-            color: currentChapterId === ch.chapterId ? "var(--page-bg)" : "var(--text-secondary)",
+            color: currentChapterId === ch.chapterId ? "var(--page-bg)" : "var(--text-primary)",
             transition: "all 0.2s",
             touchAction: "manipulation",
             userSelect: "none",
@@ -537,9 +537,9 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
       <ParticleBackground />
       <div style={{ position: "relative", zIndex: 1 }}>
         {/* Top Bar */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", paddingTop: "max(12px, env(safe-area-inset-top))", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", paddingTop: "max(12px, env(safe-area-inset-top))", borderBottom: "1px solid var(--border-color)" }}>
           <button onClick={() => navigate("/training")} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px", minWidth: "44px", minHeight: "44px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <ArrowLeft size={24} color="#fff" />
+            <ArrowLeft size={24} color="var(--text-primary)" />
           </button>
           <div style={{ fontSize: "14px", fontWeight: 500, color: "var(--text-primary)", flex: 1, textAlign: "center", margin: "0 8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {bankData.title}
@@ -562,7 +562,7 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
             >
               <Languages size={14} /> {langLabelText}
             </button>
-            <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{currentIndex + 1} / {totalQuestions}</span>
+            <span style={{ fontSize: "12px", color: "var(--text-primary)" }}>{currentIndex + 1} / {totalQuestions}</span>
           </div>
         </div>
 
@@ -609,7 +609,7 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
             exit={{ opacity: 0, x: swipeDir === "left" ? -80 : 80 }}
             transition={{ duration: 0.25 }}>
             {/* Question Card */}
-            <div style={{ background: "var(--card-bg)", borderRadius: "16px", padding: "20px", border: "1px solid rgba(255,255,255,0.08)", marginBottom: "16px" }}>
+            <div style={{ background: "var(--card-bg)", borderRadius: "16px", padding: "20px", border: "1px solid var(--border-color)", marginBottom: "16px" }}>
               <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "4px 12px", borderRadius: "8px", background: "rgba(0,212,255,0.15)", color: "#00d4ff", fontSize: "12px", fontWeight: 500, marginBottom: "12px" }}>
                 {typeLabel}
                 {currentQuestion?.chapterId !== undefined && (
@@ -620,8 +620,8 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
                 {currentAnswer?.submitted && <span style={{ color: currentAnswer.isCorrect ? "#10b981" : "#ef4444" }}>{currentAnswer.isCorrect ? " ✓ 正确" : " ✗ 错误"}</span>}
               </div>
               <div style={{ fontSize: "18px", fontWeight: 500, color: "var(--text-primary)", lineHeight: 1.6, whiteSpace: "pre-wrap", userSelect: "text", WebkitUserSelect: "text" }}>{displayQuestion}</div>
-              {lang === "both" && currentQuestion?.enQuestion && <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: "14px", color: "var(--text-secondary)", lineHeight: 1.6, userSelect: "text", WebkitUserSelect: "text" }}>{currentQuestion.enQuestion}</div>}
-              {lang === "entc" && secondaryQuestion && <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid var(--border-color)", fontSize: "16px", color: "var(--text-secondary)", lineHeight: 1.6, userSelect: "text", WebkitUserSelect: "text" }}>{secondaryQuestion}</div>}
+              {lang === "both" && currentQuestion?.enQuestion && <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid var(--border-color)", fontSize: "14px", color: "var(--text-primary)", lineHeight: 1.6, userSelect: "text", WebkitUserSelect: "text" }}>{currentQuestion.enQuestion}</div>}
+              {lang === "entc" && secondaryQuestion && <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid var(--border-color)", fontSize: "16px", color: "var(--text-primary)", lineHeight: 1.6, userSelect: "text", WebkitUserSelect: "text" }}>{secondaryQuestion}</div>}
             </div>
 
             {/* Options */}
@@ -648,8 +648,8 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
                     </div>
                     <div style={{ flex: 1 }}>
                       <span style={{ fontSize: "16px", color: "var(--text-primary)", lineHeight: 1.5, userSelect: "text", WebkitUserSelect: "text" }}>{option}</span>
-                      {lang === "both" && currentQuestion?.enOptions?.[index] && <div style={{ fontSize: "13px", color: "var(--text-secondary)", marginTop: "4px", userSelect: "text", WebkitUserSelect: "text" }}>{currentQuestion.enOptions[index]}</div>}
-                      {lang === "entc" && secondaryOptions?.[index] && <div style={{ fontSize: "15px", color: "var(--text-secondary)", marginTop: "4px", userSelect: "text", WebkitUserSelect: "text" }}>{secondaryOptions[index]}</div>}
+                      {lang === "both" && currentQuestion?.enOptions?.[index] && <div style={{ fontSize: "13px", color: "var(--text-primary)", marginTop: "4px", userSelect: "text", WebkitUserSelect: "text" }}>{currentQuestion.enOptions[index]}</div>}
+                      {lang === "entc" && secondaryOptions?.[index] && <div style={{ fontSize: "15px", color: "var(--text-primary)", marginTop: "4px", userSelect: "text", WebkitUserSelect: "text" }}>{secondaryOptions[index]}</div>}
                     </div>
                     {submitted && isCorrect && <Check size={20} color="#10b981" style={{ flexShrink: 0, marginTop: "2px" }} />}
                     {submitted && isSelected && !isCorrect && <X size={20} color="#ef4444" style={{ flexShrink: 0, marginTop: "2px" }} />}
@@ -678,9 +678,9 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
                 <div style={{ background: currentAnswer.isCorrect ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)", border: `1px solid ${currentAnswer.isCorrect ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)"}`, borderRadius: "12px", padding: "16px" }}>
                   <div style={{ fontSize: "14px", fontWeight: 600, color: currentAnswer.isCorrect ? "#10b981" : "#ef4444", marginBottom: "6px" }}>
                     {currentAnswer.isCorrect ? "回答正确！" : "回答错误"}
-                    {!currentAnswer.isCorrect && <span style={{ fontWeight: 400, fontSize: "13px", color: "var(--text-secondary)", marginLeft: "8px" }}>正确答案: {currentQuestion?.correct.map((c) => String.fromCharCode(65 + c)).join(", ")}</span>}
+                    {!currentAnswer.isCorrect && <span style={{ fontWeight: 400, fontSize: "13px", color: "var(--text-primary)", marginLeft: "8px" }}>正确答案: {currentQuestion?.correct.map((c) => String.fromCharCode(65 + c)).join(", ")}</span>}
                   </div>
-                  <div style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: 1.6, userSelect: "text", WebkitUserSelect: "text" }}>{currentQuestion?.explanation}</div>
+                  <div style={{ fontSize: "14px", color: "var(--text-primary)", lineHeight: 1.6, userSelect: "text", WebkitUserSelect: "text" }}>{currentQuestion?.explanation}</div>
                 </div>
               </motion.div>
             )}
@@ -696,7 +696,7 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
           position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100,
           padding: "12px 16px", paddingBottom: "max(16px, env(safe-area-inset-bottom))",
           background: "var(--nav-bg)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
-          borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", gap: "12px",
+          borderTop: "1px solid var(--border-color)", display: "flex", gap: "12px",
         }}>
           <motion.button whileTap={{ scale: 0.95 }} onClick={handlePrev} disabled={currentIndex === 0}
             style={{
@@ -724,21 +724,21 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
       {showSummary && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
           <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ type: "spring", damping: 20 }}
-            style={{ background: "var(--card-bg)", borderRadius: "20px", padding: "28px", width: "100%", maxWidth: "340px", border: "1px solid rgba(255,255,255,0.1)" }}>
+            style={{ background: "var(--card-bg)", borderRadius: "20px", padding: "28px", width: "100%", maxWidth: "340px", border: "1px solid var(--border-color)" }}>
             <h2 style={{ fontSize: "22px", fontWeight: 700, color: "var(--text-primary)", textAlign: "center", margin: "0 0 20px 0" }}>练习完成！</h2>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: "24px" }}>
               <div style={{ width: "140px", height: "140px", borderRadius: "50%", border: "6px solid #2a2a2a", borderTopColor: accuracy >= 80 ? "#10b981" : accuracy >= 60 ? "#00d4ff" : "#ef4444", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", transform: "rotate(-90deg)" }}>
                 <div style={{ transform: "rotate(90deg)", textAlign: "center" }}>
                   <div style={{ fontSize: "36px", fontWeight: 700, color: "var(--text-primary)" }}>{accuracy}%</div>
-                  <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>正确率</div>
+                  <div style={{ fontSize: "12px", color: "var(--text-primary)" }}>正确率</div>
                 </div>
               </div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "24px" }}>
-              <div style={{ textAlign: "center", background: "var(--card-bg-secondary)", borderRadius: "10px", padding: "12px" }}><div style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-primary)" }}>{totalQuestions}</div><div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>总题数</div></div>
-              <div style={{ textAlign: "center", background: "rgba(16,185,129,0.1)", borderRadius: "10px", padding: "12px", border: "1px solid rgba(16,185,129,0.2)" }}><div style={{ fontSize: "20px", fontWeight: 700, color: "#10b981" }}>{correctCount}</div><div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>正确数</div></div>
-              <div style={{ textAlign: "center", background: "rgba(239,68,68,0.1)", borderRadius: "10px", padding: "12px", border: "1px solid rgba(239,68,68,0.2)" }}><div style={{ fontSize: "20px", fontWeight: 700, color: "#ef4444" }}>{wrongCount}</div><div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>错误数</div></div>
-              <div style={{ textAlign: "center", background: "var(--card-bg-secondary)", borderRadius: "10px", padding: "12px" }}><div style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-primary)", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}><Clock size={16} /> {Math.floor(totalTime / 60)}:{String(totalTime % 60).padStart(2, "0")}</div><div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>用时</div></div>
+              <div style={{ textAlign: "center", background: "var(--card-bg-secondary)", borderRadius: "10px", padding: "12px" }}><div style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-primary)" }}>{totalQuestions}</div><div style={{ fontSize: "12px", color: "var(--text-primary)" }}>总题数</div></div>
+              <div style={{ textAlign: "center", background: "rgba(16,185,129,0.1)", borderRadius: "10px", padding: "12px", border: "1px solid rgba(16,185,129,0.2)" }}><div style={{ fontSize: "20px", fontWeight: 700, color: "#10b981" }}>{correctCount}</div><div style={{ fontSize: "12px", color: "var(--text-primary)" }}>正确数</div></div>
+              <div style={{ textAlign: "center", background: "rgba(239,68,68,0.1)", borderRadius: "10px", padding: "12px", border: "1px solid rgba(239,68,68,0.2)" }}><div style={{ fontSize: "20px", fontWeight: 700, color: "#ef4444" }}>{wrongCount}</div><div style={{ fontSize: "12px", color: "var(--text-primary)" }}>错误数</div></div>
+              <div style={{ textAlign: "center", background: "var(--card-bg-secondary)", borderRadius: "10px", padding: "12px" }}><div style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-primary)", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}><Clock size={16} /> {Math.floor(totalTime / 60)}:{String(totalTime % 60).padStart(2, "0")}</div><div style={{ fontSize: "12px", color: "var(--text-primary)" }}>用时</div></div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               <motion.button whileTap={{ scale: 0.95 }}

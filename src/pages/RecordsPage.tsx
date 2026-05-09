@@ -65,8 +65,8 @@ export default function RecordsPage() {
     <div style={{ position: "relative", minHeight: "100dvh", background: "var(--page-bg)" }}>
       <ParticleBackground />
       <div style={{ position: "relative", zIndex: 1 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", paddingTop: "max(12px, env(safe-area-inset-top))", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-          <button onClick={() => navigate("/")} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px", minWidth: "44px", minHeight: "44px", display: "flex", alignItems: "center", justifyContent: "center" }}><ArrowLeft size={24} color="#fff" /></button>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", paddingTop: "max(12px, env(safe-area-inset-top))", borderBottom: "1px solid var(--border-color)" }}>
+          <button onClick={() => navigate("/")} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px", minWidth: "44px", minHeight: "44px", display: "flex", alignItems: "center", justifyContent: "center" }}><ArrowLeft size={24} color="var(--text-primary)" /></button>
           <div style={{ fontSize: "17px", fontWeight: 600, color: "var(--text-primary)" }}>练习记录</div>
           <div style={{ fontSize: "13px", color: "var(--text-secondary)" }}>{currentIndex + 1} / {total}</div>
         </div>
@@ -95,7 +95,7 @@ export default function RecordsPage() {
                 <span style={{ fontSize: "11px", padding: "3px 10px", borderRadius: "6px", background: current.isCorrect ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)", color: current.isCorrect ? "#10b981" : "#ef4444", fontWeight: 500, display: "flex", alignItems: "center", gap: "3px" }}>{current.isCorrect ? <CheckCircle size={10} /> : <XCircle size={10} />}{current.isCorrect ? "正确" : "错误"}</span>
                 <span style={{ fontSize: "11px", color: "var(--text-tertiary)" }}><Clock size={10} />{formatDate(current.createdAt)}</span>
               </div>
-              <div style={{ background: "var(--card-bg)", borderRadius: "16px", padding: "20px", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <div style={{ background: "var(--card-bg)", borderRadius: "16px", padding: "20px", border: "1px solid var(--border-color)" }}>
                 <div style={{ fontSize: "16px", fontWeight: 500, color: "var(--text-primary)", lineHeight: 1.6, marginBottom: "16px" }}>{showTc ? toTraditional(question.question) : question.question}</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   {question.options.map((opt, idx) => {
