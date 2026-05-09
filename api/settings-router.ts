@@ -25,6 +25,7 @@ export const settingsRouter = createRouter({
         difficulty: 3,
         fontSize: "medium" as const,
         questionLanguage: "entc" as const,
+        theme: "system" as const,
       };
     }
 
@@ -34,6 +35,7 @@ export const settingsRouter = createRouter({
       difficulty: rows[0].difficulty,
       fontSize: rows[0].fontSize as "small" | "medium" | "large",
       questionLanguage: rows[0].questionLanguage as "zh" | "en" | "both" | "tc" | "entc",
+      theme: (rows[0].theme as "system" | "dark" | "light") || "system",
     };
   }),
 
@@ -46,6 +48,7 @@ export const settingsRouter = createRouter({
         difficulty: z.number().optional(),
         fontSize: z.enum(["small", "medium", "large"]).optional(),
         questionLanguage: z.enum(["zh", "en", "both", "tc", "entc"]).optional(),
+        theme: z.enum(["system", "dark", "light"]).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {

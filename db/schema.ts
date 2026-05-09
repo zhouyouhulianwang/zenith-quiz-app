@@ -81,6 +81,7 @@ export const userSettings = mysqlTable("user_settings", {
   difficulty: int("difficulty").notNull().default(3),
   fontSize: varchar("fontSize", { length: 10 }).notNull().default("medium"),
   questionLanguage: varchar("questionLanguage", { length: 10 }).notNull().default("entc"),
+  theme: varchar("theme", { length: 10 }).notNull().default("system"),
 });
 
 export type UserSetting = typeof userSettings.$inferSelect;
