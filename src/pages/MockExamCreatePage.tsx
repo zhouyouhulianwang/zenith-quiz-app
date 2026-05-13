@@ -168,59 +168,90 @@ export default function MockExamCreatePage() {
           return;
         }
 
-        // Validate and normalize questions
-        const questions: Q[] = rawQuestions.map((q: any, idx: number) => {
-          const content = stripHtml(q.content || q.question || "");
-          if (!content) throw new Error(`第 ${idx + 1} 题缺少题目内容`);
+        // Validate, clean, and normalize questions
+        let validCount = 0;
+        let skipCount = 0;
+        const questions: Q[] = [];
+
+        for (let idx = 0; idx < rawQuestions.length; idx++) {
+          const q = rawQuestions[idx];
+
+          // Extract question content
+          const content = stripHtml(q.content || q.question || q.title || q.q || "");
+          if (!content || content.length < 3) {
+            skipCount++;
+            continue; // Skip invalid questions
+          }
 
           // Handle options: string[] or {key, value}[]
-          let options: string[];
-          if (Array.isArray(q.options) && q.options.length > 0) {
+          let options: string[] = [];
+          if (Array.isArray(q.options) && q.options.length >= 2) {
             if (typeof q.options[0] === "string") {
-              options = q.options.map(String);
+              options = q.options.map(String).map(stripHtml).filter((o) => o.length > 0);
             } else if (typeof q.options[0] === "object") {
-              options = q.options.map((o: any) => stripHtml(o.value || o.text || o.label || ""));
-            } else {
-              throw new Error(`第 ${idx + 1} 题选项格式不支持`);
+              options = q.options
+                .map((o: any) => stripHtml(o.value || o.text || o.label || o.content || o.option || ""))
+                .filter((o: string) => o.length > 0);
             }
-          } else {
-            throw new Error(`第 ${idx + 1} 题缺少选项`);
+          }
+          // Fallback: try choices/answers/selections
+          if (options.length < 2 && Array.isArray(q.choices) && q.choices.length >= 2) {
+            options = q.choices.map(String).map(stripHtml).filter((o: string) => o.length > 0);
+          }
+          if (options.length < 2 && Array.isArray(q.selections) && q.selections.length >= 2) {
+            options = q.selections.map(String).map(stripHtml).filter((o: string) => o.length > 0);
+          }
+          if (options.length < 2) {
+            skipCount++;
+            continue; // Need at least 2 valid options
           }
 
-          // Handle answer: number[], number, or letter "A"/"B"/"C"/"D"
-          let correct: number[];
-          if (Array.isArray(q.correct)) {
-            correct = q.correct.map(Number);
-          } else if (typeof q.answer === "string" && /^[A-D]$/i.test(q.answer)) {
-            correct = [letterToIndex(q.answer)];
-          } else if (typeof q.answer === "string" && q.answer.length > 1) {
-            // Multi-answer like "AB" or "ACD"
-            correct = q.answer.split("").map(letterToIndex);
-          } else if (typeof q.answer === "number") {
-            correct = [q.answer];
+          // Handle answer
+          let correct: number[] = [];
+          if (Array.isArray(q.correct) && q.correct.length > 0) {
+            correct = q.correct.map(Number).filter((n) => !isNaN(n) && n >= 0 && n < options.length);
+          } else if (Array.isArray(q.answer) && q.answer.length > 0) {
+            correct = q.answer.map(Number).filter((n) => !isNaN(n) && n >= 0 && n < options.length);
+          } else if (typeof q.answer === "string" && q.answer.length > 0) {
+            correct = q.answer.split("").map(letterToIndex).filter((n) => n >= 0 && n < options.length);
           } else if (typeof q.correct === "number") {
-            correct = [q.correct];
-          } else {
-            throw new Error(`第 ${idx + 1} 题答案格式不支持`);
+            const n = Number(q.correct);
+            if (!isNaN(n) && n >= 0 && n < options.length) correct = [n];
+          } else if (typeof q.answer === "number") {
+            const n = Number(q.answer);
+            if (!isNaN(n) && n >= 0 && n < options.length) correct = [n];
           }
+          if (correct.length === 0) {
+            // Default to first option as correct if no valid answer found
+            correct = [0];
+          }
+
+          // Determine question type
+          const isMulti = correct.length > 1 || q.question_type === "2" || q.type === "multiple" || q.questionType === "multiple";
 
           // Chapter mapping
-          const chName = q.chapter_name || q.chapterName || "";
+          const chName = stripHtml(q.chapter_name || q.chapterName || q.chapter || "");
           if (chName && !chapterMap[chName]) {
             chapterMap[chName] = nextChapterId++;
           }
 
-          return {
+          questions.push({
             id: q.question_id || q.id || idx + 1,
-            type: (q.question_type === "2" || q.type === "multiple") ? "multiple" : "single",
+            type: isMulti ? "multiple" : "single",
             question: content,
             options,
             correct,
-            explanation: stripHtml(q.analysis || q.explanation || ""),
+            explanation: stripHtml(q.analysis || q.explanation || q.reason || q.note || ""),
             chapterId: chName ? chapterMap[chName] : undefined,
             chapterName: chName || undefined,
-          };
-        });
+          });
+          validCount++;
+        }
+
+        if (questions.length === 0) {
+          setJsonError(`没有有效的题目（共${rawQuestions.length}题，清洗后剩余0题）`);
+          return;
+        }
 
         setJsonQuestions(questions);
         setSelectedQuestionIds(new Set(questions.map((q) => q.id)));

@@ -63,8 +63,14 @@ export default function MockExamPracticePage() {
   }, [locationState?.questions, currentMock?.questionsJson]);
 
   useEffect(() => {
-    if (questions.length > 0 && answers.length === 0) {
-      setAnswers(questions.map(() => ({ selected: [], flagged: false })));
+    if (questions.length > 0) {
+      setAnswers((prev) => {
+        // Re-initialize if length mismatch or empty
+        if (prev.length !== questions.length) {
+          return questions.map(() => ({ selected: [], flagged: false }));
+        }
+        return prev;
+      });
     }
   }, [questions.length]);
 
@@ -81,18 +87,20 @@ export default function MockExamPracticePage() {
   const totalQuestions = questions.length;
 
   const handleSelect = useCallback((index: number) => {
-    if (!currentQuestion || !currentAnswer || submitted) return;
+    if (!currentQuestion || submitted) return;
     setAnswers((prev) => {
+      if (prev.length <= currentIndex) return prev;
       const next = [...prev];
+      const currentAns = next[currentIndex] || { selected: [], flagged: false };
       if (currentQuestion.type === "multiple") {
-        const s = next[currentIndex].selected;
-        next[currentIndex] = { ...next[currentIndex], selected: s.includes(index) ? s.filter((i) => i !== index) : [...s, index] };
+        const s = currentAns.selected;
+        next[currentIndex] = { ...currentAns, selected: s.includes(index) ? s.filter((i) => i !== index) : [...s, index] };
       } else {
-        next[currentIndex] = { ...next[currentIndex], selected: [index] };
+        next[currentIndex] = { ...currentAns, selected: [index] };
       }
       return next;
     });
-  }, [currentQuestion, currentAnswer, currentIndex, submitted]);
+  }, [currentQuestion, currentIndex, submitted]);
 
   const handleNext = useCallback(() => {
     if (currentIndex < totalQuestions - 1) setCurrentIndex((p) => p + 1);
@@ -212,6 +220,11 @@ export default function MockExamPracticePage() {
 
             {/* Options */}
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {(!currentQuestion || !primaryOptions || primaryOptions.length === 0) && (
+                <div style={{ textAlign: "center", padding: "20px", color: "#ef4444", fontSize: "14px", background: "rgba(239,68,68,0.05)", borderRadius: "12px" }}>
+                  题目数据异常：选项缺失
+                </div>
+              )}
               {primaryOptions.map((opt, index) => {
                 const isSelected = currentAnswer?.selected.includes(index);
                 const isCorrectOption = currentQuestion.correct.includes(index);
