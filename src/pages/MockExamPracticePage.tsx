@@ -188,12 +188,14 @@ export default function MockExamPracticePage() {
   let primaryQuestion = "";
   let primaryOptions: string[] = [];
   let secondaryQuestion = "";
+  let secondaryOptions: string[] | undefined;
 
   if (currentQuestion) {
     if (lang === "entc") {
       primaryQuestion = currentQuestion.enQuestion || currentQuestion.question || "";
       primaryOptions = currentQuestion.enOptions || currentQuestion.options || [];
-      secondaryQuestion = currentQuestion.tcQuestion || "";
+      secondaryQuestion = currentQuestion.tcQuestion || toTrad(currentQuestion.question || "");
+      secondaryOptions = currentQuestion.tcOptions || currentQuestion.options?.map((o) => toTrad(o));
     } else {
       primaryQuestion = currentQuestion.question || "";
       primaryOptions = currentQuestion.options || [];
@@ -413,7 +415,14 @@ export default function MockExamPracticePage() {
                         String.fromCharCode(65 + index)
                       )}
                     </span>
-                    <span style={{ flex: 1 }}>{opt || `选项${String.fromCharCode(65 + index)}（空）`}</span>
+                    <span style={{ flex: 1 }}>
+                      {opt || `选项${String.fromCharCode(65 + index)}（空）`}
+                      {lang === "entc" && secondaryOptions?.[index] && (
+                        <span style={{ display: "block", marginTop: "4px", fontSize: "14px", color: submitted ? (isCorrectOption ? "#10b981" : isSelected ? "#ef4444" : "var(--text-secondary)") : "var(--text-secondary)" }}>
+                          {secondaryOptions[index]}
+                        </span>
+                      )}
+                    </span>
                     {submitted && isCorrectOption && <Check size={16} color="#10b981" style={{ flexShrink: 0 }} />}
                     {submitted && isSelected && !isCorrectOption && <X size={16} color="#ef4444" style={{ flexShrink: 0 }} />}
                   </motion.button>
