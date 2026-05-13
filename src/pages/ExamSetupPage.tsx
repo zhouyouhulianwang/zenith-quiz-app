@@ -173,7 +173,7 @@ export default function ExamSetupPage() {
 
         {/* Start Button */}
         {selectedBankId && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ position: "fixed", bottom: 0, left: 0, right: 0, padding: "16px", background: "linear-gradient(transparent, var(--page-bg) 40%)", zIndex: 10 }}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ position: "fixed", bottom: "70px", left: 0, right: 0, padding: "16px", background: "linear-gradient(transparent, var(--page-bg) 40%)", zIndex: 10 }}>
             <button onClick={handleStart}
               style={{
                 width: "100%", padding: "16px", borderRadius: "14px",
