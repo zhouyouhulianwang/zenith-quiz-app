@@ -59,7 +59,7 @@ export default function Login() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        style={{ width: "100%", maxWidth: "340px" }}
+        style={{ width: "100%", maxWidth: "420px" }}
       >
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: isKeyboardOpen ? "16px" : "32px", transition: "margin 0.3s ease" }}>

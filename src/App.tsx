@@ -132,8 +132,9 @@ export default function App() {
     <AppProvider>
       <ThemeManager />
       <div
+        className="app-container"
         style={{
-          maxWidth: "430px",
+          width: "100%",
           margin: "0 auto",
           minHeight: "100dvh",
           background: "var(--page-bg)",

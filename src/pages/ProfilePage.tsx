@@ -159,7 +159,7 @@ export default function ProfilePage() {
       {/* Bank Reset Modal */}
       {showBankReset && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
-          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} style={{ background: "var(--card-bg)", borderRadius: "16px", padding: "20px", width: "100%", maxWidth: "340px", border: "1px solid var(--border-color)", maxHeight: "80vh", overflowY: "auto" }}>
+          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} style={{ background: "var(--card-bg)", borderRadius: "16px", padding: "20px", width: "100%", maxWidth: "500px", border: "1px solid var(--border-color)", maxHeight: "80vh", overflowY: "auto" }}>
             <h3 style={{ fontSize: "18px", fontWeight: 600, color: "var(--text-primary)", margin: "0 0 4px 0" }}>选择要清空的题库</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "12px" }}>
               {(banks || []).map((bank) => (
@@ -181,7 +181,7 @@ export default function ProfilePage() {
       {/* Reset All Confirm */}
       {showResetConfirm && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
-          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} style={{ background: "var(--card-bg)", borderRadius: "16px", padding: "24px", width: "100%", maxWidth: "300px", border: "1px solid var(--border-color)" }}>
+          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} style={{ background: "var(--card-bg)", borderRadius: "16px", padding: "24px", width: "100%", maxWidth: "420px", border: "1px solid var(--border-color)" }}>
             <h3 style={{ fontSize: "18px", fontWeight: 600, color: "var(--text-primary)", margin: "0 0 8px 0" }}>确认全部清空</h3>
             <p style={{ fontSize: "14px", color: "var(--text-secondary)", margin: "0 0 20px 0" }}>此操作将删除所有题库和练习记录，无法恢复。</p>
             <div style={{ display: "flex", gap: "10px" }}>

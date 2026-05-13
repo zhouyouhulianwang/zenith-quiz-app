@@ -724,7 +724,7 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
       {showSummary && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
           <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ type: "spring", damping: 20 }}
-            style={{ background: "var(--card-bg)", borderRadius: "20px", padding: "28px", width: "100%", maxWidth: "340px", border: "1px solid var(--border-color)" }}>
+            style={{ background: "var(--card-bg)", borderRadius: "20px", padding: "28px", width: "100%", maxWidth: "500px", border: "1px solid var(--border-color)" }}>
             <h2 style={{ fontSize: "22px", fontWeight: 700, color: "var(--text-primary)", textAlign: "center", margin: "0 0 20px 0" }}>练习完成！</h2>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: "24px" }}>
               <div style={{ width: "140px", height: "140px", borderRadius: "50%", border: "6px solid #2a2a2a", borderTopColor: accuracy >= 80 ? "#10b981" : accuracy >= 60 ? "#00d4ff" : "#ef4444", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", transform: "rotate(-90deg)" }}>

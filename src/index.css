@@ -94,4 +94,16 @@
 
   ::-webkit-scrollbar { display: none; }
   * { scrollbar-width: none; }
+
+  /* Mobile: max 430px */
+  .app-container {
+    max-width: 430px;
+  }
+}
+
+/* PC responsive */
+@media (min-width: 768px) {
+  .app-container {
+    max-width: 900px !important;
+  }
 }
