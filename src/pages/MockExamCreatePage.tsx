@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Check, ChevronDown, ChevronUp, Search, BookOpen, Plus, GraduationCap, X } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, ChevronUp, Search, BookOpen, Plus, GraduationCap, X, FileText } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAppSettings } from "@/context/AppContext";
 import { toTraditional } from "@/lib/chineseConv";
@@ -306,10 +306,22 @@ export default function MockExamCreatePage() {
 
       {/* Bottom Action */}
       <div style={{ position: "fixed", bottom: "70px", left: 0, right: 0, padding: "16px", background: "linear-gradient(transparent, var(--page-bg) 40%)", zIndex: 10 }}>
-        {step === 1 && (
-          <button onClick={() => selectedBankId && setStep(2)} disabled={!selectedBankId}
-            style={{ width: "100%", padding: "14px", borderRadius: "14px", background: selectedBankId ? "var(--accent-color)" : "var(--card-bg-secondary)", color: selectedBankId ? "#fff" : "var(--text-tertiary)", border: "none", fontSize: "16px", fontWeight: 600, cursor: selectedBankId ? "pointer" : "not-allowed" }}>
-            下一步：选择题目
+        {step === 1 && selectedBankId && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <button onClick={() => { setSelectedQuestionIds(new Set(allQuestions.map((q) => q.id))); setStep(3); }}
+              style={{ width: "100%", padding: "14px", borderRadius: "14px", background: "#10b981", color: "#fff", border: "none", fontSize: "16px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+              <FileText size={18} /> 导入整套试卷（{allQuestions.length}题）
+            </button>
+            <button onClick={() => setStep(2)}
+              style={{ width: "100%", padding: "14px", borderRadius: "14px", background: "var(--card-bg)", color: "var(--text-primary)", border: "1px solid var(--border-color)", fontSize: "15px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+              <Search size={16} /> 手动选择题目
+            </button>
+          </motion.div>
+        )}
+        {step === 1 && !selectedBankId && (
+          <button disabled
+            style={{ width: "100%", padding: "14px", borderRadius: "14px", background: "var(--card-bg-secondary)", color: "var(--text-tertiary)", border: "none", fontSize: "16px", fontWeight: 600, cursor: "not-allowed" }}>
+            请先选择题库
           </button>
         )}
         {step === 2 && (
