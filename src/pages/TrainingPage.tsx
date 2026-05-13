@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { motion } from "framer-motion";
-import { ArrowLeft, Check, X, Clock, ChevronRight, ChevronLeft, RotateCcw, Home, BookOpen, Languages, AlertCircle, Trophy, Zap, FileText } from "lucide-react";
+import { ArrowLeft, Check, X, Clock, ChevronRight, ChevronLeft, RotateCcw, Home, BookOpen, Languages, AlertCircle, Trophy, Zap, FileText, GraduationCap } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAppSettings } from "@/context/AppContext";
 import { toTraditional } from "@/lib/chineseConv";
@@ -89,6 +89,24 @@ function TrainingSelector({ onSelect }: { onSelect: (id: number) => void }) {
             <ChevronRight size={18} color="#ef4444" />
           </motion.button>
         )}
+
+        <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.97 }}
+          onClick={() => navigate("/exam/setup")}
+          style={{
+            width: "100%", padding: "16px", borderRadius: "14px",
+            background: "linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.03))",
+            border: "1px solid rgba(245,158,11,0.2)", marginBottom: "16px",
+            display: "flex", alignItems: "center", gap: "12px", cursor: "pointer",
+          }}>
+          <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: "rgba(245,158,11,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <GraduationCap size={22} color="#f59e0b" />
+          </div>
+          <div style={{ flex: 1, textAlign: "left" }}>
+            <div style={{ fontSize: "15px", fontWeight: 600, color: "#f59e0b" }}>模拟考试</div>
+            <div style={{ fontSize: "12px", color: "var(--text-primary)", marginTop: "2px" }}>模拟真实考试环境，完成后查看解析</div>
+          </div>
+          <ChevronRight size={18} color="#f59e0b" />
+        </motion.button>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           {inProgress.length > 0 && (

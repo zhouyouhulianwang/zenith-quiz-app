@@ -11,6 +11,9 @@ import StatsPage from "@/pages/StatsPage";
 import ProfilePage from "@/pages/ProfilePage";
 import MistakesPage from "@/pages/MistakesPage";
 import RecordsPage from "@/pages/RecordsPage";
+import ExamSetupPage from "@/pages/ExamSetupPage";
+import ExamSessionPage from "@/pages/ExamSessionPage";
+import ExamResultPage from "@/pages/ExamResultPage";
 import AdminPage from "@/pages/AdminPage";
 import Login from "@/pages/Login";
 import { useAuth } from "@/hooks/useAuth";
@@ -120,6 +123,9 @@ function AnimatedRoutes() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/mistakes" element={<MistakesPage />} />
           <Route path="/records" element={<RecordsPage />} />
+          <Route path="/exam/setup" element={<ExamSetupPage />} />
+          <Route path="/exam/session" element={<ExamSessionPage />} />
+          <Route path="/exam/result" element={<ExamResultPage />} />
         </Routes>
       </motion.div>
       {!hideNav && <BottomNav />}
