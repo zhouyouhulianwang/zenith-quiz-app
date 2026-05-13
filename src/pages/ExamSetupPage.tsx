@@ -17,7 +17,7 @@ export default function ExamSetupPage() {
 
   const [selectedBankId, setSelectedBankId] = useState<number | null>(null);
   const [selectedChapterId, setSelectedChapterId] = useState<number | undefined>(undefined);
-  const [questionCount, setQuestionCount] = useState(50);
+  const [questionCount, setQuestionCount] = useState(40);
 
   const selectedBank = banks?.find((b) => b.id === selectedBankId);
   const chapters: ChapterInfo[] = useMemo(() => {
@@ -49,7 +49,7 @@ export default function ExamSetupPage() {
   return (
     <div style={{ position: "relative", minHeight: "100dvh", background: "var(--page-bg)", overflowX: "hidden" }}>
       <ParticleBackground />
-      <div style={{ position: "relative", zIndex: 1, padding: "16px", paddingBottom: "120px" }}>
+      <div style={{ position: "relative", zIndex: 1, padding: "16px", paddingBottom: "200px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
           <button onClick={() => navigate("/training")} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px", minWidth: "44px", minHeight: "44px", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <ArrowLeft size={24} color="var(--text-primary)" />
@@ -154,7 +154,7 @@ export default function ExamSetupPage() {
                 <span style={{ fontSize: "11px", color: "var(--text-tertiary)" }}>{maxQuestions}题（最大）</span>
               </div>
               <div style={{ display: "flex", gap: "8px", marginTop: "12px", flexWrap: "wrap" }}>
-                {[25, 50, 75, 100].filter((n) => n <= availableCount).map((n) => (
+                {[40, 60].filter((n) => n <= availableCount).map((n) => (
                   <button key={n} onClick={() => setQuestionCount(n)}
                     style={{
                       padding: "6px 14px", borderRadius: "8px", fontSize: "13px",
