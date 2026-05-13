@@ -39,7 +39,7 @@ function shuffleArray<T>(arr: T[]): T[] {
 export default function ExamSessionPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { settings } = useAppSettings();
+  const { settings, setSettings } = useAppSettings();
 
   const bankId = Number(searchParams.get("bankId"));
   const chapterId = searchParams.get("chapterId") ? Number(searchParams.get("chapterId")) : undefined;
@@ -205,7 +205,11 @@ export default function ExamSessionPage() {
             <Clock size={14} color="var(--accent-color)" />
             {formatTime(elapsed)}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <button onClick={() => setSettings({ questionLanguage: settings.questionLanguage === "entc" ? "sc" : settings.questionLanguage === "sc" ? "en" : settings.questionLanguage === "en" ? "entc" : "entc" })} style={{ background: "var(--card-bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "8px", padding: "4px 8px", fontSize: "11px", fontWeight: 600, color: "var(--accent-color)", cursor: "pointer", display: "flex", alignItems: "center", gap: "3px" }}>
+              <Languages size={11} />
+              {settings.questionLanguage === "entc" ? "EN+繁" : settings.questionLanguage === "sc" ? "简体" : settings.questionLanguage === "en" ? "EN" : settings.questionLanguage === "tc" ? "繁體" : "EN+繁"}
+            </button>
             <button onClick={toggleFlag} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px" }}>
               <Flag size={18} color={currentAnswer?.flagged ? "#f59e0b" : "var(--text-tertiary)"} />
             </button>

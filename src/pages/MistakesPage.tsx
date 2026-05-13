@@ -46,8 +46,9 @@ export default function MistakesPage() {
     catch { return []; }
   }, [bank?.questionsJson]);
   const question = current ? bankQuestions.find((q) => q.id === current.questionId) : null;
-  const { settings } = useAppSettings();
-  const showTc = settings.questionLanguage === "entc" || settings.questionLanguage === "tc";
+  const { settings, setSettings } = useAppSettings();
+  const langMode = settings.questionLanguage as "en" | "tc" | "sc" | "entc" | string;
+  const showTc = langMode === "entc" || langMode === "tc";
 
   const handlePrev = () => { if (currentIndex > 0) setCurrentIndex((p) => p - 1); };
   const handleNext = () => { if (currentIndex < filtered.length - 1) setCurrentIndex((p) => p + 1); };
@@ -89,7 +90,12 @@ export default function MistakesPage() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", paddingTop: "max(12px, env(safe-area-inset-top))", borderBottom: "1px solid var(--border-color)" }}>
           <button onClick={() => navigate("/")} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px", minWidth: "44px", minHeight: "44px", display: "flex", alignItems: "center", justifyContent: "center" }}><ArrowLeft size={24} color="var(--text-primary)" /></button>
           <div style={{ fontSize: "17px", fontWeight: 600, color: "var(--text-primary)" }}>{isWrongMode ? "错题回顾" : "正确回顾"}</div>
-          <div style={{ fontSize: "13px", color: isWrongMode ? "#ef4444" : "#10b981", fontWeight: 600 }}>{currentIndex + 1} / {filtered.length}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <button onClick={() => setSettings({ questionLanguage: settings.questionLanguage === "entc" ? "sc" : settings.questionLanguage === "sc" ? "en" : "entc" })} style={{ background: "var(--card-bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "8px", padding: "4px 8px", fontSize: "11px", fontWeight: 600, color: "var(--accent-color)", cursor: "pointer" }}>
+              {settings.questionLanguage === "entc" ? "EN+繁" : settings.questionLanguage === "sc" ? "简体" : settings.questionLanguage === "en" ? "EN" : settings.questionLanguage === "tc" ? "繁體" : "EN+繁"}
+            </button>
+            <div style={{ fontSize: "13px", color: isWrongMode ? "#ef4444" : "#10b981", fontWeight: 600 }}>{currentIndex + 1} / {filtered.length}</div>
+          </div>
         </div>
         <div style={{ width: "100%", height: "3px", background: "var(--card-bg-secondary)" }}><motion.div animate={{ width: `${filtered.length > 0 ? ((currentIndex + 1) / filtered.length) * 100 : 0}%` }} transition={{ duration: 0.3 }} style={{ height: "100%", background: isWrongMode ? "#ef4444" : "#10b981" }} /></div>
 
