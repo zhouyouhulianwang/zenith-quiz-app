@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { useSearchParams, useNavigate } from "react-router";
+import { useSearchParams, useNavigate, useLocation } from "react-router";
 import { motion } from "framer-motion";
 import { ArrowLeft, Clock, ChevronLeft, ChevronRight, Flag, GraduationCap, Check, X } from "lucide-react";
 import { trpc } from "@/providers/trpc";
@@ -33,12 +33,15 @@ export default function MockExamPracticePage() {
   const { settings } = useAppSettings();
 
   const mockExamId = Number(searchParams.get("mockExamId"));
+  const location = useLocation();
+  const locationState = location.state as { questions?: any[]; title?: string } | null;
   const utils = trpc.useUtils();
 
   const { data: mockExam } = trpc.mockExam.list.useQuery();
-  const incrementMutation = trpc.mockExam.incrementPracticed.useMutation();
-
   const currentMock = mockExam?.find((m) => m.id === mockExamId);
+  const mockTitle = locationState?.title || currentMock?.title || "模拟练习";
+
+  const incrementMutation = trpc.mockExam.incrementPracticed.useMutation();
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<ExamAnswer[]>([]);
@@ -50,9 +53,14 @@ export default function MockExamPracticePage() {
   const timerRef = useRef<ReturnType<typeof setInterval>>();
 
   const questions: Q[] = useMemo(() => {
+    // Prefer questions passed via location.state (avoids tRPC truncation issues)
+    if (locationState?.questions && Array.isArray(locationState.questions) && locationState.questions.length > 0) {
+      return locationState.questions;
+    }
+    // Fallback: load from query result
     if (!currentMock?.questionsJson) return [];
     try { return JSON.parse(currentMock.questionsJson); } catch { return []; }
-  }, [currentMock?.questionsJson]);
+  }, [locationState?.questions, currentMock?.questionsJson]);
 
   useEffect(() => {
     if (questions.length > 0 && answers.length === 0) {
@@ -142,10 +150,10 @@ export default function MockExamPracticePage() {
     secondaryOptions = currentQuestion.tcOptions || currentQuestion.options.map((o) => toTrad(o));
   }
 
-  if (!currentMock || questions.length === 0) {
+  if (questions.length === 0) {
     return (
       <div style={{ minHeight: "100dvh", background: "var(--page-bg)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-tertiary)" }}>
-        加载中...
+        试卷加载失败，请返回重试
       </div>
     );
   }
