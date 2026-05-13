@@ -107,6 +107,25 @@ export default function MockExamCreatePage() {
     });
   };
 
+  const stripHtml = (html: string): string => {
+    return html
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, "")
+      .replace(/<[^>]+>/g, "")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&amp;/g, "&")
+      .replace(/&quot;/g, '"')
+      .replace(/&#\d+;/g, (m) => String.fromCharCode(Number(m.slice(2, -1))))
+      .replace(/\s+/g, " ")
+      .trim();
+  };
+
+  const letterToIndex = (letter: string): number => {
+    return Math.max(0, letter.toUpperCase().charCodeAt(0) - 65);
+  };
+
   const handleJsonFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -116,37 +135,103 @@ export default function MockExamCreatePage() {
       try {
         const text = String(ev.target?.result || "");
         const parsed = JSON.parse(text);
-        if (!Array.isArray(parsed)) {
-          setJsonError("JSON 格式错误：根节点必须是数组");
+        if (!Array.isArray(parsed) && !parsed.questions) {
+          setJsonError("JSON 格式错误：应为题目数组或包含 .questions 字段的考试对象");
           return;
         }
-        // Validate and normalize questions
-        const questions: Q[] = parsed.map((q: any, idx: number) => {
-          if (!q.question || !Array.isArray(q.options) || !Array.isArray(q.correct)) {
-            throw new Error(`第 ${idx + 1} 题格式错误：缺少必要字段`);
+
+        // Handle HKSI exam format: [{exam_obj with questions array}]
+        let examTitle = file.name.replace(/\.json$/i, "");
+        let rawQuestions: any[] = [];
+        let chapterMap: Record<string, number> = {};
+        let nextChapterId = 1;
+
+        if (Array.isArray(parsed)) {
+          // Check if it's array of exam objects (HKSI format)
+          const first = parsed[0];
+          if (first && Array.isArray(first.questions)) {
+            // HKSI format: [{title, cht_title, questions: [...]}]
+            examTitle = first.title || first.cht_title || examTitle;
+            rawQuestions = first.questions;
+          } else {
+            // Direct question array format
+            rawQuestions = parsed;
           }
+        } else if (parsed.questions) {
+          // Single exam object with questions
+          examTitle = parsed.title || parsed.cht_title || examTitle;
+          rawQuestions = parsed.questions;
+        }
+
+        if (!Array.isArray(rawQuestions) || rawQuestions.length === 0) {
+          setJsonError("未找到题目数据");
+          return;
+        }
+
+        // Validate and normalize questions
+        const questions: Q[] = rawQuestions.map((q: any, idx: number) => {
+          const content = stripHtml(q.content || q.question || "");
+          if (!content) throw new Error(`第 ${idx + 1} 题缺少题目内容`);
+
+          // Handle options: string[] or {key, value}[]
+          let options: string[];
+          if (Array.isArray(q.options) && q.options.length > 0) {
+            if (typeof q.options[0] === "string") {
+              options = q.options.map(String);
+            } else if (typeof q.options[0] === "object") {
+              options = q.options.map((o: any) => stripHtml(o.value || o.text || o.label || ""));
+            } else {
+              throw new Error(`第 ${idx + 1} 题选项格式不支持`);
+            }
+          } else {
+            throw new Error(`第 ${idx + 1} 题缺少选项`);
+          }
+
+          // Handle answer: number[], number, or letter "A"/"B"/"C"/"D"
+          let correct: number[];
+          if (Array.isArray(q.correct)) {
+            correct = q.correct.map(Number);
+          } else if (typeof q.answer === "string" && /^[A-D]$/i.test(q.answer)) {
+            correct = [letterToIndex(q.answer)];
+          } else if (typeof q.answer === "string" && q.answer.length > 1) {
+            // Multi-answer like "AB" or "ACD"
+            correct = q.answer.split("").map(letterToIndex);
+          } else if (typeof q.answer === "number") {
+            correct = [q.answer];
+          } else if (typeof q.correct === "number") {
+            correct = [q.correct];
+          } else {
+            throw new Error(`第 ${idx + 1} 题答案格式不支持`);
+          }
+
+          // Chapter mapping
+          const chName = q.chapter_name || q.chapterName || "";
+          if (chName && !chapterMap[chName]) {
+            chapterMap[chName] = nextChapterId++;
+          }
+
           return {
-            id: q.id ?? idx + 1,
-            type: q.type || "single",
-            question: String(q.question),
-            options: q.options.map(String),
-            correct: q.correct.map(Number),
-            explanation: String(q.explanation || ""),
-            chapterId: q.chapterId,
-            chapterName: q.chapterName,
+            id: q.question_id || q.id || idx + 1,
+            type: (q.question_type === "2" || q.type === "multiple") ? "multiple" : "single",
+            question: content,
+            options,
+            correct,
+            explanation: stripHtml(q.analysis || q.explanation || ""),
+            chapterId: chName ? chapterMap[chName] : undefined,
+            chapterName: chName || undefined,
           };
         });
+
         setJsonQuestions(questions);
         setSelectedQuestionIds(new Set(questions.map((q) => q.id)));
         setJsonMode(true);
-        setExamTitle(file.name.replace(/\.json$/i, ""));
+        setExamTitle(examTitle);
         setStep(3);
       } catch (err: any) {
         setJsonError(err.message || "JSON 解析失败");
       }
     };
     reader.readAsText(file);
-    // Reset input so same file can be selected again
     e.target.value = "";
   };
 
