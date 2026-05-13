@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Check, ChevronDown, ChevronUp, Search, BookOpen, Plus, GraduationCap, X, FileText } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, ChevronUp, Search, BookOpen, GraduationCap, X, FileText, Upload, FileJson } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAppSettings } from "@/context/AppContext";
 import { toTraditional } from "@/lib/chineseConv";
@@ -21,6 +21,7 @@ interface Q {
 export default function MockExamCreatePage() {
   const navigate = useNavigate();
   const { settings } = useAppSettings();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: banks } = trpc.bank.list.useQuery();
   const utils = trpc.useUtils();
@@ -37,18 +38,22 @@ export default function MockExamCreatePage() {
   const [examTitle, setExamTitle] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedChapter, setExpandedChapter] = useState<number | null>(null);
+  const [jsonMode, setJsonMode] = useState(false);
+  const [jsonQuestions, setJsonQuestions] = useState<Q[]>([]);
+  const [jsonError, setJsonError] = useState("");
 
   const selectedBank = banks?.find((b) => b.id === selectedBankId);
 
   const allQuestions: Q[] = useMemo(() => {
+    if (jsonMode) return jsonQuestions;
     if (!selectedBank?.questionsJson) return [];
     try { return JSON.parse(selectedBank.questionsJson); } catch { return []; }
-  }, [selectedBank?.questionsJson]);
+  }, [jsonMode, jsonQuestions, selectedBank?.questionsJson]);
 
   const chapters = useMemo(() => {
-    if (!selectedBank?.chaptersJson) return [];
+    if (jsonMode || !selectedBank?.chaptersJson) return [];
     try { return JSON.parse(selectedBank.chaptersJson); } catch { return []; }
-  }, [selectedBank?.chaptersJson]);
+  }, [jsonMode, selectedBank?.chaptersJson]);
 
   const questionsByChapter = useMemo(() => {
     const map: Record<number, Q[]> = {};
@@ -91,15 +96,58 @@ export default function MockExamCreatePage() {
   };
 
   const handleCreate = () => {
-    if (!selectedBankId || !examTitle.trim() || selectedQuestionIds.size === 0) return;
+    if (selectedQuestionIds.size === 0 || !examTitle.trim()) return;
     const selectedQuestions = allQuestions.filter((q) => selectedQuestionIds.has(q.id));
     createMutation.mutate({
       title: examTitle.trim(),
-      bankId: selectedBankId,
-      bankName: selectedBank?.title,
+      bankId: jsonMode ? 0 : (selectedBankId || 0),
+      bankName: jsonMode ? "JSON导入" : selectedBank?.title,
       questionsJson: JSON.stringify(selectedQuestions),
       questionCount: selectedQuestions.length,
     });
+  };
+
+  const handleJsonFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setJsonError("");
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const text = String(ev.target?.result || "");
+        const parsed = JSON.parse(text);
+        if (!Array.isArray(parsed)) {
+          setJsonError("JSON 格式错误：根节点必须是数组");
+          return;
+        }
+        // Validate and normalize questions
+        const questions: Q[] = parsed.map((q: any, idx: number) => {
+          if (!q.question || !Array.isArray(q.options) || !Array.isArray(q.correct)) {
+            throw new Error(`第 ${idx + 1} 题格式错误：缺少必要字段`);
+          }
+          return {
+            id: q.id ?? idx + 1,
+            type: q.type || "single",
+            question: String(q.question),
+            options: q.options.map(String),
+            correct: q.correct.map(Number),
+            explanation: String(q.explanation || ""),
+            chapterId: q.chapterId,
+            chapterName: q.chapterName,
+          };
+        });
+        setJsonQuestions(questions);
+        setSelectedQuestionIds(new Set(questions.map((q) => q.id)));
+        setJsonMode(true);
+        setExamTitle(file.name.replace(/\.json$/i, ""));
+        setStep(3);
+      } catch (err: any) {
+        setJsonError(err.message || "JSON 解析失败");
+      }
+    };
+    reader.readAsText(file);
+    // Reset input so same file can be selected again
+    e.target.value = "";
   };
 
   const toTrad = (text: string) => { try { return toTraditional(text); } catch { return text; } };
@@ -107,6 +155,7 @@ export default function MockExamCreatePage() {
   return (
     <div style={{ position: "relative", minHeight: "100dvh", background: "var(--page-bg)", overflowX: "hidden" }}>
       <ParticleBackground />
+      <input type="file" accept=".json" ref={fileInputRef} onChange={handleJsonFile} style={{ display: "none" }} />
       <div style={{ position: "relative", zIndex: 1, padding: "16px", paddingBottom: "200px" }}>
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
@@ -116,21 +165,54 @@ export default function MockExamCreatePage() {
           </button>
           <div style={{ flex: 1 }}>
             <h1 style={{ fontSize: "22px", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
-              {step === 1 ? "选择题库" : step === 2 ? "选择题目" : "确认创建"}
+              {jsonMode ? "JSON导入" : step === 1 ? "选择题库" : step === 2 ? "选择题目" : "确认创建"}
             </h1>
             <p style={{ fontSize: "13px", color: "var(--text-tertiary)", margin: "2px 0 0" }}>
-              步骤 {step}/3 — 已选 {selectedQuestionIds.size} 题
+              已选 {selectedQuestionIds.size} 题
             </p>
           </div>
         </div>
 
-        {/* Step 1: Select Bank */}
+        {/* JSON Error */}
+        {jsonError && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ background: "rgba(239,68,68,0.1)", borderRadius: "12px", padding: "14px 16px", border: "1px solid rgba(239,68,68,0.3)", marginBottom: "16px", color: "#ef4444", fontSize: "14px" }}>
+            {jsonError}
+          </motion.div>
+        )}
+
+        {/* Step 1: Select Source (Bank or JSON) */}
         {step === 1 && (
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+            {/* JSON Upload Card */}
+            <motion.button whileTap={{ scale: 0.97 }} onClick={() => fileInputRef.current?.click()}
+              style={{
+                width: "100%", padding: "24px", borderRadius: "16px",
+                background: "linear-gradient(135deg, rgba(139,92,246,0.12), rgba(139,92,246,0.03))",
+                border: "2px dashed rgba(139,92,246,0.4)", marginBottom: "16px",
+                display: "flex", flexDirection: "column", alignItems: "center", gap: "10px",
+                cursor: "pointer", textAlign: "center",
+              }}>
+              <div style={{ width: "52px", height: "52px", borderRadius: "14px", background: "rgba(139,92,246,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Upload size={26} color="#8b5cf6" />
+              </div>
+              <div>
+                <div style={{ fontSize: "16px", fontWeight: 600, color: "#8b5cf6" }}>导入 JSON 文件</div>
+                <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "4px" }}>点击上传 .json 格式的试卷文件</div>
+              </div>
+            </motion.button>
+
+            {/* Divider */}
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+              <div style={{ flex: 1, height: "1px", background: "var(--border-color)" }} />
+              <span style={{ fontSize: "12px", color: "var(--text-tertiary)" }}>或从已有题库导入</span>
+              <div style={{ flex: 1, height: "1px", background: "var(--border-color)" }} />
+            </div>
+
+            {/* Bank List */}
             {!banks || banks.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "40px", color: "var(--text-tertiary)" }}>
-                <BookOpen size={40} />
-                <p style={{ marginTop: "12px" }}>暂无题库，请先导入</p>
+              <div style={{ textAlign: "center", padding: "20px", color: "var(--text-tertiary)" }}>
+                <BookOpen size={32} />
+                <p style={{ marginTop: "8px", fontSize: "13px" }}>暂无题库</p>
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -139,7 +221,7 @@ export default function MockExamCreatePage() {
                   const isSelected = selectedBankId === bank.id;
                   return (
                     <motion.button key={bank.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                      whileTap={{ scale: 0.98 }} onClick={() => setSelectedBankId(bank.id)}
+                      whileTap={{ scale: 0.98 }} onClick={() => { setJsonMode(false); setSelectedBankId(bank.id); }}
                       style={{
                         width: "100%", padding: "16px", borderRadius: "14px", textAlign: "left",
                         background: isSelected ? "var(--accent-color)" : "var(--card-bg)",
@@ -161,9 +243,8 @@ export default function MockExamCreatePage() {
         )}
 
         {/* Step 2: Select Questions */}
-        {step === 2 && selectedBankId && (
+        {step === 2 && !jsonMode && selectedBankId && (
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-            {/* Search */}
             <div style={{ position: "relative", marginBottom: "16px" }}>
               <Search size={18} color="var(--text-tertiary)" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)" }} />
               <input type="text" placeholder="搜索题目..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
@@ -175,7 +256,6 @@ export default function MockExamCreatePage() {
               )}
             </div>
 
-            {/* Search results or chapter list */}
             {searchQuery.trim() ? (
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 {filteredQuestions.map((q, i) => (
@@ -291,8 +371,8 @@ export default function MockExamCreatePage() {
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px" }}>
-                  <span style={{ color: "var(--text-secondary)" }}>题库</span>
-                  <span style={{ color: "var(--text-primary)", fontWeight: 500 }}>{selectedBank?.title}</span>
+                  <span style={{ color: "var(--text-secondary)" }}>来源</span>
+                  <span style={{ color: "var(--text-primary)", fontWeight: 500 }}>{jsonMode ? "JSON 导入" : selectedBank?.title}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px" }}>
                   <span style={{ color: "var(--text-secondary)" }}>题目数量</span>
@@ -306,7 +386,7 @@ export default function MockExamCreatePage() {
 
       {/* Bottom Action */}
       <div style={{ position: "fixed", bottom: "70px", left: 0, right: 0, padding: "16px", background: "linear-gradient(transparent, var(--page-bg) 40%)", zIndex: 10 }}>
-        {step === 1 && selectedBankId && (
+        {step === 1 && selectedBankId && !jsonMode && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             <button onClick={() => { setSelectedQuestionIds(new Set(allQuestions.map((q) => q.id))); setStep(3); }}
               style={{ width: "100%", padding: "14px", borderRadius: "14px", background: "#10b981", color: "#fff", border: "none", fontSize: "16px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
@@ -319,10 +399,16 @@ export default function MockExamCreatePage() {
           </motion.div>
         )}
         {step === 1 && !selectedBankId && (
-          <button disabled
-            style={{ width: "100%", padding: "14px", borderRadius: "14px", background: "var(--card-bg-secondary)", color: "var(--text-tertiary)", border: "none", fontSize: "16px", fontWeight: 600, cursor: "not-allowed" }}>
-            请先选择题库
-          </button>
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <button onClick={() => fileInputRef.current?.click()}
+              style={{ width: "100%", padding: "14px", borderRadius: "14px", background: "#8b5cf6", color: "#fff", border: "none", fontSize: "16px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+              <Upload size={18} /> 导入 JSON 文件
+            </button>
+            <button disabled
+              style={{ width: "100%", padding: "14px", borderRadius: "14px", background: "var(--card-bg-secondary)", color: "var(--text-tertiary)", border: "none", fontSize: "15px", fontWeight: 600, cursor: "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+              <BookOpen size={16} /> 请先选择题库或上传 JSON
+            </button>
+          </motion.div>
         )}
         {step === 2 && (
           <div style={{ display: "flex", gap: "10px" }}>
@@ -338,7 +424,7 @@ export default function MockExamCreatePage() {
         )}
         {step === 3 && (
           <div style={{ display: "flex", gap: "10px" }}>
-            <button onClick={() => setStep(2)}
+            <button onClick={() => { setJsonMode(false); setJsonQuestions([]); setStep(1); }}
               style={{ flex: 1, padding: "14px", borderRadius: "14px", background: "var(--card-bg)", color: "var(--text-primary)", border: "1px solid var(--border-color)", fontSize: "15px", fontWeight: 600, cursor: "pointer" }}>
               上一步
             </button>
