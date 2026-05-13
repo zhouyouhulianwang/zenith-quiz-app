@@ -85,3 +85,19 @@ export const userSettings = mysqlTable("user_settings", {
 });
 
 export type UserSetting = typeof userSettings.$inferSelect;
+
+// Mock exams (preset exam papers)
+export const mockExams = mysqlTable("mock_exams", {
+  id: serial("id").primaryKey(),
+  userId: bigint("userId", { mode: "number", unsigned: true }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  bankId: bigint("bankId", { mode: "number", unsigned: true }).notNull(),
+  bankName: varchar("bankName", { length: 255 }),
+  questionsJson: longtext("questionsJson").notNull(),
+  questionCount: int("questionCount").notNull().default(0),
+  practicedCount: int("practicedCount").notNull().default(0),
+  lastPracticedAt: timestamp("lastPracticedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type MockExam = typeof mockExams.$inferSelect;

@@ -108,6 +108,25 @@ function TrainingSelector({ onSelect }: { onSelect: (id: number) => void }) {
           <ChevronRight size={18} color="#f59e0b" />
         </motion.button>
 
+        {/* Preset Mock Exam Entry */}
+        <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} whileTap={{ scale: 0.97 }}
+          onClick={() => navigate("/mock-exam/list")}
+          style={{
+            width: "100%", padding: "16px", borderRadius: "14px",
+            background: "linear-gradient(135deg, rgba(16,185,129,0.12), rgba(16,185,129,0.03))",
+            border: "1px solid rgba(16,185,129,0.2)", marginBottom: "16px",
+            display: "flex", alignItems: "center", gap: "12px", cursor: "pointer",
+          }}>
+          <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: "rgba(16,185,129,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <FileText size={22} color="#10b981" />
+          </div>
+          <div style={{ flex: 1, textAlign: "left" }}>
+            <div style={{ fontSize: "15px", fontWeight: 600, color: "#10b981" }}>预设模拟卷</div>
+            <div style={{ fontSize: "12px", color: "var(--text-primary)", marginTop: "2px" }}>自定义题目组成试卷，反复练习</div>
+          </div>
+          <ChevronRight size={18} color="#10b981" />
+        </motion.button>
+
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           {inProgress.length > 0 && (
             <div>

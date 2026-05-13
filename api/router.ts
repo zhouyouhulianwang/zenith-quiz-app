@@ -5,6 +5,7 @@ import { bankRouter } from "./bank-router";
 import { recordRouter } from "./record-router";
 import { settingsRouter } from "./settings-router";
 import { adminRouter } from "./admin-router";
+import { mockExamRouter } from "./mock-exam-router";
 
 export const appRouter = createRouter({
   health: publicQuery.query(() => "ok"),
@@ -14,6 +15,7 @@ export const appRouter = createRouter({
   record: recordRouter,
   settings: settingsRouter,
   admin: adminRouter,
+  mockExam: mockExamRouter,
 });
 
 export type AppRouter = typeof appRouter;

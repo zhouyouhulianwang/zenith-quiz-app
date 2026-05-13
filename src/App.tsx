@@ -14,6 +14,9 @@ import RecordsPage from "@/pages/RecordsPage";
 import ExamSetupPage from "@/pages/ExamSetupPage";
 import ExamSessionPage from "@/pages/ExamSessionPage";
 import ExamResultPage from "@/pages/ExamResultPage";
+import MockExamListPage from "@/pages/MockExamListPage";
+import MockExamCreatePage from "@/pages/MockExamCreatePage";
+import MockExamPracticePage from "@/pages/MockExamPracticePage";
 import AdminPage from "@/pages/AdminPage";
 import Login from "@/pages/Login";
 import { useAuth } from "@/hooks/useAuth";
@@ -126,6 +129,9 @@ function AnimatedRoutes() {
           <Route path="/exam/setup" element={<ExamSetupPage />} />
           <Route path="/exam/session" element={<ExamSessionPage />} />
           <Route path="/exam/result" element={<ExamResultPage />} />
+          <Route path="/mock-exam/list" element={<MockExamListPage />} />
+          <Route path="/mock-exam/create" element={<MockExamCreatePage />} />
+          <Route path="/mock-exam/practice" element={<MockExamPracticePage />} />
         </Routes>
       </motion.div>
       {!hideNav && <BottomNav />}
