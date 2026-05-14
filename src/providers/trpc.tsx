@@ -8,22 +8,9 @@ import { useState, useEffect, useMemo } from "react";
 
 export const trpc = createTRPCReact<AppRouter>();
 
-// Hardcoded API endpoint for static deployment
-// Update this when tunnel URL changes
-const HARDCODED_API_URL = "https://initial-earth-ranked-camp.trycloudflare.com";
-
 function getApiUrl(): string {
-  // For non-localhost: always use hardcoded API URL (avoids cached HTML issues)
-  if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
-    // Check if window.__API_ENDPOINT__ matches our hardcoded URL (new deployment)
-    const configuredApi = (window as any).__API_ENDPOINT__;
-    if (configuredApi && configuredApi === HARDCODED_API_URL) {
-      return configuredApi + "/api/trpc";
-    }
-    // Ignore stale cached window.__API_ENDPOINT__, use hardcoded
-    return HARDCODED_API_URL + "/api/trpc";
-  }
-  // Localhost: use relative path
+  // In container deployment (Kimi platform), frontend and backend run on same domain
+  // Use relative path for API requests
   return "/api/trpc";
 }
 
