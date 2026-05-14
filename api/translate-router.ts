@@ -1,31 +1,130 @@
 import { z } from "zod";
-import { createRouter, publicQuery } from "./middleware";
+import { createRouter, publicQuery, authedQuery } from "./middleware";
+import { dictTranslate, batchDictTranslate, hasChinese } from "./translate-dict";
 
-// Simple in-memory cache for translations
-const translationCache = new Map<string, string>();
-const MAX_CACHE_SIZE = 2000;
+// Multi-source translation with fallback
+// Priority: 1) Dictionary (offline, reliable) 2) MyMemory 3) Google Translate
 
-// Rate limiting - MyMemory free tier: 1000 words/day
-let dailyCount = 0;
-let lastReset = Date.now();
-const DAILY_LIMIT = 900; // Stay under the limit
+// In-memory cache
+const cache = new Map<string, string>();
+const MAX_CACHE = 5000;
 
 function getCacheKey(text: string, from: string, to: string): string {
   return `${from}:${to}:${text}`;
 }
 
-function checkRateLimit(): boolean {
-  const now = Date.now();
-  // Reset counter every 24 hours
-  if (now - lastReset > 24 * 60 * 60 * 1000) {
-    dailyCount = 0;
-    lastReset = now;
+// Source 1: Offline dictionary (always available, no limits)
+function dictionaryTranslate(text: string): string {
+  return dictTranslate(text);
+}
+
+// Source 2: MyMemory (free, 1000 words/day)
+async function mymemoryTranslate(text: string, from: string, to: string): Promise<string | null> {
+  try {
+    const pair = `${from === "zh-CN" ? "zh" : from}|${to === "en" ? "en-US" : to}`;
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${pair}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { responseData?: { translatedText?: string }; responseStatus?: number };
+    if (data.responseStatus !== 200) return null;
+    const t = data.responseData?.translatedText;
+    if (!t || t === text) return null;
+    // Check if the result is still Chinese (API limit or failure)
+    if (hasChinese(t)) return null;
+    return t;
+  } catch {
+    return null;
   }
-  return dailyCount < DAILY_LIMIT;
+}
+
+// Source 3: Google Translate (unofficial, free)
+async function googleTranslate(text: string, from: string, to: string): Promise<string | null> {
+  try {
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${from}&tl=${to}&dt=t&q=${encodeURIComponent(text)}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return null;
+    const data = (await res.json()) as unknown[][];
+    if (!data || !data[0] || !Array.isArray(data[0])) return null;
+    const parts = data[0] as unknown[][];
+    const translated = parts.map((p) => p[0]).join("");
+    if (!translated || translated === text) return null;
+    if (hasChinese(translated)) return null;
+    return translated;
+  } catch {
+    return null;
+  }
+}
+
+// Source 4: LibreTranslate public instance
+async function libreTranslate(text: string, from: string, to: string): Promise<string | null> {
+  const instances = [
+    "https://libretranslate.de",
+    "https://trans.zillyhuhn.com",
+  ];
+  for (const base of instances) {
+    try {
+      const res = await fetch(`${base}/translate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ q: text, source: from, target: to, format: "text" }),
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!res.ok) continue;
+      const data = (await res.json()) as { translatedText?: string };
+      const t = data.translatedText;
+      if (t && t !== text && !hasChinese(t)) return t;
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
+// Main translate with multi-source fallback
+async function translateWithFallback(text: string, from: string, to: string): Promise<string> {
+  // Check cache first
+  const key = getCacheKey(text, from, to);
+  if (cache.has(key)) return cache.get(key)!;
+
+  // If text is not Chinese, return as-is
+  if (!hasChinese(text)) return text;
+
+  // 1. Try dictionary (offline, always available)
+  const dictResult = dictionaryTranslate(text);
+  if (!hasChinese(dictResult)) {
+    if (cache.size > MAX_CACHE) cache.clear();
+    cache.set(key, dictResult);
+    return dictResult;
+  }
+
+  // 2. Try online APIs (only if dictionary still left Chinese)
+  const sources = [
+    () => mymemoryTranslate(text, from, to),
+    () => googleTranslate(text, from, to),
+    () => libreTranslate(text, from, to),
+  ];
+
+  for (const source of sources) {
+    const result = await source();
+    if (result) {
+      if (cache.size > MAX_CACHE) cache.clear();
+      cache.set(key, result);
+      return result;
+    }
+  }
+
+  // All sources failed, return dictionary result (may have partial translation)
+  // or marked with [EN] prefix
+  return dictResult;
+}
+
+// Validate translation: if result still contains Chinese, it's invalid
+function isValidEn(text: string): boolean {
+  return !/[\u4e00-\u9fff]/.test(text);
 }
 
 export const translateRouter = createRouter({
-  // Translate text using MyMemory API (free, no key needed)
+  // Single text translation
   translate: publicQuery
     .input(
       z.object({
@@ -35,99 +134,67 @@ export const translateRouter = createRouter({
       }),
     )
     .mutation(async ({ input }) => {
-      const cacheKey = getCacheKey(input.text, input.from, input.to);
-
-      // Check cache first
-      if (translationCache.has(cacheKey)) {
-        return { translated: translationCache.get(cacheKey)!, cached: true };
-      }
-
-      // Rate limit check
-      if (!checkRateLimit()) {
-        // Return original text if rate limited
-        return { translated: input.text, cached: false, rateLimited: true };
-      }
-
-      try {
-        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(input.text)}&langpair=${input.from}|${input.to}`;
-        const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
-
-        if (!response.ok) {
-          return { translated: input.text, cached: false, error: "API error" };
-        }
-
-        const data = (await response.json()) as {
-          responseData?: { translatedText?: string };
-          responseStatus?: number;
-        };
-
-        const translated = data.responseData?.translatedText || input.text;
-
-        // Cache the result
-        if (translationCache.size > MAX_CACHE_SIZE) {
-          translationCache.clear();
-        }
-        translationCache.set(cacheKey, translated);
-        dailyCount++;
-
-        return { translated, cached: false };
-      } catch {
-        return { translated: input.text, cached: false, error: "Network error" };
-      }
+      const translated = await translateWithFallback(input.text, input.from, input.to);
+      return {
+        translated,
+        cached: cache.has(getCacheKey(input.text, input.from, input.to)),
+        valid: isValidEn(translated),
+        source: isValidEn(translated) ? (cache.has(getCacheKey(input.text, input.from, input.to)) ? "cache" : "api") : "dict",
+      };
     }),
 
-  // Batch translate multiple texts
+  // Batch translate with validation - uses dictionary as primary
   batchTranslate: publicQuery
     .input(
       z.object({
-        texts: z.array(z.string().min(1).max(2000)).max(10),
+        texts: z.array(z.string().min(1).max(2000)).max(20),
         from: z.string().default("zh-CN"),
         to: z.string().default("en"),
       }),
     )
     .mutation(async ({ input }) => {
-      const results: string[] = [];
+      // First pass: dictionary translation (fast, offline)
+      const { results: dictResults, fullyTranslated } = batchDictTranslate(input.texts);
 
-      for (const text of input.texts) {
-        const cacheKey = getCacheKey(text, input.from, input.to);
+      // For texts that dictionary couldn't fully translate, try APIs
+      const results = [...dictResults];
+      const apiTranslated: number[] = [];
+      const failed: number[] = [];
 
-        if (translationCache.has(cacheKey)) {
-          results.push(translationCache.get(cacheKey)!);
+      for (let i = 0; i < input.texts.length; i++) {
+        // Skip if already fully translated by dictionary or not Chinese
+        if (fullyTranslated.includes(i)) continue;
+
+        const text = input.texts[i];
+
+        // Check cache
+        const key = getCacheKey(text, input.from, input.to);
+        if (cache.has(key)) {
+          results[i] = cache.get(key)!;
           continue;
         }
 
-        if (!checkRateLimit()) {
-          results.push(text);
-          continue;
-        }
-
-        try {
-          const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${input.from}|${input.to}`;
-          const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
-
-          if (!response.ok) {
-            results.push(text);
-            continue;
-          }
-
-          const data = (await response.json()) as {
-            responseData?: { translatedText?: string };
-          };
-
-          const translated = data.responseData?.translatedText || text;
-
-          if (translationCache.size > MAX_CACHE_SIZE) {
-            translationCache.clear();
-          }
-          translationCache.set(cacheKey, translated);
-          dailyCount++;
-
-          results.push(translated);
-        } catch {
-          results.push(text);
+        // Try APIs for remaining Chinese text
+        const translated = await translateWithFallback(text, input.from, input.to);
+        if (isValidEn(translated)) {
+          results[i] = translated;
+          apiTranslated.push(i);
+        } else {
+          failed.push(i);
+          results[i] = translated; // Use dict result with partial translation
         }
       }
 
-      return { results };
+      return {
+        results,
+        dictTranslated: fullyTranslated,
+        apiTranslated,
+        failed,
+      };
     }),
+
+  // Get cache stats
+  stats: publicQuery.query(() => {
+    return { cacheSize: cache.size };
+  }),
 });

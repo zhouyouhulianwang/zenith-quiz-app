@@ -5,6 +5,7 @@ import { ArrowLeft, Check, X, Clock, ChevronRight, ChevronLeft, RotateCcw, Home,
 import { trpc } from "@/providers/trpc";
 import { useAppSettings } from "@/context/AppContext";
 import { toTraditional } from "@/lib/chineseConv";
+import { isChinese } from "@/lib/translate";
 import ParticleBackground from "@/components/ParticleBackground";
 
 interface AnswerState {
@@ -426,6 +427,92 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
 
   const lang = settings.questionLanguage;
 
+  // Auto-translation for EN/EN+繁 modes
+  const [transCache, setTransCache] = useState<Record<number, { enQuestion: string; enOptions: string[] }>>({});
+  const [translatingIds, setTranslatingIds] = useState<Set<number>>(new Set());
+  const translateMutation = trpc.translate.batchTranslate.useMutation();
+  const updateBankMutation = trpc.bank.updateQuestions.useMutation();
+
+  // Auto-translate questions without EN data
+  useEffect(() => {
+    if (lang !== "entc" && lang !== "en") return;
+    if (!bankData) return;
+
+    const needsTranslation = questions.filter((q) => {
+      if (!isChinese(q.question)) return false;
+      if (q.enQuestion && !isChinese(q.enQuestion)) return false;
+      if (transCache[q.id]) return false;
+      if (translatingIds.has(q.id)) return false;
+      return true;
+    });
+
+    if (needsTranslation.length === 0) return;
+
+    const batchSize = 10;
+    for (let i = 0; i < needsTranslation.length; i += batchSize) {
+      const batch = needsTranslation.slice(i, i + batchSize);
+      const ids = batch.map((q) => q.id);
+      const texts = batch.flatMap((q) => [q.question, ...q.options]);
+
+      setTranslatingIds((prev) => {
+        const next = new Set(prev);
+        ids.forEach((id) => next.add(id));
+        return next;
+      });
+
+      translateMutation
+        .mutateAsync({ texts, from: "zh-CN", to: "en" })
+        .then((result) => {
+          const results = result.results;
+          const newTransCache: Record<number, { enQuestion: string; enOptions: string[] }> = {};
+          let idx = 0;
+          batch.forEach((q) => {
+            const optCount = q.options.length;
+            const enQuestion = results[idx] || q.question;
+            const enOptions = results.slice(idx + 1, idx + 1 + optCount);
+            while (enOptions.length < optCount) {
+              enOptions.push("[EN] " + q.options[enOptions.length]);
+            }
+            newTransCache[q.id] = { enQuestion, enOptions };
+            (q as any).enQuestion = enQuestion;
+            (q as any).enOptions = enOptions;
+            (q as any).tcQuestion = toTraditional(q.question);
+            (q as any).tcOptions = q.options.map((o: string) => toTraditional(o));
+            idx += 1 + optCount;
+          });
+          setTransCache((prev) => ({ ...prev, ...newTransCache }));
+
+          // Save translated questions back to DB
+          if (bankData && batch.length > 0) {
+            const allQs = JSON.parse(bankData.questionsJson);
+            const updatedQs = allQs.map((q: any) => {
+              if (newTransCache[q.id]) {
+                return { ...q, ...newTransCache[q.id], tcQuestion: toTraditional(q.question), tcOptions: q.options.map((o: string) => toTraditional(o)) };
+              }
+              return q;
+            });
+            updateBankMutation.mutate({ id: rawBankId, questionsJson: JSON.stringify(updatedQs) });
+          }
+        })
+        .catch(() => {
+          setTransCache((prev) => {
+            const next = { ...prev };
+            batch.forEach((q) => {
+              next[q.id] = { enQuestion: "[EN] " + q.question, enOptions: q.options.map((o) => "[EN] " + o) };
+            });
+            return next;
+          });
+        })
+        .finally(() => {
+          setTranslatingIds((prev) => {
+            const next = new Set(prev);
+            ids.forEach((id) => next.delete(id));
+            return next;
+          });
+        });
+    }
+  }, [questions, lang, transCache, translatingIds, bankData, rawBankId]);
+
   // Switch chapter and reset state
   const handleSwitchChapter = useCallback((chapterId?: number) => {
     setActiveChapterId(chapterId);
@@ -568,21 +655,26 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
     return <div style={{ minHeight: "100dvh", background: "var(--page-bg)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-tertiary)" }}>加载中...</div>;
   }
 
+  // Use auto-translated text if available
+  const autoTrans = currentQuestion ? transCache[currentQuestion.id] : null;
+  const effEnQ = currentQuestion?.enQuestion || autoTrans?.enQuestion || "";
+  const effEnOpts = currentQuestion?.enOptions?.length ? currentQuestion.enOptions : autoTrans?.enOptions || [];
+
   const displayQuestion = (() => {
     if (!currentQuestion) return "";
     switch (lang) {
-      case "en": return currentQuestion.enQuestion || currentQuestion.question;
+      case "en": return effEnQ || `[EN] ${currentQuestion.question}`;
       case "tc": return toTraditional(currentQuestion.question);
-      case "entc": return currentQuestion.enQuestion || "";
+      case "entc": return effEnQ || `[EN] ${currentQuestion.question}`;
       default: return currentQuestion.question;
     }
   })();
   const displayOptions: string[] = (() => {
     if (!currentQuestion) return [];
     switch (lang) {
-      case "en": return currentQuestion.enOptions?.length ? currentQuestion.enOptions : currentQuestion.options;
+      case "en": return effEnOpts.length ? effEnOpts : currentQuestion.options.map((o) => `[EN] ${o}`);
       case "tc": return currentQuestion.options.map((o) => toTraditional(o));
-      case "entc": return currentQuestion.enOptions?.length ? currentQuestion.enOptions : currentQuestion.options;
+      case "entc": return effEnOpts.length ? effEnOpts : currentQuestion.options.map((o) => `[EN] ${o}`);
       default: return currentQuestion.options;
     }
   })();

@@ -110,22 +110,23 @@ export default function MistakesPage() {
   const effEnOpts = dbEnOpts.length > 0 ? dbEnOpts : autoTrans?.enOptions || [];
 
   // Compute display text based on langMode
+  const hasEn = !!effEnQ && !effEnQ.startsWith("[EN]");
   const displayQuestion = question
     ? langMode === "en"
-      ? effEnQ || question.question
+      ? hasEn ? effEnQ : `[EN] ${question.question}`
       : langMode === "tc"
         ? toTraditional(question.question)
         : langMode === "entc"
-          ? effEnQ || question.question
+          ? hasEn ? effEnQ : `[EN] ${question.question}`
           : question.question
     : "";
   const displayOptions = question
     ? langMode === "en"
-      ? (effEnOpts.length > 0 ? effEnOpts : question.options)
+      ? hasEn ? effEnOpts : question.options.map((o: string) => `[EN] ${o}`)
       : langMode === "tc"
         ? question.options.map((opt: string) => toTraditional(opt))
         : langMode === "entc"
-          ? (effEnOpts.length > 0 ? effEnOpts : question.options)
+          ? hasEn ? effEnOpts : question.options.map((o: string) => `[EN] ${o}`)
           : question.options
     : [];
   // Sub-line for EN+繁 mode

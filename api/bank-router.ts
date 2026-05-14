@@ -102,6 +102,23 @@ export const bankRouter = createRouter({
       return { success: true };
     }),
 
+  // Update questions JSON (after translation)
+  updateQuestions: authedQuery
+    .input(
+      z.object({
+        id: z.number(),
+        questionsJson: z.string(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      await db
+        .update(banks)
+        .set({ questionsJson: input.questionsJson })
+        .where(and(eq(banks.id, input.id), eq(banks.userId, ctx.user.id)));
+      return { success: true };
+    }),
+
   // Update progress
   updateProgress: authedQuery
     .input(

@@ -5,6 +5,7 @@ import { ArrowLeft, Clock, ChevronLeft, ChevronRight, Flag, GraduationCap, BookO
 import { trpc } from "@/providers/trpc";
 import { useAppSettings } from "@/context/AppContext";
 import { toTraditional } from "@/lib/chineseConv";
+import { isChinese } from "@/lib/translate";
 import ParticleBackground from "@/components/ParticleBackground";
 
 interface Q {
@@ -70,6 +71,66 @@ export default function ExamSessionPage() {
     qs = shuffleArray(qs);
     return qs.slice(0, Math.min(count, qs.length));
   }, [allQuestions, chapterId, count]);
+
+  // Auto-translation for EN/EN+繁 modes
+  const [transCache, setTransCache] = useState<Record<number, { enQuestion: string; enOptions: string[] }>>({});
+  const translateMutation = trpc.translate.batchTranslate.useMutation();
+  const updateBankMutation = trpc.bank.updateQuestions.useMutation();
+
+  useEffect(() => {
+    if (lang !== "entc" && lang !== "en") return;
+    if (!bankData) return;
+
+    const needsTranslation = questions.filter((q) => {
+      if (!isChinese(q.question)) return false;
+      if (q.enQuestion && !isChinese(q.enQuestion)) return false;
+      if (transCache[q.id]) return false;
+      return true;
+    });
+
+    if (needsTranslation.length === 0) return;
+
+    const batchSize = 10;
+    for (let i = 0; i < needsTranslation.length; i += batchSize) {
+      const batch = needsTranslation.slice(i, i + batchSize);
+      const texts = batch.flatMap((q) => [q.question, ...q.options]);
+
+      translateMutation
+        .mutateAsync({ texts, from: "zh-CN", to: "en" })
+        .then((result) => {
+          const results = result.results;
+          const newTransCache: Record<number, { enQuestion: string; enOptions: string[] }> = {};
+          let idx = 0;
+          batch.forEach((q) => {
+            const optCount = q.options.length;
+            const enQuestion = results[idx] || q.question;
+            const enOptions = results.slice(idx + 1, idx + 1 + optCount);
+            while (enOptions.length < optCount) {
+              enOptions.push("[EN] " + q.options[enOptions.length]);
+            }
+            newTransCache[q.id] = { enQuestion, enOptions };
+            (q as any).enQuestion = enQuestion;
+            (q as any).enOptions = enOptions;
+            (q as any).tcQuestion = toTraditional(q.question);
+            (q as any).tcOptions = q.options.map((o: string) => toTraditional(o));
+            idx += 1 + optCount;
+          });
+          setTransCache((prev) => ({ ...prev, ...newTransCache }));
+
+          if (bankData && batch.length > 0) {
+            const allQs = JSON.parse(bankData.questionsJson);
+            const updatedQs = allQs.map((q: any) => {
+              if (newTransCache[q.id]) {
+                return { ...q, ...newTransCache[q.id], tcQuestion: toTraditional(q.question), tcOptions: q.options.map((o: string) => toTraditional(o)) };
+              }
+              return q;
+            });
+            updateBankMutation.mutate({ id: bankId, questionsJson: JSON.stringify(updatedQs) });
+          }
+        })
+        .catch(() => { /* ignore */ });
+    }
+  }, [questions, lang, transCache, bankData, bankId]);
 
   // Initialize answers
   useEffect(() => {
@@ -222,9 +283,15 @@ export default function ExamSessionPage() {
     try { return toTraditional(text); } catch { return text; }
   }
 
+  // Use auto-translated text if available
+  const autoTrans = currentQuestion ? transCache[currentQuestion.id] : null;
+  const effEnQ = currentQuestion?.enQuestion || autoTrans?.enQuestion || "";
+  const effEnOpts = currentQuestion?.enOptions?.length ? currentQuestion.enOptions : autoTrans?.enOptions || [];
+
   if (lang === "entc" && currentQuestion) {
-    primaryQuestion = currentQuestion.enQuestion || currentQuestion.question;
-    primaryOptions = currentQuestion.enOptions || currentQuestion.options;
+    // Show [EN] prefix when English is not available (translation pending)
+    primaryQuestion = effEnQ || `[EN] ${currentQuestion.question}`;
+    primaryOptions = effEnOpts.length ? effEnOpts : currentQuestion.options.map((o) => `[EN] ${o}`);
     secondaryQuestion = currentQuestion.tcQuestion || toTrad(currentQuestion.question);
     secondaryOptions = currentQuestion.tcOptions || currentQuestion.options.map((o) => toTrad(o));
   }

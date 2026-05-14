@@ -92,13 +92,13 @@ export default function MockExamPracticePage() {
   // Auto-translate questions that don't have EN data
   // Also save translated text back to DB for future use
   const updateQuestionsMutation = trpc.mockExam.updateQuestions.useMutation();
-  
+
   useEffect(() => {
     if (langMode !== "entc" && langMode !== "en") return;
 
     const needsTranslation = questions.filter((q) => {
       if (!isChinese(q.question)) return false; // Not Chinese, no need to translate
-      if (q.enQuestion) return false; // Already has EN in DB
+      if (q.enQuestion && !isChinese(q.enQuestion)) return false; // Already has valid EN in DB
       if (transCache[q.id]) return false; // Already translated in this session
       if (translatingIds.has(q.id)) return false; // Currently translating
       return true;
@@ -106,8 +106,8 @@ export default function MockExamPracticePage() {
 
     if (needsTranslation.length === 0) return;
 
-    // Batch translate in groups of 3 (stay under MyMemory free limit)
-    const batchSize = 3;
+    // Use larger batch size since dictionary translation is fast and offline
+    const batchSize = 10;
     for (let i = 0; i < needsTranslation.length; i += batchSize) {
       const batch = needsTranslation.slice(i, i + batchSize);
       const ids = batch.map((q) => q.id);
@@ -127,16 +127,11 @@ export default function MockExamPracticePage() {
           let idx = 0;
           batch.forEach((q) => {
             const optCount = q.options.length;
-            let enQuestion = results[idx] || q.question;
-            let enOptions = results.slice(idx + 1, idx + 1 + optCount);
+            const enQuestion = results[idx] || q.question;
+            const enOptions = results.slice(idx + 1, idx + 1 + optCount);
             // Pad if missing
             while (enOptions.length < optCount) {
-              enOptions.push(q.options[enOptions.length]);
-            }
-            // Validate: if result is still Chinese, mark as failed
-            if (isChinese(enQuestion)) {
-              enQuestion = "[翻译失败] " + q.question;
-              enOptions = q.options;
+              enOptions.push("[EN] " + q.options[enOptions.length]);
             }
             newTransCache[q.id] = { enQuestion, enOptions };
             // Also update the question object for DB save
@@ -146,9 +141,9 @@ export default function MockExamPracticePage() {
             q.tcOptions = q.options.map((o: string) => toTrad(o));
             idx += 1 + optCount;
           });
-          
+
           setTransCache((prev) => ({ ...prev, ...newTransCache }));
-          
+
           // Save translated questions back to DB
           if (currentMock && batch.length > 0) {
             const updatedQuestions = questions.map((q: Q) => {
@@ -164,11 +159,11 @@ export default function MockExamPracticePage() {
           }
         })
         .catch(() => {
-          // Mark as failed
+          // On error, still show original with [EN] marker
           setTransCache((prev) => {
             const next = { ...prev };
             batch.forEach((q) => {
-              next[q.id] = { enQuestion: "[翻译失败] " + q.question, enOptions: q.options };
+              next[q.id] = { enQuestion: "[EN] " + q.question, enOptions: q.options.map((o) => "[EN] " + o) };
             });
             return next;
           });
@@ -367,14 +362,17 @@ export default function MockExamPracticePage() {
   let subOptions: string[] | undefined;
 
   if (currentQuestion) {
-    // Build effective EN text: db en > auto-translated > original
-    const effectiveEnQuestion = currentQuestion.enQuestion || autoTrans?.enQuestion || "";
-    const effectiveEnOptions = currentQuestion.enOptions || autoTrans?.enOptions || [];
+    // Build effective EN text: db en > auto-translated > fallback marker
+    const hasDbEn = !!currentQuestion.enQuestion;
+    const hasTransEn = !!autoTrans?.enQuestion;
+    const enQ = currentQuestion.enQuestion || autoTrans?.enQuestion || "";
+    const enO = currentQuestion.enOptions || autoTrans?.enOptions || [];
 
     switch (langMode) {
       case "en":
-        displayQuestion = effectiveEnQuestion || currentQuestion.question || "";
-        displayOptions = effectiveEnOptions.length > 0 ? effectiveEnOptions : currentQuestion.options || [];
+        // If no EN available, show [EN] prefix + original (so user knows it's pending translation)
+        displayQuestion = hasDbEn || hasTransEn ? enQ! : `[EN] ${currentQuestion.question}`;
+        displayOptions = enO.length > 0 ? enO : currentQuestion.options || [];
         break;
       case "tc":
         displayQuestion = currentQuestion.tcQuestion || toTrad(currentQuestion.question || "");
@@ -385,19 +383,15 @@ export default function MockExamPracticePage() {
         displayOptions = currentQuestion.options || [];
         break;
       case "entc": {
-        const hasEn = !!effectiveEnQuestion;
-        displayQuestion = effectiveEnQuestion || currentQuestion.question || "";
-        displayOptions = effectiveEnOptions.length > 0 ? effectiveEnOptions : currentQuestion.options || [];
+        // EN+繁: EN primary, TC sub-line
+        // If no EN, show [EN] original so user knows translation is pending
+        displayQuestion = hasDbEn || hasTransEn ? enQ! : `[EN] ${currentQuestion.question}`;
+        displayOptions = enO.length > 0 ? enO : currentQuestion.options || [];
+        // TC always shows as sub-line (local conversion, no API needed)
         const tcQ = currentQuestion.tcQuestion || toTrad(currentQuestion.question || "");
         const tcO = currentQuestion.tcOptions || currentQuestion.options?.map((o) => toTrad(o));
-        // Show TC sub-line when: (1) EN text exists (db or auto-translated), or (2) TC differs from primary
-        if (hasEn) {
-          subQuestion = tcQ;
-          subOptions = tcO;
-        } else if (tcQ !== displayQuestion) {
-          subQuestion = tcQ;
-          subOptions = tcO;
-        }
+        subQuestion = tcQ;
+        subOptions = tcO;
         break;
       }
     }
