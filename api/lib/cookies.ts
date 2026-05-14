@@ -1,4 +1,5 @@
 import type { CookieOptions } from "hono/utils/cookie";
+import { Session } from "@contracts/constants";
 
 function isLocalhost(headers: Headers): boolean {
   const host = headers.get("host") || "";
@@ -13,5 +14,6 @@ export function getSessionCookieOptions(headers: Headers): CookieOptions {
     path: "/",
     sameSite: localhost ? "Lax" : "None",
     secure: !localhost,
+    maxAge: Math.floor(Session.maxAgeMs / 1000),
   };
 }
