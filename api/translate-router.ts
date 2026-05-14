@@ -92,7 +92,7 @@ ${texts.map((t, i) => `${i + 1}. ${t}`).join("\n")}`;
 
     const res = await llmClient.post<{
       choices?: Array<{ message?: { content?: string } }>;
-    }>("/chat/completions", {
+    }>("/v1/chat/completions", {
       model: "moonshot-v1-8k",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.1,
