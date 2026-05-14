@@ -9,62 +9,8 @@ import { getSessionCookieOptions } from "./lib/cookies";
 import { Session } from "@contracts/constants";
 import bcrypt from "bcryptjs";
 
-// Hash a password with bcrypt
-function hashPassword(pw: string): string {
-  return bcrypt.hashSync(pw, 10);
-}
-
-// Validate credentials — auto-creates user on first login if not exists
-async function findOrCreateUser(username: string, password: string) {
-  const db = getDb();
-  const rows = await db
-    .select()
-    .from(users)
-    .where(eq(users.username, username))
-    .limit(1);
-
-  if (rows.length === 0) {
-    // Auto-create user on first login attempt
-    const result = await db.insert(users).values({
-      username,
-      password: hashPassword(password),
-      name: `User ${username}`,
-      role: "user",
-      lastSignInAt: new Date(),
-    });
-    const insertId = result[0]?.insertId ? Number(result[0].insertId) : 0;
-
-    // Create default settings
-    await db.insert(userSettings).values({
-      userId: insertId,
-      dailyGoal: 20,
-      reminderTime: "20:00",
-      difficulty: 3,
-      fontSize: "medium",
-      questionLanguage: "entc",
-      theme: "system",
-    });
-
-    return { id: insertId, username };
-  }
-
-  const user = rows[0];
-  if (!user.password) {
-    // User exists but has no password — set it
-    await db
-      .update(users)
-      .set({ password: hashPassword(password) })
-      .where(eq(users.id, user.id));
-  } else if (!bcrypt.compareSync(password, user.password)) {
-    // Wrong password
-    return null;
-  }
-
-  return user;
-}
-
 export const simpleAuthRouter = createRouter({
-  // Simple username/password login — auto-creates user on first login
+  // Simple username/password login — validates against existing users only
   login: publicQuery
     .input(
       z.object({
@@ -73,14 +19,26 @@ export const simpleAuthRouter = createRouter({
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const user = await findOrCreateUser(input.username, input.password);
+      const db = getDb();
+      const rows = await db
+        .select()
+        .from(users)
+        .where(eq(users.username, input.username))
+        .limit(1);
 
-      if (!user) {
+      // User must exist
+      if (rows.length === 0) {
+        return { success: false, error: "用户名或密码错误" };
+      }
+
+      const user = rows[0];
+
+      // Password must match
+      if (!user.password || !bcrypt.compareSync(input.password, user.password)) {
         return { success: false, error: "用户名或密码错误" };
       }
 
       // Update last sign in
-      const db = getDb();
       await db
         .update(users)
         .set({ lastSignInAt: new Date() })
