@@ -5,6 +5,7 @@ import { ArrowLeft, Check, ChevronDown, ChevronUp, Search, BookOpen, GraduationC
 import { trpc } from "@/providers/trpc";
 import { useAppSettings } from "@/context/AppContext";
 import { toTraditional } from "@/lib/chineseConv";
+import { isChinese } from "@/lib/translate";
 import ParticleBackground from "@/components/ParticleBackground";
 
 interface Q {
@@ -13,6 +14,10 @@ interface Q {
   question: string;
   options: string[];
   correct: number[];
+  enQuestion?: string;
+  enOptions?: string[];
+  tcQuestion?: string;
+  tcOptions?: string[];
   explanation: string;
   chapterId?: number;
   chapterName?: string;
@@ -95,9 +100,46 @@ export default function MockExamCreatePage() {
     });
   };
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (selectedQuestionIds.size === 0 || !examTitle.trim()) return;
-    const selectedQuestions = allQuestions.filter((q) => selectedQuestionIds.has(q.id));
+    let selectedQuestions = allQuestions.filter((q) => selectedQuestionIds.has(q.id));
+    
+    // Auto-translate questions that don't have EN/TC data
+    const needsTrans = selectedQuestions.filter((q: Q) => !q.enQuestion && isChinese(q.question));
+    if (needsTrans.length > 0) {
+      setJsonError(`正在翻译 ${needsTrans.length} 道题目...`);
+      try {
+        const translate = trpc.translate.batchTranslate.useMutation();
+        const batchSize = 3;
+        for (let i = 0; i < needsTrans.length; i += batchSize) {
+          const batch = needsTrans.slice(i, i + batchSize);
+          const texts = batch.flatMap((q: Q) => [q.question, ...q.options]);
+          const result = await translate.mutateAsync({ texts, from: "zh-CN", to: "en" });
+          const results = result.results;
+          let idx = 0;
+          batch.forEach((q: Q) => {
+            const optCount = q.options.length;
+            let enQuestion = results[idx] || q.question;
+            let enOptions = results.slice(idx + 1, idx + 1 + optCount);
+            while (enOptions.length < optCount) enOptions.push(q.options[enOptions.length]);
+            // Validate translation
+            if (isChinese(enQuestion)) enQuestion = q.question;
+            // Update question
+            q.enQuestion = enQuestion;
+            q.enOptions = enOptions;
+            q.tcQuestion = toTrad(q.question);
+            q.tcOptions = q.options.map((o: string) => toTrad(o));
+            idx += 1 + optCount;
+          });
+        }
+        // Update selectedQuestions with translated data
+        selectedQuestions = allQuestions.filter((q) => selectedQuestionIds.has(q.id));
+      } catch {
+        // Continue with untranslated data
+      }
+      setJsonError("");
+    }
+    
     createMutation.mutate({
       title: examTitle.trim(),
       bankId: jsonMode ? 0 : (selectedBankId || 0),

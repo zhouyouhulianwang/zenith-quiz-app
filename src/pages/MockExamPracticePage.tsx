@@ -90,21 +90,24 @@ export default function MockExamPracticePage() {
   }, [currentMock?.questionsJson]);
 
   // Auto-translate questions that don't have EN data
+  // Also save translated text back to DB for future use
+  const updateQuestionsMutation = trpc.mockExam.updateQuestions.useMutation();
+  
   useEffect(() => {
     if (langMode !== "entc" && langMode !== "en") return;
 
     const needsTranslation = questions.filter((q) => {
       if (!isChinese(q.question)) return false; // Not Chinese, no need to translate
-      if (q.enQuestion) return false; // Already has EN
-      if (transCache[q.id]) return false; // Already translated
+      if (q.enQuestion) return false; // Already has EN in DB
+      if (transCache[q.id]) return false; // Already translated in this session
       if (translatingIds.has(q.id)) return false; // Currently translating
       return true;
     });
 
     if (needsTranslation.length === 0) return;
 
-    // Batch translate in groups of 5
-    const batchSize = 5;
+    // Batch translate in groups of 3 (stay under MyMemory free limit)
+    const batchSize = 3;
     for (let i = 0; i < needsTranslation.length; i += batchSize) {
       const batch = needsTranslation.slice(i, i + batchSize);
       const ids = batch.map((q) => q.id);
@@ -120,25 +123,55 @@ export default function MockExamPracticePage() {
         .mutateAsync({ texts, from: "zh-CN", to: "en" })
         .then((result) => {
           const results = result.results;
+          const newTransCache: Record<number, { enQuestion: string; enOptions: string[] }> = {};
+          let idx = 0;
+          batch.forEach((q) => {
+            const optCount = q.options.length;
+            let enQuestion = results[idx] || q.question;
+            let enOptions = results.slice(idx + 1, idx + 1 + optCount);
+            // Pad if missing
+            while (enOptions.length < optCount) {
+              enOptions.push(q.options[enOptions.length]);
+            }
+            // Validate: if result is still Chinese, mark as failed
+            if (isChinese(enQuestion)) {
+              enQuestion = "[翻译失败] " + q.question;
+              enOptions = q.options;
+            }
+            newTransCache[q.id] = { enQuestion, enOptions };
+            // Also update the question object for DB save
+            q.enQuestion = enQuestion;
+            q.enOptions = enOptions;
+            q.tcQuestion = toTrad(q.question);
+            q.tcOptions = q.options.map((o: string) => toTrad(o));
+            idx += 1 + optCount;
+          });
+          
+          setTransCache((prev) => ({ ...prev, ...newTransCache }));
+          
+          // Save translated questions back to DB
+          if (currentMock && batch.length > 0) {
+            const updatedQuestions = questions.map((q: Q) => {
+              if (newTransCache[q.id]) {
+                return { ...q, ...newTransCache[q.id], tcQuestion: toTrad(q.question), tcOptions: q.options.map((o: string) => toTrad(o)) };
+              }
+              return q;
+            });
+            updateQuestionsMutation.mutate({
+              id: currentMock.id,
+              questionsJson: JSON.stringify(updatedQuestions),
+            });
+          }
+        })
+        .catch(() => {
+          // Mark as failed
           setTransCache((prev) => {
             const next = { ...prev };
-            let idx = 0;
             batch.forEach((q) => {
-              const optCount = q.options.length;
-              const enQuestion = results[idx] || q.question;
-              const enOptions = results.slice(idx + 1, idx + 1 + optCount);
-              // Pad if missing
-              while (enOptions.length < optCount) {
-                enOptions.push(q.options[enOptions.length]);
-              }
-              next[q.id] = { enQuestion, enOptions };
-              idx += 1 + optCount;
+              next[q.id] = { enQuestion: "[翻译失败] " + q.question, enOptions: q.options };
             });
             return next;
           });
-        })
-        .catch(() => {
-          // Silently fail - will use fallback display
         })
         .finally(() => {
           setTranslatingIds((prev) => {
@@ -148,7 +181,7 @@ export default function MockExamPracticePage() {
           });
         });
     }
-  }, [questions, langMode, transCache, translatingIds]);
+  }, [questions, langMode, transCache, translatingIds, currentMock]);
 
 
 

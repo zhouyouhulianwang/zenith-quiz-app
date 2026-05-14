@@ -66,4 +66,21 @@ export const mockExamRouter = {
       }
       return { success: true };
     }),
+
+  // Update questionsJson after translation (save translated text back to DB)
+  updateQuestions: authedQuery
+    .input(
+      z.object({
+        id: z.number(),
+        questionsJson: z.string(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      await db
+        .update(mockExams)
+        .set({ questionsJson: input.questionsJson })
+        .where(eq(mockExams.id, input.id));
+      return { success: true };
+    }),
 };
