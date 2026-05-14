@@ -5,6 +5,7 @@ import { ArrowLeft, Clock, ChevronLeft, ChevronRight, Flag, GraduationCap, Check
 import { trpc } from "@/providers/trpc";
 import { toTraditional } from "@/lib/chineseConv";
 import { isChinese } from "@/lib/translate";
+import { clientDictTranslate, getEnDisplay, getEnOptions } from "@/lib/dict-translate";
 import ParticleBackground from "@/components/ParticleBackground";
 
 interface Q {
@@ -159,11 +160,14 @@ export default function MockExamPracticePage() {
           }
         })
         .catch(() => {
-          // On error, still show original with [EN] marker
+          // API failed — use client-side dictionary for instant partial translation
           setTransCache((prev) => {
             const next = { ...prev };
             batch.forEach((q) => {
-              next[q.id] = { enQuestion: "[EN] " + q.question, enOptions: q.options.map((o) => "[EN] " + o) };
+              next[q.id] = {
+                enQuestion: clientDictTranslate(q.question) || "[EN] " + q.question,
+                enOptions: q.options.map((o) => clientDictTranslate(o) || "[EN] " + o),
+              };
             });
             return next;
           });
@@ -362,17 +366,14 @@ export default function MockExamPracticePage() {
   let subOptions: string[] | undefined;
 
   if (currentQuestion) {
-    // Build effective EN text: db en > auto-translated > fallback marker
-    const hasDbEn = !!currentQuestion.enQuestion;
-    const hasTransEn = !!autoTrans?.enQuestion;
-    const enQ = currentQuestion.enQuestion || autoTrans?.enQuestion || "";
-    const enO = currentQuestion.enOptions || autoTrans?.enOptions || [];
+    // Build effective EN text using client-side dictionary as ultimate fallback
+    const enQ = getEnDisplay(currentQuestion.question, currentQuestion.enQuestion, autoTrans?.enQuestion);
+    const enO = getEnOptions(currentQuestion.options, currentQuestion.enOptions, autoTrans?.enOptions);
 
     switch (langMode) {
       case "en":
-        // If no EN available, show [EN] prefix + original (so user knows it's pending translation)
-        displayQuestion = hasDbEn || hasTransEn ? enQ! : `[EN] ${currentQuestion.question}`;
-        displayOptions = enO.length > 0 ? enO : currentQuestion.options || [];
+        displayQuestion = enQ;
+        displayOptions = enO;
         break;
       case "tc":
         displayQuestion = currentQuestion.tcQuestion || toTrad(currentQuestion.question || "");
@@ -384,14 +385,11 @@ export default function MockExamPracticePage() {
         break;
       case "entc": {
         // EN+繁: EN primary, TC sub-line
-        // If no EN, show [EN] original so user knows translation is pending
-        displayQuestion = hasDbEn || hasTransEn ? enQ! : `[EN] ${currentQuestion.question}`;
-        displayOptions = enO.length > 0 ? enO : currentQuestion.options || [];
+        displayQuestion = enQ;
+        displayOptions = enO;
         // TC always shows as sub-line (local conversion, no API needed)
-        const tcQ = currentQuestion.tcQuestion || toTrad(currentQuestion.question || "");
-        const tcO = currentQuestion.tcOptions || currentQuestion.options?.map((o) => toTrad(o));
-        subQuestion = tcQ;
-        subOptions = tcO;
+        subQuestion = currentQuestion.tcQuestion || toTrad(currentQuestion.question || "");
+        subOptions = currentQuestion.tcOptions || currentQuestion.options?.map((o) => toTrad(o));
         break;
       }
     }

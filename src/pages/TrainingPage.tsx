@@ -6,6 +6,7 @@ import { trpc } from "@/providers/trpc";
 import { useAppSettings } from "@/context/AppContext";
 import { toTraditional } from "@/lib/chineseConv";
 import { isChinese } from "@/lib/translate";
+import { clientDictTranslate, getEnDisplay, getEnOptions } from "@/lib/dict-translate";
 import ParticleBackground from "@/components/ParticleBackground";
 
 interface AnswerState {
@@ -498,7 +499,10 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
           setTransCache((prev) => {
             const next = { ...prev };
             batch.forEach((q) => {
-              next[q.id] = { enQuestion: "[EN] " + q.question, enOptions: q.options.map((o) => "[EN] " + o) };
+              next[q.id] = {
+                enQuestion: clientDictTranslate(q.question) || "[EN] " + q.question,
+                enOptions: q.options.map((o) => clientDictTranslate(o) || "[EN] " + o),
+              };
             });
             return next;
           });
@@ -655,26 +659,26 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
     return <div style={{ minHeight: "100dvh", background: "var(--page-bg)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-tertiary)" }}>加载中...</div>;
   }
 
-  // Use auto-translated text if available
+  // Use auto-translated text with client-side dictionary fallback
   const autoTrans = currentQuestion ? transCache[currentQuestion.id] : null;
-  const effEnQ = currentQuestion?.enQuestion || autoTrans?.enQuestion || "";
-  const effEnOpts = currentQuestion?.enOptions?.length ? currentQuestion.enOptions : autoTrans?.enOptions || [];
+  const enQ = currentQuestion ? getEnDisplay(currentQuestion.question, currentQuestion.enQuestion, autoTrans?.enQuestion) : "";
+  const enO = currentQuestion ? getEnOptions(currentQuestion.options, currentQuestion.enOptions, autoTrans?.enOptions) : [];
 
   const displayQuestion = (() => {
     if (!currentQuestion) return "";
     switch (lang) {
-      case "en": return effEnQ || `[EN] ${currentQuestion.question}`;
+      case "en": return enQ;
       case "tc": return toTraditional(currentQuestion.question);
-      case "entc": return effEnQ || `[EN] ${currentQuestion.question}`;
+      case "entc": return enQ;
       default: return currentQuestion.question;
     }
   })();
   const displayOptions: string[] = (() => {
     if (!currentQuestion) return [];
     switch (lang) {
-      case "en": return effEnOpts.length ? effEnOpts : currentQuestion.options.map((o) => `[EN] ${o}`);
+      case "en": return enO;
       case "tc": return currentQuestion.options.map((o) => toTraditional(o));
-      case "entc": return effEnOpts.length ? effEnOpts : currentQuestion.options.map((o) => `[EN] ${o}`);
+      case "entc": return enO;
       default: return currentQuestion.options;
     }
   })();
@@ -781,7 +785,7 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
                 {currentAnswer?.submitted && <span style={{ color: currentAnswer.isCorrect ? "#10b981" : "#ef4444" }}>{currentAnswer.isCorrect ? " ✓ 正确" : " ✗ 错误"}</span>}
               </div>
               <div style={{ fontSize: "18px", fontWeight: 500, color: "var(--text-primary)", lineHeight: 1.6, whiteSpace: "pre-wrap", userSelect: "text", WebkitUserSelect: "text" }}>{displayQuestion}</div>
-              {lang === "both" && currentQuestion?.enQuestion && <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid var(--border-color)", fontSize: "14px", color: "var(--text-primary)", lineHeight: 1.6, userSelect: "text", WebkitUserSelect: "text" }}>{currentQuestion.enQuestion}</div>}
+              {lang === "both" && <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid var(--border-color)", fontSize: "14px", color: "var(--text-primary)", lineHeight: 1.6, userSelect: "text", WebkitUserSelect: "text" }}>{enQ}</div>}
               {lang === "entc" && secondaryQuestion && <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid var(--border-color)", fontSize: "16px", color: "var(--text-primary)", lineHeight: 1.6, userSelect: "text", WebkitUserSelect: "text" }}>{secondaryQuestion}</div>}
             </div>
 

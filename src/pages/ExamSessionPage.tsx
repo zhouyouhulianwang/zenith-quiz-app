@@ -6,6 +6,7 @@ import { trpc } from "@/providers/trpc";
 import { useAppSettings } from "@/context/AppContext";
 import { toTraditional } from "@/lib/chineseConv";
 import { isChinese } from "@/lib/translate";
+import { clientDictTranslate, getEnDisplay, getEnOptions } from "@/lib/dict-translate";
 import ParticleBackground from "@/components/ParticleBackground";
 
 interface Q {
@@ -128,7 +129,18 @@ export default function ExamSessionPage() {
             updateBankMutation.mutate({ id: bankId, questionsJson: JSON.stringify(updatedQs) });
           }
         })
-        .catch(() => { /* ignore */ });
+        .catch(() => {
+          setTransCache((prev) => {
+            const next = { ...prev };
+            batch.forEach((q) => {
+              next[q.id] = {
+                enQuestion: clientDictTranslate(q.question) || "[EN] " + q.question,
+                enOptions: q.options.map((o) => clientDictTranslate(o) || "[EN] " + o),
+              };
+            });
+            return next;
+          });
+        });
     }
   }, [questions, lang, transCache, bankData, bankId]);
 
@@ -283,15 +295,14 @@ export default function ExamSessionPage() {
     try { return toTraditional(text); } catch { return text; }
   }
 
-  // Use auto-translated text if available
+  // Use auto-translated text with client-side dictionary fallback
   const autoTrans = currentQuestion ? transCache[currentQuestion.id] : null;
-  const effEnQ = currentQuestion?.enQuestion || autoTrans?.enQuestion || "";
-  const effEnOpts = currentQuestion?.enOptions?.length ? currentQuestion.enOptions : autoTrans?.enOptions || [];
+  const enQ = currentQuestion ? getEnDisplay(currentQuestion.question, currentQuestion.enQuestion, autoTrans?.enQuestion) : "";
+  const enO = currentQuestion ? getEnOptions(currentQuestion.options, currentQuestion.enOptions, autoTrans?.enOptions) : [];
 
   if (lang === "entc" && currentQuestion) {
-    // Show [EN] prefix when English is not available (translation pending)
-    primaryQuestion = effEnQ || `[EN] ${currentQuestion.question}`;
-    primaryOptions = effEnOpts.length ? effEnOpts : currentQuestion.options.map((o) => `[EN] ${o}`);
+    primaryQuestion = enQ;
+    primaryOptions = enO;
     secondaryQuestion = currentQuestion.tcQuestion || toTrad(currentQuestion.question);
     secondaryOptions = currentQuestion.tcOptions || currentQuestion.options.map((o) => toTrad(o));
   }

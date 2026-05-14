@@ -17,7 +17,7 @@ function getCacheKey(text: string, from: string, to: string): string {
 async function googleTranslate(text: string, from: string, to: string): Promise<string | null> {
   try {
     const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${from}&tl=${to}&dt=t&q=${encodeURIComponent(text)}`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    const res = await fetch(url, { signal: AbortSignal.timeout(3000) });
     if (!res.ok) return null;
     const data = (await res.json()) as unknown[][];
     if (!data || !data[0] || !Array.isArray(data[0])) return null;
@@ -36,7 +36,7 @@ async function mymemoryTranslate(text: string, from: string, to: string): Promis
   try {
     const pair = `${from === "zh-CN" ? "zh" : from}|${to === "en" ? "en-US" : to}`;
     const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${pair}`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    const res = await fetch(url, { signal: AbortSignal.timeout(3000) });
     if (!res.ok) return null;
     const data = (await res.json()) as { responseData?: { translatedText?: string }; responseStatus?: number };
     if (data.responseStatus !== 200) return null;

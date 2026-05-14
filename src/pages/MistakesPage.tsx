@@ -6,6 +6,7 @@ import { trpc } from "@/providers/trpc";
 import { useAppSettings } from "@/context/AppContext";
 import { toTraditional } from "@/lib/chineseConv";
 import { isChinese } from "@/lib/translate";
+import { clientDictTranslate } from "@/lib/dict-translate";
 import ParticleBackground from "@/components/ParticleBackground";
 
 type LangMode = "en" | "tc" | "sc" | "entc";
@@ -100,7 +101,16 @@ export default function MistakesPage() {
           enOptions: r.slice(1, 1 + question.options.length),
         },
       }));
-    }).catch(() => { /* ignore */ });
+    }).catch(() => {
+      // API failed — use client-side dictionary
+      setTransCache((prev) => ({
+        ...prev,
+        [qKey]: {
+          enQuestion: clientDictTranslate(question.question) || "[EN] " + question.question,
+          enOptions: question.options.map((o: string) => clientDictTranslate(o) || "[EN] " + o),
+        },
+      }));
+    });
   }, [qKey, question, langMode, autoTrans]);
 
   // Compute effective EN text
@@ -110,23 +120,26 @@ export default function MistakesPage() {
   const effEnOpts = dbEnOpts.length > 0 ? dbEnOpts : autoTrans?.enOptions || [];
 
   // Compute display text based on langMode
-  const hasEn = !!effEnQ && !effEnQ.startsWith("[EN]");
+  // Use client-side dictionary if no translation available
+  const effEnQ2 = effEnQ || (question ? clientDictTranslate(question.question) : "");
+  const effEnOpts2 = effEnOpts.length > 0 ? effEnOpts : (question ? question.options.map((o: string) => clientDictTranslate(o) || o) : []);
+  const hasEn = !!effEnQ2 && !effEnQ2.startsWith("[EN]");
   const displayQuestion = question
     ? langMode === "en"
-      ? hasEn ? effEnQ : `[EN] ${question.question}`
+      ? hasEn ? effEnQ2 : `[EN] ${question.question}`
       : langMode === "tc"
         ? toTraditional(question.question)
         : langMode === "entc"
-          ? hasEn ? effEnQ : `[EN] ${question.question}`
+          ? hasEn ? effEnQ2 : `[EN] ${question.question}`
           : question.question
     : "";
   const displayOptions = question
     ? langMode === "en"
-      ? hasEn ? effEnOpts : question.options.map((o: string) => `[EN] ${o}`)
+      ? hasEn ? effEnOpts2 : question.options.map((o: string) => `[EN] ${o}`)
       : langMode === "tc"
         ? question.options.map((opt: string) => toTraditional(opt))
         : langMode === "entc"
-          ? hasEn ? effEnOpts : question.options.map((o: string) => `[EN] ${o}`)
+          ? hasEn ? effEnOpts2 : question.options.map((o: string) => `[EN] ${o}`)
           : question.options
     : [];
   // Sub-line for EN+繁 mode
