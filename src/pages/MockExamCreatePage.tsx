@@ -235,6 +235,16 @@ export default function MockExamCreatePage() {
             chapterMap[chName] = nextChapterId++;
           }
 
+          // Extract multi-language fields if present in JSON
+          const enQ = stripHtml(q.enQuestion || q.en_question || q.english || q.eng || "");
+          const tcQ = stripHtml(q.tcQuestion || q.tc_question || q.cht_title || q.traditional || q.cht || "");
+          const enOpts = Array.isArray(q.enOptions || q.en_options || q.englishOptions)
+            ? (q.enOptions || q.en_options || q.englishOptions).map(String).map(stripHtml).filter((o: string) => o.length > 0)
+            : undefined;
+          const tcOpts = Array.isArray(q.tcOptions || q.tc_options || q.chtOptions || q.traditionalOptions)
+            ? (q.tcOptions || q.tc_options || q.chtOptions || q.traditionalOptions).map(String).map(stripHtml).filter((o: string) => o.length > 0)
+            : undefined;
+
           questions.push({
             id: q.question_id || q.id || idx + 1,
             type: isMulti ? "multiple" : "single",
@@ -244,6 +254,10 @@ export default function MockExamCreatePage() {
             explanation: stripHtml(q.analysis || q.explanation || q.reason || q.note || ""),
             chapterId: chName ? chapterMap[chName] : undefined,
             chapterName: chName || undefined,
+            ...(enQ ? { enQuestion: enQ } : {}),
+            ...(tcQ ? { tcQuestion: tcQ } : {}),
+            ...(enOpts && enOpts.length >= 2 ? { enOptions: enOpts } : {}),
+            ...(tcOpts && tcOpts.length >= 2 ? { tcOptions: tcOpts } : {}),
           });
           validCount++;
         }

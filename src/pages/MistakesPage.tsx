@@ -77,15 +77,32 @@ export default function MistakesPage() {
 
   // Compute display text based on langMode
   const displayQuestion = question
-    ? langMode === "tc" || langMode === "entc"
-      ? toTraditional(question.question)
-      : question.question
+    ? langMode === "en"
+      ? (question as any).enQuestion || question.question
+      : langMode === "tc"
+        ? toTraditional(question.question)
+        : langMode === "entc"
+          ? (question as any).enQuestion || question.question
+          : question.question
     : "";
   const displayOptions = question
-    ? question.options.map((opt) =>
-        langMode === "tc" || langMode === "entc" ? toTraditional(opt) : opt
-      )
+    ? langMode === "en"
+      ? ((question as any).enOptions || question.options)
+      : langMode === "tc"
+        ? question.options.map((opt: string) => toTraditional(opt))
+        : langMode === "entc"
+          ? ((question as any).enOptions || question.options)
+          : question.options
     : [];
+  // Sub-line for EN+繁 mode (Traditional Chinese below English)
+  const subQuestion = question && langMode === "entc"
+    ? ((question as any).tcQuestion || toTraditional(question.question))
+    : "";
+  const subOptions = question && langMode === "entc"
+    ? (((question as any).tcOptions || question.options.map((o: string) => toTraditional(o))) as string[])
+    : undefined;
+  // Only show sub-line when it differs from primary (avoid duplicate when no EN available)
+  const showSub = langMode === "entc" && subQuestion && subQuestion !== displayQuestion;
 
   const handlePrev = () => { if (currentIndex > 0) setCurrentIndex((p) => p - 1); };
   const handleNext = () => { if (currentIndex < filtered.length - 1) setCurrentIndex((p) => p + 1); };
@@ -156,7 +173,10 @@ export default function MistakesPage() {
                 <span style={{ fontSize: "11px", color: "var(--text-tertiary)", display: "flex", alignItems: "center", gap: "3px" }}><Clock size={10} />{formatDate(current.createdAt)}</span>
               </div>
               <div style={{ background: "var(--card-bg)", borderRadius: "16px", padding: "20px", border: "1px solid var(--border-color)", marginBottom: "16px" }}>
-                <div style={{ fontSize: "17px", fontWeight: 500, color: "var(--text-primary)", lineHeight: 1.6, marginBottom: "16px" }}>{displayQuestion}</div>
+                <div style={{ fontSize: "17px", fontWeight: 500, color: "var(--text-primary)", lineHeight: 1.6 }}>{displayQuestion}</div>
+                {showSub && subQuestion && (
+                  <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid var(--border-color)", fontSize: "16px", color: "var(--text-primary)", lineHeight: 1.6 }}>{subQuestion}</div>
+                )}
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   {displayOptions.map((opt, idx) => {
                     const isCorrect = question.correct.includes(idx);
@@ -168,7 +188,9 @@ export default function MistakesPage() {
                     return (
                       <div key={idx} style={{ padding: "10px 12px", borderRadius: "8px", background: bg, border, fontSize: "14px", color, display: "flex", alignItems: "center", gap: "8px" }}>
                         <span style={{ width: "22px", height: "22px", borderRadius: "50%", background: isCorrect ? "#10b981" : isWrong ? "#ef4444" : isSelected ? "#00d4ff" : "var(--text-tertiary)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 600, color: "var(--text-primary)", flexShrink: 0 }}>{String.fromCharCode(65 + idx)}</span>
-                        <span>{displayOpt}</span>
+                        <span>{opt}{showSub && subOptions?.[idx] && (
+                          <span style={{ display: "block", marginTop: "3px", fontSize: "13px", color: "var(--text-secondary)" }}>{subOptions[idx]}</span>
+                        )}</span>
                         {isCorrect && <span style={{ fontSize: "11px", marginLeft: "auto" }}>正确答案</span>}
                         {!isCorrect && isSelected && <span style={{ fontSize: "11px", marginLeft: "auto" }}>你的选择</span>}
                       </div>

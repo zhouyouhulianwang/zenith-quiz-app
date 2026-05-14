@@ -13,6 +13,8 @@ export interface Question {
   explanation: string;
   enQuestion?: string;
   enOptions?: string[];
+  tcQuestion?: string;
+  tcOptions?: string[];
   chapterId?: number;
   chapterName?: string;
 }

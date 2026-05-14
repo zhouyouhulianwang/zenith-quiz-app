@@ -52,6 +52,35 @@ export default function RecordsPage() {
   const langMode = settings.questionLanguage as LangMode;
   const showTc = langMode === "entc" || langMode === "tc";
   const total = filtered.length;
+
+  // Compute display text based on langMode
+  const displayQuestion = question
+    ? langMode === "en"
+      ? (question as any).enQuestion || question.question
+      : langMode === "tc"
+        ? toTraditional(question.question)
+        : langMode === "entc"
+          ? (question as any).enQuestion || question.question
+          : question.question
+    : "";
+  const displayOptions = question
+    ? langMode === "en"
+      ? ((question as any).enOptions || question.options)
+      : langMode === "tc"
+        ? question.options.map((opt: string) => toTraditional(opt))
+        : langMode === "entc"
+          ? ((question as any).enOptions || question.options)
+          : question.options
+    : [];
+  // Sub-line for EN+繁 mode (Traditional Chinese below English)
+  const subQuestion = question && langMode === "entc"
+    ? ((question as any).tcQuestion || toTraditional(question.question))
+    : "";
+  const subOptions = question && langMode === "entc"
+    ? (((question as any).tcOptions || question.options.map((o: string) => toTraditional(o))) as string[])
+    : undefined;
+  // Only show sub-line when it differs from primary (avoid duplicate when no EN available)
+  const showSub = langMode === "entc" && subQuestion && subQuestion !== displayQuestion;
   const correctCount = (records || []).filter((r) => r.isCorrect).length;
   const wrongCount = (records || []).filter((r) => !r.isCorrect).length;
 
@@ -124,20 +153,24 @@ export default function RecordsPage() {
                 <span style={{ fontSize: "11px", color: "var(--text-tertiary)" }}><Clock size={10} />{formatDate(current.createdAt)}</span>
               </div>
               <div style={{ background: "var(--card-bg)", borderRadius: "16px", padding: "20px", border: "1px solid var(--border-color)" }}>
-                <div style={{ fontSize: "16px", fontWeight: 500, color: "var(--text-primary)", lineHeight: 1.6, marginBottom: "16px" }}>
-                  {showTc ? toTraditional(question.question) : question.question}
+                <div style={{ fontSize: "16px", fontWeight: 500, color: "var(--text-primary)", lineHeight: 1.6 }}>
+                  {displayQuestion}
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  {question.options.map((opt, idx) => {
+                {showSub && subQuestion && (
+                  <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid var(--border-color)", fontSize: "15px", color: "var(--text-primary)", lineHeight: 1.6 }}>{subQuestion}</div>
+                )}
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "16px" }}>
+                  {displayOptions.map((opt, idx) => {
                     const isCorrect = question.correct.includes(idx);
                     const isSelected = current.selected.includes(idx);
-                    const displayOpt = showTc ? toTraditional(opt) : opt;
                     const bg = isCorrect ? "rgba(16,185,129,0.12)" : isSelected && !isCorrect ? "rgba(239,68,68,0.12)" : "var(--card-bg-secondary)";
                     const color = isCorrect ? "#10b981" : isSelected && !isCorrect ? "#ef4444" : "var(--text-secondary)";
                     return (
                       <div key={idx} style={{ padding: "10px 12px", borderRadius: "8px", background: bg, border: `1px solid ${isCorrect ? "rgba(16,185,129,0.3)" : isSelected && !isCorrect ? "rgba(239,68,68,0.3)" : "var(--border-color)"}`, fontSize: "14px", color, display: "flex", alignItems: "center", gap: "8px" }}>
                         <span style={{ width: "22px", height: "22px", borderRadius: "50%", background: isCorrect ? "#10b981" : isSelected ? "#ef4444" : "var(--text-tertiary)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 600, color: "var(--text-primary)" }}>{String.fromCharCode(65 + idx)}</span>
-                        <span>{displayOpt}</span>
+                        <span>{opt}{showSub && subOptions?.[idx] && (
+                          <span style={{ display: "block", marginTop: "3px", fontSize: "13px", color: "var(--text-secondary)" }}>{subOptions[idx]}</span>
+                        )}</span>
                       </div>
                     );
                   })}

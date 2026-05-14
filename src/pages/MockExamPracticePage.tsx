@@ -207,12 +207,24 @@ export default function MockExamPracticePage() {
         displayQuestion = currentQuestion.question || "";
         displayOptions = currentQuestion.options || [];
         break;
-      case "entc":
+      case "entc": {
+        const hasEn = !!currentQuestion.enQuestion;
         displayQuestion = currentQuestion.enQuestion || currentQuestion.question || "";
         displayOptions = currentQuestion.enOptions || currentQuestion.options || [];
-        subQuestion = currentQuestion.tcQuestion || toTrad(currentQuestion.question || "");
-        subOptions = currentQuestion.tcOptions || currentQuestion.options?.map((o) => toTrad(o));
+        const tcQ = currentQuestion.tcQuestion || toTrad(currentQuestion.question || "");
+        const tcO = currentQuestion.tcOptions || currentQuestion.options?.map((o) => toTrad(o));
+        // Only show sub-line when: (1) EN text exists, or (2) TC is different from primary display
+        if (hasEn) {
+          subQuestion = tcQ;
+          subOptions = tcO;
+        } else if (tcQ !== displayQuestion) {
+          // No EN available — show TC as sub only if it differs from primary
+          subQuestion = tcQ;
+          subOptions = tcO;
+        }
+        // If no EN and TC is same as primary, sub stays empty (no duplicate)
         break;
+      }
     }
   }
 
