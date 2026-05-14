@@ -20,4 +20,5 @@ export const env = {
   apiBase: required("KIMI_OPEN_URL"),
   appUrl: process.env.APP_URL ?? (process.env.NODE_ENV === "production" ? "" : "http://localhost:3000"),
   ownerUnionId: process.env.OWNER_UNION_ID ?? "",
+  moonshotApiKey: process.env.MOONSHOT_API_KEY ?? "",
 };
