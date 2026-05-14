@@ -375,16 +375,14 @@ export default function MockExamPracticePage() {
               style={{ background: "var(--card-bg)", border: "1px solid var(--border-color)", borderRadius: "10px", padding: "10px", cursor: currentIndex === 0 ? "not-allowed" : "pointer", opacity: currentIndex === 0 ? 0.4 : 1, display: "flex", alignItems: "center", gap: "4px", color: "var(--text-primary)" }}>
               <ChevronLeft size={16} /> 上一题
             </button>
-            {!submitted && answeredCount === totalQuestions ? (
+            {!submitted ? (
               <motion.button whileTap={{ scale: 0.97 }} onClick={() => setShowSubmitConfirm(true)}
-                style={{ flex: 1, padding: "12px", borderRadius: "12px", background: "#f59e0b", color: "#fff", border: "none", fontSize: "14px", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-                <GraduationCap size={18} /> 提交试卷
+                style={{ flex: 1, padding: "12px", borderRadius: "12px", background: answeredCount === totalQuestions ? "#f59e0b" : "var(--accent-color)", color: "#fff", border: "none", fontSize: "14px", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                <GraduationCap size={18} /> 提交 ({answeredCount}/{totalQuestions})
               </motion.button>
-            ) : submitted ? (
+            ) : (
               <button onClick={() => navigate("/mock-exam/list")}
                 style={{ flex: 1, padding: "12px", borderRadius: "12px", background: "var(--accent-color)", color: "#fff", border: "none", fontSize: "14px", fontWeight: 700, cursor: "pointer" }}>完成</button>
-            ) : (
-              <div style={{ flex: 1, textAlign: "center", fontSize: "13px", color: "var(--text-tertiary)" }}>已答 {answeredCount}/{totalQuestions}</div>
             )}
             <button onClick={handleNext} disabled={currentIndex === totalQuestions - 1}
               style={{ background: "var(--card-bg)", border: "1px solid var(--border-color)", borderRadius: "10px", padding: "10px", cursor: currentIndex === totalQuestions - 1 ? "not-allowed" : "pointer", opacity: currentIndex === totalQuestions - 1 ? 0.4 : 1, display: "flex", alignItems: "center", gap: "4px", color: "var(--text-primary)" }}>
