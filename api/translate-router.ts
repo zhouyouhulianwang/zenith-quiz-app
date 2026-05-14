@@ -56,6 +56,7 @@ async function mymemoryTranslate(text: string, from: string, to: string): Promis
 // Source 3: Moonshot LLM (guaranteed, uses API key)
 async function moonshotTranslate(texts: string[]): Promise<string[]> {
   const apiKey = env.moonshotApiKey;
+  console.log("[translate] moonshot api key present:", !!apiKey, "length:", apiKey?.length);
   if (!apiKey) return texts.map((t) => `[EN] ${t}`);
 
   try {
@@ -63,6 +64,7 @@ async function moonshotTranslate(texts: string[]): Promise<string[]> {
 
 ${texts.map((t, i) => `${i + 1}. ${t}`).join("\n")}`;
 
+    console.log("[translate] calling moonshot for", texts.length, "texts");
     const res = await fetch("https://api.moonshot.ai/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -74,8 +76,9 @@ ${texts.map((t, i) => `${i + 1}. ${t}`).join("\n")}`;
         messages: [{ role: "user", content: prompt }],
         temperature: 0.1,
       }),
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(20000),
     });
+    console.log("[translate] moonshot response status:", res.status);
 
     if (!res.ok) {
       const err = await res.text();
@@ -203,8 +206,23 @@ export const translateRouter = createRouter({
       return { results, source };
     }),
 
+  // Health check: verify Moonshot API key is configured and reachable
+  health: publicQuery.query(async () => {
+    const apiKey = env.moonshotApiKey;
+    if (!apiKey) return { configured: false, reachable: false, error: "No API key" };
+    try {
+      const res = await fetch("https://api.moonshot.ai/v1/models", {
+        headers: { Authorization: `Bearer ${apiKey}` },
+        signal: AbortSignal.timeout(5000),
+      });
+      return { configured: true, reachable: res.ok, status: res.status };
+    } catch {
+      return { configured: true, reachable: false, status: 0 };
+    }
+  }),
+
   // Cache stats
   stats: publicQuery.query(() => {
-    return { cacheSize: cache.size };
+    return { cacheSize: cache.size, moonshotConfigured: !!env.moonshotApiKey };
   }),
 });
