@@ -115,7 +115,7 @@ export default function Login() {
               id="username"
               type="text"
               inputMode="numeric"
-              placeholder="输入账号 (1, 2, 3)"
+              placeholder="输入账号"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               onInput={(e) => setUsername(e.currentTarget.value)}
@@ -238,8 +238,8 @@ export default function Login() {
           </button>
         </form>
 
-        <p style={{ textAlign: "center", marginTop: "24px", fontSize: "12px", color: "var(--text-tertiary)", lineHeight: 1.8 }}>
-          预设账号：1 / a &nbsp;|&nbsp; 2 / b &nbsp;|&nbsp; 3 / c
+        <p style={{ textAlign: "center", marginTop: "24px", fontSize: "12px", color: "var(--text-tertiary)" }}>
+          请输入账号和密码
         </p>
       </motion.div>
     </div>

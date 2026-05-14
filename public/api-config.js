@@ -1,1 +1,1 @@
-window.__API_ENDPOINT__="https://suit-roles-sympathy-rep.trycloudflare.com";
+window.__API_ENDPOINT__="https://kernel-mapping-banner-expenditure.trycloudflare.com";
