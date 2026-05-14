@@ -36,7 +36,7 @@ interface AppSettings {
   reminderTime: string;
   difficulty: number;
   fontSize: "small" | "medium" | "large";
-  questionLanguage: "zh" | "en" | "both" | "tc" | "entc";
+  questionLanguage: "en" | "tc" | "sc" | "entc";
   theme: "system" | "dark" | "light";
 }
 

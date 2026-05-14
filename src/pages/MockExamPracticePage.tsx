@@ -74,6 +74,21 @@ export default function MockExamPracticePage() {
   const [translatingIds, setTranslatingIds] = useState<Set<number>>(new Set());
   const translateMutation = trpc.translate.batchTranslate.useMutation();
 
+  // Load questions from API
+  const questions: Q[] = useMemo(() => {
+    if (currentMock?.questionsJson) {
+      try {
+        const parsed = JSON.parse(currentMock.questionsJson);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return [];
+  }, [currentMock?.questionsJson]);
+
   // Auto-translate questions that don't have EN data
   useEffect(() => {
     if (langMode !== "entc" && langMode !== "en") return;
@@ -135,20 +150,7 @@ export default function MockExamPracticePage() {
     }
   }, [questions, langMode, transCache, translatingIds]);
 
-  // Load questions from API
-  const questions: Q[] = useMemo(() => {
-    if (currentMock?.questionsJson) {
-      try {
-        const parsed = JSON.parse(currentMock.questionsJson);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
-        }
-      } catch {
-        // ignore
-      }
-    }
-    return [];
-  }, [currentMock?.questionsJson]);
+
 
   // Set load error in useEffect (not during render)
   useEffect(() => {
