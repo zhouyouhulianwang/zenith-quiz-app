@@ -10,7 +10,7 @@ export const trpc = createTRPCReact<AppRouter>();
 
 // Hardcoded API endpoint for static deployment
 // Update this when tunnel URL changes
-const HARDCODED_API_URL = "https://molecular-perry-throwing-consistently.trycloudflare.com";
+const HARDCODED_API_URL = "https://suit-roles-sympathy-rep.trycloudflare.com";
 
 function getApiUrl(): string {
   // For non-localhost: always use hardcoded API URL (avoids cached HTML issues)

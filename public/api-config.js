@@ -1,1 +1,1 @@
-window.__API_ENDPOINT__="https://molecular-perry-throwing-consistently.trycloudflare.com";
+window.__API_ENDPOINT__="https://suit-roles-sympathy-rep.trycloudflare.com";

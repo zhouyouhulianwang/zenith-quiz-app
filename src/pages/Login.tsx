@@ -18,12 +18,6 @@ export default function Login() {
     return () => window.visualViewport?.removeEventListener("resize", handleResize);
   }, []);
 
-  // Debug: log API endpoint on mount
-  useEffect(() => {
-    const apiUrl = (window as any).__API_ENDPOINT__ || "not set";
-    console.log("[ZENITH] API Endpoint:", apiUrl);
-  }, []);
-
   const loginMutation = trpc.simpleAuth.login.useMutation({
     onSuccess: async (data) => {
       if (data.success) {
@@ -34,9 +28,27 @@ export default function Login() {
     },
     onError: (err) => {
       console.error("[ZENITH] Login error:", err);
-      const apiUrl = (window as any).__API_ENDPOINT__ || "not set";
+      setError(err.message || "登录失败，请检查网络连接");
     },
   });
+
+  // Auto-login from URL hash params for testing: #/login?user=1&pass=a
+  useEffect(() => {
+    const hash = window.location.hash;
+    const qIdx = hash.indexOf("?");
+    if (qIdx > 0) {
+      const params = new URLSearchParams(hash.slice(qIdx + 1));
+      const u = params.get("user");
+      const p = params.get("pass");
+      if (u && p) {
+        setUsername(u);
+        setPassword(p);
+        setTimeout(() => {
+          loginMutation.mutate({ username: u, password: p });
+        }, 300);
+      }
+    }
+  }, []);
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -68,10 +80,6 @@ export default function Login() {
         transition={{ duration: 0.5 }}
         style={{ width: "100%", maxWidth: "420px" }}
       >
-        {/* Debug: show API URL */}
-        <div style={{ textAlign: "center", marginBottom: "8px", fontSize: "10px", color: "var(--text-tertiary)", wordBreak: "break-all" }}>
-        </div>
-
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: isKeyboardOpen ? "16px" : "32px", transition: "margin 0.3s ease" }}>
           <div
@@ -185,31 +193,6 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Quick login button */}
-          <button
-            type="button"
-            onClick={() => {
-              setUsername("1");
-              setPassword("a");
-              setTimeout(() => loginMutation.mutate({ username: "1", password: "a" }), 100);
-            }}
-            style={{
-              marginTop: "8px",
-              marginBottom: "8px",
-              background: "transparent",
-              border: "1px dashed var(--border-color)",
-              color: "var(--text-tertiary)",
-              fontSize: "12px",
-              cursor: "pointer",
-              width: "100%",
-              textAlign: "center",
-              padding: "6px",
-              borderRadius: "6px",
-            }}
-          >
-            快速登录（账号: 1 / 密码: a）
-          </button>
-
           <AnimatePresence>
             {error && (
               <motion.div
@@ -255,8 +238,8 @@ export default function Login() {
           </button>
         </form>
 
-        <p style={{ textAlign: "center", marginTop: "24px", fontSize: "12px", color: "var(--text-tertiary)" }}>
-          请输入您的账号和密码登录
+        <p style={{ textAlign: "center", marginTop: "24px", fontSize: "12px", color: "var(--text-tertiary)", lineHeight: 1.8 }}>
+          预设账号：1 / a &nbsp;|&nbsp; 2 / b &nbsp;|&nbsp; 3 / c
         </p>
       </motion.div>
     </div>
