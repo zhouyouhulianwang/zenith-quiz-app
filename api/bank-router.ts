@@ -3,6 +3,7 @@ import { eq, and, desc } from "drizzle-orm";
 import { createRouter, authedQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { banks, practiceRecords } from "@db/schema";
+import { translateQuestions } from "./translate-service";
 
 export interface Question {
   id: number;
@@ -66,12 +67,19 @@ export const bankRouter = createRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const db = getDb();
-      const questionsJson = JSON.stringify(input.questions);
+
+      // Translate all questions to EN + TC before saving
+      const { questions, allTranslated } = await translateQuestions(input.questions);
+      if (!allTranslated) {
+        throw new Error("翻译未完成，请检查 Moonshot API 配置或稍后重试");
+      }
+
+      const questionsJson = JSON.stringify(questions);
       const chaptersJson = input.chapters ? JSON.stringify(input.chapters) : null;
       const result = await db.insert(banks).values({
         userId: ctx.user.id,
         title: input.title,
-        description: input.description || `${input.questions.length} 题`,
+        description: input.description || `${questions.length} 题`,
         category: input.category,
         color: input.color,
         questionsJson,
@@ -79,7 +87,7 @@ export const bankRouter = createRouter({
         progress: 0,
       });
       const insertId = result[0]?.insertId ? Number(result[0].insertId) : 0;
-      return { id: insertId };
+      return { id: insertId, translated: true, count: questions.length };
     }),
 
   // Delete a bank

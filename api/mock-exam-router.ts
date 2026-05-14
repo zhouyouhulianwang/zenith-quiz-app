@@ -3,6 +3,7 @@ import { authedQuery, publicQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { mockExams } from "@db/schema";
 import { eq, and, desc } from "drizzle-orm";
+import { translateQuestions } from "./translate-service";
 
 export const mockExamRouter = {
   list: authedQuery.query(async () => {
@@ -26,15 +27,23 @@ export const mockExamRouter = {
     )
     .mutation(async ({ ctx, input }) => {
       const db = getDb();
+
+      // Parse questions, translate to EN + TC before saving
+      const questions = JSON.parse(input.questionsJson);
+      const { questions: translated, allTranslated } = await translateQuestions(questions);
+      if (!allTranslated) {
+        throw new Error("翻译未完成，请检查 Moonshot API 配置或稍后重试");
+      }
+
       await db.insert(mockExams).values({
         userId: ctx.user.id,
         title: input.title,
         bankId: input.bankId,
         bankName: input.bankName,
-        questionsJson: input.questionsJson,
+        questionsJson: JSON.stringify(translated),
         questionCount: input.questionCount,
       });
-      return { success: true };
+      return { success: true, translated: true };
     }),
 
   delete: authedQuery
