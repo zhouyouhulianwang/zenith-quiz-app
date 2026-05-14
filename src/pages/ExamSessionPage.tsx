@@ -56,6 +56,8 @@ export default function ExamSessionPage() {
   const [elapsed, setElapsed] = useState(0);
   const [swipeDir, setSwipeDir] = useState<"left" | "right" | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval>>();
+  // Track which questions have been saved to DB (to avoid duplicate saves)
+  const savedQuestionIds = useRef<Set<number>>(new Set());
 
   // Parse and prepare questions
   const allQuestions: Q[] = useMemo(() => {
@@ -89,6 +91,23 @@ export default function ExamSessionPage() {
   const flaggedCount = answers.filter((a) => a.flagged).length;
   const totalQuestions = questions.length;
 
+  // Helper: save a single question record to DB
+  const saveQuestionRecord = useCallback((q: Q, ans: ExamAnswer) => {
+    if (!q || ans.selected.length === 0) return;
+    if (savedQuestionIds.current.has(q.id)) return; // Already saved
+    const isCorrect = q.correct.length === ans.selected.length && q.correct.every((c) => ans.selected.includes(c));
+    savedQuestionIds.current.add(q.id);
+    addRecord.mutate({
+      bankId: bankId || undefined,
+      questionId: q.id,
+      chapterId: q.chapterId,
+      chapterName: q.chapterName,
+      selected: ans.selected,
+      isCorrect,
+      timeSpent: 0,
+    });
+  }, [bankId, addRecord]);
+
   const handleSelect = useCallback((index: number) => {
     if (!currentQuestion || !currentAnswer) return;
     setAnswers((prev) => {
@@ -101,21 +120,33 @@ export default function ExamSessionPage() {
       }
       return next;
     });
-  }, [currentQuestion, currentAnswer, currentIndex]);
+    // For single-choice: save immediately after selection
+    if (currentQuestion.type !== "multiple") {
+      saveQuestionRecord(currentQuestion, { ...currentAnswer, selected: [index] });
+    }
+  }, [currentQuestion, currentAnswer, currentIndex, saveQuestionRecord]);
 
   const handleNext = useCallback(() => {
+    // Auto-save multi-select before navigating away
+    if (currentQuestion && currentAnswer && currentQuestion.type === "multiple" && currentAnswer.selected.length > 0) {
+      saveQuestionRecord(currentQuestion, currentAnswer);
+    }
     if (currentIndex < totalQuestions - 1) {
       setSwipeDir("left");
       setCurrentIndex((p) => p + 1);
     }
-  }, [currentIndex, totalQuestions]);
+  }, [currentIndex, totalQuestions, currentQuestion, currentAnswer, saveQuestionRecord]);
 
   const handlePrev = useCallback(() => {
+    // Auto-save multi-select before navigating away
+    if (currentQuestion && currentAnswer && currentQuestion.type === "multiple" && currentAnswer.selected.length > 0) {
+      saveQuestionRecord(currentQuestion, currentAnswer);
+    }
     if (currentIndex > 0) {
       setSwipeDir("right");
       setCurrentIndex((p) => p - 1);
     }
-  }, [currentIndex]);
+  }, [currentIndex, currentQuestion, currentAnswer, saveQuestionRecord]);
 
   const toggleFlag = useCallback(() => {
     setAnswers((prev) => {
@@ -136,19 +167,13 @@ export default function ExamSessionPage() {
     const correctCount = results.filter((r) => r.isCorrect).length;
     const score = Math.round((correctCount / totalQuestions) * 100);
 
-    // Save practice records for each answered question
-    const qTimeAvg = totalQuestions > 0 ? Math.round((elapsed * 1000) / totalQuestions) : 0;
-    for (const r of results) {
-      if (r.selected.length === 0) continue; // Skip unanswered
-      addRecord.mutate({
-        bankId: bankId || undefined,
-        questionId: r.questionId,
-        chapterId: r.chapterId,
-        chapterName: r.chapterName,
-        selected: r.selected,
-        isCorrect: r.isCorrect,
-        timeSpent: qTimeAvg,
-      });
+    // Save any remaining unsaved questions
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i];
+      const ans = answers[i];
+      if (ans.selected.length > 0 && !savedQuestionIds.current.has(q.id)) {
+        saveQuestionRecord(q, ans);
+      }
     }
 
     // Update daily stats
@@ -165,7 +190,7 @@ export default function ExamSessionPage() {
     navigate(`/exam/result?score=${score}&correct=${correctCount}&total=${totalQuestions}&time=${elapsed}&bankId=${bankId}`, {
       state: { questions, answers: results },
     });
-  }, [questions, answers, totalQuestions, elapsed, bankId, navigate, addRecord, upsertDaily]);
+  }, [questions, answers, totalQuestions, elapsed, bankId, navigate, saveQuestionRecord, upsertDaily]);
 
   // Swipe
   const touchStartX = useRef(0);

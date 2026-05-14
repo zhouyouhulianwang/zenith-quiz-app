@@ -390,6 +390,13 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
     onSuccess: () => {
       utils.record.list.invalidate();
       utils.record.listByBank.invalidate({ bankId: rawBankId });
+      setSaveError("");
+    },
+    onError: (err) => {
+      console.error("保存失败:", err);
+      setSaveError("记录保存失败，请检查网络");
+      // Auto clear error after 3s
+      setTimeout(() => setSaveError(""), 3000);
     },
   });
   const upsertDaily = trpc.record.upsertDaily.useMutation();
@@ -405,6 +412,7 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
   const [qStartTime, setQStartTime] = useState(Date.now());
   const [swipeDir, setSwipeDir] = useState<"left" | "right" | null>(null);
   const restoredRef = useRef(false);
+  const [saveError, setSaveError] = useState("");
 
   // Memoize parsed questions to avoid re-parsing on every render
   const allQuestions: Q[] = useMemo(() => bankData ? JSON.parse(bankData.questionsJson) : [], [bankData?.questionsJson]);
@@ -442,7 +450,8 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
     const firstUnanswered = init.findIndex((a) => !a.submitted);
     setAnswers(init);
     setCurrentIndex(firstUnanswered >= 0 ? firstUnanswered : 0);
-  }, [questions.length]);
+  // Depend on both chapter and question count to re-run on chapter switch
+  }, [activeChapterId, questions.length, savedRecords]);
 
   useEffect(() => { setQStartTime(Date.now()); setSwipeDir(null); }, [currentIndex]);
 
@@ -496,7 +505,21 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
     submitAnswer(currentAnswer.selected);
   }, [currentQuestion, currentAnswer, submitAnswer]);
 
+  // Auto-submit helper: if current multi-select has selections but not submitted, submit it
+  const autoSubmitIfNeeded = useCallback(() => {
+    if (!currentQuestion || !currentAnswer) return false;
+    if (currentAnswer.submitted) return false;
+    if (currentAnswer.selected.length === 0) return false;
+    // Only auto-submit for multi-select; single-select auto-submits on select
+    if (currentQuestion.type !== "multiple") return false;
+    submitAnswer(currentAnswer.selected);
+    return true;
+  }, [currentQuestion, currentAnswer, submitAnswer]);
+
   const handleNext = useCallback(() => {
+    // Auto-submit current multi-select if needed before navigating
+    autoSubmitIfNeeded();
+
     if (currentIndex < questions.length - 1) {
       setSwipeDir("left");
       setCurrentIndex((p) => p + 1);
@@ -507,11 +530,12 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
       upsertDaily.mutate({ date: new Date().toISOString().split("T")[0], count: submitted.length, correct: correctCount });
       setShowSummary(true);
     }
-  }, [currentIndex, questions.length, answers, rawBankId, allQuestions.length, updateProgress, upsertDaily]);
+  }, [currentIndex, questions.length, answers, rawBankId, allQuestions.length, updateProgress, upsertDaily, autoSubmitIfNeeded]);
 
   const handlePrev = useCallback(() => {
+    autoSubmitIfNeeded();
     if (currentIndex > 0) { setSwipeDir("right"); setCurrentIndex((p) => p - 1); }
-  }, [currentIndex]);
+  }, [currentIndex, autoSubmitIfNeeded]);
 
   // Swipe — only horizontal, require minimum distance, prevent default on horizontal swipe
   const tsX = useRef<number | null>(null);
@@ -602,6 +626,14 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
             <span style={{ fontSize: "12px", color: "var(--text-primary)" }}>{currentIndex + 1} / {totalQuestions}</span>
           </div>
         </div>
+
+        {/* Save Error Toast */}
+        {saveError && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+            style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)", padding: "8px 16px", textAlign: "center", fontSize: "13px", color: "#ef4444", fontWeight: 500 }}>
+            {saveError}
+          </motion.div>
+        )}
 
         {/* Progress Bar */}
         <div style={{ width: "100%", height: "3px", background: "var(--card-bg-secondary)" }}>

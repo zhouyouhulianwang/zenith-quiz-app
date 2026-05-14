@@ -66,6 +66,8 @@ export default function MockExamPracticePage() {
   const [expandedExplanation, setExpandedExplanation] = useState<number | null>(null);
   const [loadError, setLoadError] = useState("");
   const timerRef = useRef<ReturnType<typeof setInterval>>(null);
+  // Track which questions have been saved to DB (avoid duplicate saves)
+  const savedQuestionIds = useRef<Set<number>>(new Set());
 
   // Translation cache for auto-translated questions
   const [transCache, setTransCache] = useState<Record<number, { enQuestion: string; enOptions: string[] }>>({});
@@ -186,6 +188,24 @@ export default function MockExamPracticePage() {
 
   const answeredCount = answers.filter((a) => a && a.selected && a.selected.length > 0).length;
 
+  // Helper: save a single question record to DB
+  const saveQuestionRecord = useCallback((q: Q, ans: ExamAnswer) => {
+    if (!q || ans.selected.length === 0) return;
+    if (savedQuestionIds.current.has(q.id)) return; // Already saved
+    const isCorrect = q.correct.length === ans.selected.length && q.correct.every((c) => ans.selected.includes(c));
+    savedQuestionIds.current.add(q.id);
+    addRecord.mutate({
+      mockExamId: mockExamId || undefined,
+      bankId: bankId || undefined,
+      questionId: q.id,
+      chapterId: q.chapterId,
+      chapterName: q.chapterName,
+      selected: ans.selected,
+      isCorrect,
+      timeSpent: 0,
+    });
+  }, [mockExamId, bankId, addRecord]);
+
   const handleSelect = useCallback(
     (index: number) => {
       if (!currentQuestion || submitted) return;
@@ -204,17 +224,29 @@ export default function MockExamPracticePage() {
         }
         return next;
       });
+      // For single-choice: save immediately after selection
+      if (currentQuestion.type !== "multiple" && currentAnswer) {
+        saveQuestionRecord(currentQuestion, { ...currentAnswer, selected: [index] });
+      }
     },
-    [currentQuestion, currentIndex, submitted],
+    [currentQuestion, currentIndex, submitted, currentAnswer, saveQuestionRecord],
   );
 
   const handleNext = useCallback(() => {
+    // Auto-save multi-select before navigating away
+    if (currentQuestion && currentAnswer && currentQuestion.type === "multiple" && currentAnswer.selected.length > 0) {
+      saveQuestionRecord(currentQuestion, currentAnswer);
+    }
     if (currentIndex < totalQuestions - 1) setCurrentIndex((p) => p + 1);
-  }, [currentIndex, totalQuestions]);
+  }, [currentIndex, totalQuestions, currentQuestion, currentAnswer, saveQuestionRecord]);
 
   const handlePrev = useCallback(() => {
+    // Auto-save multi-select before navigating away
+    if (currentQuestion && currentAnswer && currentQuestion.type === "multiple" && currentAnswer.selected.length > 0) {
+      saveQuestionRecord(currentQuestion, currentAnswer);
+    }
     if (currentIndex > 0) setCurrentIndex((p) => p - 1);
-  }, [currentIndex]);
+  }, [currentIndex, currentQuestion, currentAnswer, saveQuestionRecord]);
 
   const toggleFlag = useCallback(() => {
     if (submitted) return;
@@ -232,24 +264,26 @@ export default function MockExamPracticePage() {
     if (timerRef.current) clearInterval(timerRef.current);
     if (mockExamId) incrementMutation.mutate({ id: mockExamId });
 
-    // Save practice records for each question
-    const qTimeAvg = questions.length > 0 ? Math.round((elapsed * 1000) / questions.length) : 0;
+    // Save any remaining unsaved questions
     let correctCount = 0;
     questions.forEach((q, i) => {
       const ans = answers[i];
       if (!ans || ans.selected.length === 0) return;
       const isCorrect = q.correct.length === ans.selected.length && q.correct.every((c) => ans.selected.includes(c));
       if (isCorrect) correctCount++;
-      addRecord.mutate({
-        mockExamId: mockExamId || undefined,
-        bankId: bankId || undefined,
-        questionId: q.id,
-        chapterId: q.chapterId,
-        chapterName: q.chapterName,
-        selected: ans.selected,
-        isCorrect,
-        timeSpent: qTimeAvg,
-      });
+      if (!savedQuestionIds.current.has(q.id)) {
+        savedQuestionIds.current.add(q.id);
+        addRecord.mutate({
+          mockExamId: mockExamId || undefined,
+          bankId: bankId || undefined,
+          questionId: q.id,
+          chapterId: q.chapterId,
+          chapterName: q.chapterName,
+          selected: ans.selected,
+          isCorrect,
+          timeSpent: 0,
+        });
+      }
     });
 
     // Update daily stats
@@ -261,7 +295,7 @@ export default function MockExamPracticePage() {
         correct: correctCount,
       });
     }
-  }, [mockExamId, incrementMutation, questions, answers, elapsed, addRecord, upsertDaily, bankId]);
+  }, [mockExamId, incrementMutation, questions, answers, addRecord, upsertDaily, bankId]);
 
   const touchStartX = useRef(0);
   const onTouchStart = (e: React.TouchEvent) => {
