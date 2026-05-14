@@ -12,6 +12,9 @@ export default defineConfig({
     inspectAttr(), react()],
   server: {
     port: 3000,
+    cors: false,
+    allowedHosts: true,
+    hmr: false,
   },
   resolve: {
     alias: {

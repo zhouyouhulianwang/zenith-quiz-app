@@ -18,6 +18,12 @@ export default function Login() {
     return () => window.visualViewport?.removeEventListener("resize", handleResize);
   }, []);
 
+  // Debug: log API endpoint on mount
+  useEffect(() => {
+    const apiUrl = (window as any).__API_ENDPOINT__ || "not set";
+    console.log("[ZENITH] API Endpoint:", apiUrl);
+  }, []);
+
   const loginMutation = trpc.simpleAuth.login.useMutation({
     onSuccess: async (data) => {
       if (data.success) {
@@ -26,8 +32,9 @@ export default function Login() {
         setError(data.error || "登录失败");
       }
     },
-    onError: () => {
-      setError("登录失败，请检查网络");
+    onError: (err) => {
+      console.error("[ZENITH] Login error:", err);
+      const apiUrl = (window as any).__API_ENDPOINT__ || "not set";
     },
   });
 
@@ -61,6 +68,10 @@ export default function Login() {
         transition={{ duration: 0.5 }}
         style={{ width: "100%", maxWidth: "420px" }}
       >
+        {/* Debug: show API URL */}
+        <div style={{ textAlign: "center", marginBottom: "8px", fontSize: "10px", color: "var(--text-tertiary)", wordBreak: "break-all" }}>
+        </div>
+
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: isKeyboardOpen ? "16px" : "32px", transition: "margin 0.3s ease" }}>
           <div
@@ -99,6 +110,7 @@ export default function Login() {
               placeholder="输入账号 (1, 2, 3)"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              onInput={(e) => setUsername(e.currentTarget.value)}
               autoComplete="username"
               autoFocus
               style={{
@@ -130,6 +142,7 @@ export default function Login() {
                 placeholder="输入密码"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onInput={(e) => setPassword(e.currentTarget.value)}
                 autoComplete="current-password"
                 style={{
                   width: "100%",
@@ -171,6 +184,31 @@ export default function Login() {
               </button>
             </div>
           </div>
+
+          {/* Quick login button */}
+          <button
+            type="button"
+            onClick={() => {
+              setUsername("1");
+              setPassword("1");
+              setTimeout(() => loginMutation.mutate({ username: "1", password: "1" }), 100);
+            }}
+            style={{
+              marginTop: "8px",
+              marginBottom: "8px",
+              background: "transparent",
+              border: "1px dashed var(--border-color)",
+              color: "var(--text-tertiary)",
+              fontSize: "12px",
+              cursor: "pointer",
+              width: "100%",
+              textAlign: "center",
+              padding: "6px",
+              borderRadius: "6px",
+            }}
+          >
+            快速登录（测试账号: 1 / 密码: 1）
+          </button>
 
           <AnimatePresence>
             {error && (

@@ -4,28 +4,76 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import superjson from "superjson";
 import type { AppRouter } from "../../api/router";
 import type { ReactNode } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 export const trpc = createTRPCReact<AppRouter>();
 
-// API URL: same-origin (works when frontend & backend are served from same domain)
+// Hardcoded API endpoint for static deployment
+// Update this when tunnel URL changes
+const HARDCODED_API_URL = "https://becoming-success-attempted-interviews.trycloudflare.com";
 
-const queryClient = new QueryClient();
-const trpcClient = trpc.createClient({
-  links: [
-    httpBatchLink({
-      url: "/api/trpc",
-      transformer: superjson,
-      fetch(input, init) {
-        return globalThis.fetch(input, {
-          ...(init ?? {}),
-          credentials: "include",
-        });
-      },
-    }),
-  ],
-});
+function getApiUrl(): string {
+  const configuredApi = (window as any).__API_ENDPOINT__;
+  if (configuredApi) return configuredApi + "/api/trpc";
+  if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+    return "/api/trpc";
+  }
+  // For static deployment: use hardcoded tunnel URL
+  return HARDCODED_API_URL + "/api/trpc";
+}
+
+function createTrpcClient(apiUrl: string) {
+  return trpc.createClient({
+    links: [
+      httpBatchLink({
+        url: apiUrl,
+        transformer: superjson,
+        headers() {
+          return { "x-trpc-source": "zenith-client" };
+        },
+        fetch(input, init) {
+          return globalThis.fetch(input, {
+            ...(init ?? {}),
+            credentials: "include",
+            mode: "cors",
+          });
+        },
+      }),
+    ],
+  });
+}
 
 export function TRPCProvider({ children }: { children: ReactNode }) {
+  const [apiUrl, setApiUrl] = useState(() => getApiUrl());
+
+  // Poll for window.__API_ENDPOINT__ being set by external config script
+  useEffect(() => {
+    if ((window as any).__API_ENDPOINT__) {
+      const newUrl = getApiUrl();
+      if (newUrl !== apiUrl) setApiUrl(newUrl);
+      return;
+    }
+    // If not set immediately, wait for it
+    const timer = setInterval(() => {
+      if ((window as any).__API_ENDPOINT__) {
+        setApiUrl(getApiUrl());
+        clearInterval(timer);
+      }
+    }, 50);
+    // Fallback: use relative path after 2s
+    const fallback = setTimeout(() => {
+      clearInterval(timer);
+    }, 2000);
+    return () => {
+      clearInterval(timer);
+      clearTimeout(fallback);
+    };
+  }, []);
+
+  // Recreate client when API URL changes
+  const trpcClient = useMemo(() => createTrpcClient(apiUrl), [apiUrl]);
+  const [queryClient] = useState(() => new QueryClient());
+
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
