@@ -5,7 +5,7 @@ import { ArrowLeft, Clock, ChevronLeft, ChevronRight, Flag, GraduationCap, Check
 import { trpc } from "@/providers/trpc";
 import { toTraditional } from "@/lib/chineseConv";
 import { isChinese } from "@/lib/translate";
-import { clientDictTranslate, getEnDisplay, getEnOptions } from "@/lib/dict-translate";
+import { getEnDisplay, getEnOptions } from "@/lib/dict-translate";
 import ParticleBackground from "@/components/ParticleBackground";
 
 interface Q {
@@ -74,6 +74,7 @@ export default function MockExamPracticePage() {
   const [transCache, setTransCache] = useState<Record<number, { enQuestion: string; enOptions: string[] }>>({});
   const [translatingIds, setTranslatingIds] = useState<Set<number>>(new Set());
   const translateMutation = trpc.translate.batchTranslate.useMutation();
+  const llmTranslateMutation = trpc.translate.llmTranslate.useMutation();
 
   // Load questions from API
   const questions: Q[] = useMemo(() => {
@@ -160,16 +161,44 @@ export default function MockExamPracticePage() {
           }
         })
         .catch(() => {
-          // API failed — use client-side dictionary for instant partial translation
-          setTransCache((prev) => {
-            const next = { ...prev };
+          // All online APIs failed — use LLM for whole-sentence translation
+          const llmTexts = batch.flatMap((q) => [q.question, ...q.options]);
+          llmTranslateMutation.mutateAsync({ texts: llmTexts }).then((llmResult) => {
+            const results = llmResult.results;
+            const newTransCache: Record<number, { enQuestion: string; enOptions: string[] }> = {};
+            let idx = 0;
             batch.forEach((q) => {
-              next[q.id] = {
-                enQuestion: clientDictTranslate(q.question) || "[EN] " + q.question,
-                enOptions: q.options.map((o) => clientDictTranslate(o) || "[EN] " + o),
-              };
+              const optCount = q.options.length;
+              const enQuestion = results[idx] || `[EN] ${q.question}`;
+              const enOptions = results.slice(idx + 1, idx + 1 + optCount);
+              while (enOptions.length < optCount) enOptions.push(`[EN] ${q.options[enOptions.length]}`);
+              newTransCache[q.id] = { enQuestion, enOptions };
+              idx += 1 + optCount;
             });
-            return next;
+            setTransCache((prev) => ({ ...prev, ...newTransCache }));
+
+            // Save LLM-translated questions back to DB
+            if (currentMock && batch.length > 0) {
+              const updatedQuestions = questions.map((q: Q) => {
+                if (newTransCache[q.id]) {
+                  return { ...q, ...newTransCache[q.id], tcQuestion: toTrad(q.question), tcOptions: q.options.map((o: string) => toTrad(o)) };
+                }
+                return q;
+              });
+              updateQuestionsMutation.mutate({
+                id: currentMock.id,
+                questionsJson: JSON.stringify(updatedQuestions),
+              });
+            }
+          }).catch(() => {
+            // LLM also failed — mark as [EN] original
+            setTransCache((prev) => {
+              const next = { ...prev };
+              batch.forEach((q) => {
+                next[q.id] = { enQuestion: `[EN] ${q.question}`, enOptions: q.options.map((o) => `[EN] ${o}`) };
+              });
+              return next;
+            });
           });
         })
         .finally(() => {

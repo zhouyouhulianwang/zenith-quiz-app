@@ -6,7 +6,7 @@ import { trpc } from "@/providers/trpc";
 import { useAppSettings } from "@/context/AppContext";
 import { toTraditional } from "@/lib/chineseConv";
 import { isChinese } from "@/lib/translate";
-import { clientDictTranslate } from "@/lib/dict-translate";
+import { getEnDisplay, getEnOptions } from "@/lib/dict-translate";
 import ParticleBackground from "@/components/ParticleBackground";
 
 type LangMode = "en" | "tc" | "sc" | "entc";
@@ -80,6 +80,7 @@ export default function MistakesPage() {
   // Auto-translation for EN/EN+繁 modes
   const [transCache, setTransCache] = useState<Record<string, { enQuestion: string; enOptions: string[] }>>({});
   const translateMutation = trpc.translate.batchTranslate.useMutation();
+  const llmTranslateMutation = trpc.translate.llmTranslate.useMutation();
   const qKey = question && current ? `${current.bankId}-${question.id}` : "";
   const autoTrans = qKey ? transCache[qKey] : null;
 
@@ -102,14 +103,23 @@ export default function MistakesPage() {
         },
       }));
     }).catch(() => {
-      // API failed — use client-side dictionary
-      setTransCache((prev) => ({
-        ...prev,
-        [qKey]: {
-          enQuestion: clientDictTranslate(question.question) || "[EN] " + question.question,
-          enOptions: question.options.map((o: string) => clientDictTranslate(o) || "[EN] " + o),
-        },
-      }));
+      // All online APIs failed — use LLM for whole-sentence translation
+      const llmTexts = [question.question, ...question.options];
+      llmTranslateMutation.mutateAsync({ texts: llmTexts }).then((llmResult) => {
+        const results = llmResult.results;
+        setTransCache((prev) => ({
+          ...prev,
+          [qKey]: {
+            enQuestion: results[0] || `[EN] ${question.question}`,
+            enOptions: results.slice(1, 1 + question.options.length),
+          },
+        }));
+      }).catch(() => {
+        setTransCache((prev) => ({
+          ...prev,
+          [qKey]: { enQuestion: `[EN] ${question.question}`, enOptions: question.options.map((o: string) => `[EN] ${o}`) },
+        }));
+      });
     });
   }, [qKey, question, langMode, autoTrans]);
 
@@ -120,26 +130,25 @@ export default function MistakesPage() {
   const effEnOpts = dbEnOpts.length > 0 ? dbEnOpts : autoTrans?.enOptions || [];
 
   // Compute display text based on langMode
-  // Use client-side dictionary if no translation available
-  const effEnQ2 = effEnQ || (question ? clientDictTranslate(question.question) : "");
-  const effEnOpts2 = effEnOpts.length > 0 ? effEnOpts : (question ? question.options.map((o: string) => clientDictTranslate(o) || o) : []);
-  const hasEn = !!effEnQ2 && !effEnQ2.startsWith("[EN]");
+  const displayQ = question ? getEnDisplay(question.question, (question as any).enQuestion, autoTrans?.enQuestion) : "";
+  const displayO = question ? getEnOptions(question.options, (question as any).enOptions, autoTrans?.enOptions) : [];
+  const hasEn = !!displayQ && !displayQ.startsWith("[EN]");
   const displayQuestion = question
     ? langMode === "en"
-      ? hasEn ? effEnQ2 : `[EN] ${question.question}`
+      ? displayQ
       : langMode === "tc"
         ? toTraditional(question.question)
         : langMode === "entc"
-          ? hasEn ? effEnQ2 : `[EN] ${question.question}`
+          ? displayQ
           : question.question
     : "";
   const displayOptions = question
     ? langMode === "en"
-      ? hasEn ? effEnOpts2 : question.options.map((o: string) => `[EN] ${o}`)
+      ? displayO
       : langMode === "tc"
         ? question.options.map((opt: string) => toTraditional(opt))
         : langMode === "entc"
-          ? hasEn ? effEnOpts2 : question.options.map((o: string) => `[EN] ${o}`)
+          ? displayO
           : question.options
     : [];
   // Sub-line for EN+繁 mode
