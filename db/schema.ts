@@ -50,6 +50,7 @@ export const practiceRecords = mysqlTable("practice_records", {
   id: serial("id").primaryKey(),
   userId: bigint("userId", { mode: "number", unsigned: true }).notNull(),
   bankId: bigint("bankId", { mode: "number", unsigned: true }).notNull(),
+  mockExamId: bigint("mockExamId", { mode: "number", unsigned: true }),
   questionId: int("questionId").notNull(),
   chapterId: int("chapterId"),
   chapterName: varchar("chapterName", { length: 255 }),

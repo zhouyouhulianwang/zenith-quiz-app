@@ -42,7 +42,8 @@ export default function MockExamPracticePage() {
   const location = useLocation();
 
   const mockExamId = Number(searchParams.get("mockExamId"));
-  const locationState = location.state as { questions?: any[]; title?: string } | null;
+  const locationState = location.state as { questions?: any[]; title?: string; bankId?: number } | null;
+  const bankId = locationState?.bankId;
 
   // Page-level language switch, default entc
   const [langMode, setLangMode] = useState<LangMode>("entc");
@@ -53,6 +54,8 @@ export default function MockExamPracticePage() {
   const currentMock = mockExam?.find((m) => m.id === mockExamId);
   const mockTitle = locationState?.title || currentMock?.title || "模拟练习";
   const incrementMutation = trpc.mockExam.incrementPracticed.useMutation();
+  const addRecord = trpc.record.add.useMutation();
+  const upsertDaily = trpc.record.upsertDaily.useMutation();
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<ExamAnswer[]>([]);
@@ -228,7 +231,37 @@ export default function MockExamPracticePage() {
     setShowSubmitConfirm(false);
     if (timerRef.current) clearInterval(timerRef.current);
     if (mockExamId) incrementMutation.mutate({ id: mockExamId });
-  }, [mockExamId, incrementMutation]);
+
+    // Save practice records for each question
+    const qTimeAvg = questions.length > 0 ? Math.round((elapsed * 1000) / questions.length) : 0;
+    let correctCount = 0;
+    questions.forEach((q, i) => {
+      const ans = answers[i];
+      if (!ans || ans.selected.length === 0) return;
+      const isCorrect = q.correct.length === ans.selected.length && q.correct.every((c) => ans.selected.includes(c));
+      if (isCorrect) correctCount++;
+      addRecord.mutate({
+        mockExamId: mockExamId || undefined,
+        bankId: bankId || undefined,
+        questionId: q.id,
+        chapterId: q.chapterId,
+        chapterName: q.chapterName,
+        selected: ans.selected,
+        isCorrect,
+        timeSpent: qTimeAvg,
+      });
+    });
+
+    // Update daily stats
+    const answered = answers.filter((a) => a && a.selected.length > 0);
+    if (answered.length > 0) {
+      upsertDaily.mutate({
+        date: new Date().toISOString().split("T")[0],
+        count: answered.length,
+        correct: correctCount,
+      });
+    }
+  }, [mockExamId, incrementMutation, questions, answers, elapsed, addRecord, upsertDaily, bankId]);
 
   const touchStartX = useRef(0);
   const onTouchStart = (e: React.TouchEvent) => {

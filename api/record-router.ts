@@ -9,7 +9,8 @@ export const recordRouter = createRouter({
   add: authedQuery
     .input(
       z.object({
-        bankId: z.number(),
+        bankId: z.number().optional(),
+        mockExamId: z.number().optional(),
         questionId: z.number(),
         chapterId: z.number().optional(),
         chapterName: z.string().optional(),
@@ -22,7 +23,8 @@ export const recordRouter = createRouter({
       const db = getDb();
       await db.insert(practiceRecords).values({
         userId: ctx.user.id,
-        bankId: input.bankId,
+        bankId: input.bankId ?? 0,
+        mockExamId: input.mockExamId ?? null,
         questionId: input.questionId,
         chapterId: input.chapterId,
         chapterName: input.chapterName,

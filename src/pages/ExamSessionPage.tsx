@@ -46,6 +46,8 @@ export default function ExamSessionPage() {
   const count = Number(searchParams.get("count")) || 50;
 
   const { data: bankData } = trpc.bank.get.useQuery({ id: bankId }, { enabled: !!bankId });
+  const addRecord = trpc.record.add.useMutation();
+  const upsertDaily = trpc.record.upsertDaily.useMutation();
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<ExamAnswer[]>([]);
@@ -134,17 +136,36 @@ export default function ExamSessionPage() {
     const correctCount = results.filter((r) => r.isCorrect).length;
     const score = Math.round((correctCount / totalQuestions) * 100);
 
-    // Save records
-    const addRecord = (window as any).__examAddRecord;
+    // Save practice records for each answered question
+    const qTimeAvg = totalQuestions > 0 ? Math.round((elapsed * 1000) / totalQuestions) : 0;
     for (const r of results) {
-      // Fire and forget
+      if (r.selected.length === 0) continue; // Skip unanswered
+      addRecord.mutate({
+        bankId: bankId || undefined,
+        questionId: r.questionId,
+        chapterId: r.chapterId,
+        chapterName: r.chapterName,
+        selected: r.selected,
+        isCorrect: r.isCorrect,
+        timeSpent: qTimeAvg,
+      });
+    }
+
+    // Update daily stats
+    const answeredCount = results.filter((r) => r.selected.length > 0).length;
+    if (answeredCount > 0) {
+      upsertDaily.mutate({
+        date: new Date().toISOString().split("T")[0],
+        count: answeredCount,
+        correct: correctCount,
+      });
     }
 
     // Navigate to result
     navigate(`/exam/result?score=${score}&correct=${correctCount}&total=${totalQuestions}&time=${elapsed}&bankId=${bankId}`, {
       state: { questions, answers: results },
     });
-  }, [questions, answers, totalQuestions, elapsed, bankId, navigate]);
+  }, [questions, answers, totalQuestions, elapsed, bankId, navigate, addRecord, upsertDaily]);
 
   // Swipe
   const touchStartX = useRef(0);
