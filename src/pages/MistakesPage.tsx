@@ -7,6 +7,7 @@ import { useAppSettings } from "@/context/AppContext";
 import { toTraditional } from "@/lib/chineseConv";
 import { isChinese } from "@/lib/translate";
 import { getEnDisplay, getEnOptions } from "@/lib/dict-translate";
+import { mymemoryBatchTranslate } from "@/lib/direct-translate";
 import ParticleBackground from "@/components/ParticleBackground";
 
 type LangMode = "en" | "tc" | "sc" | "entc";
@@ -93,33 +94,21 @@ export default function MistakesPage() {
     if (!isChinese(question.question)) return; // Not Chinese
 
     const texts = [question.question, ...question.options];
-    translateMutation.mutateAsync({ texts, from: "zh-CN", to: "en" }).then((result) => {
+    translateMutation.mutateAsync({ texts, from: "zh-CN", to: "en" }).then(async (result) => {
       const r = result.results;
-      setTransCache((prev) => ({
-        ...prev,
-        [qKey]: {
-          enQuestion: r[0] || question.question,
-          enOptions: r.slice(1, 1 + question.options.length),
-        },
-      }));
-    }).catch(() => {
-      // All online APIs failed — use LLM for whole-sentence translation
-      const llmTexts = [question.question, ...question.options];
-      llmTranslateMutation.mutateAsync({ texts: llmTexts }).then((llmResult) => {
-        const results = llmResult.results;
-        setTransCache((prev) => ({
-          ...prev,
-          [qKey]: {
-            enQuestion: results[0] || `[EN] ${question.question}`,
-            enOptions: results.slice(1, 1 + question.options.length),
-          },
-        }));
-      }).catch(() => {
-        setTransCache((prev) => ({
-          ...prev,
-          [qKey]: { enQuestion: `[EN] ${question.question}`, enOptions: question.options.map((o: string) => `[EN] ${o}`) },
-        }));
-      });
+      const hasUntranslated = r.some((t) => t?.startsWith("[EN]"));
+      let final = r;
+      if (hasUntranslated) {
+        try { final = (await mymemoryBatchTranslate(texts)).map((m, i) => m ?? r[i]); } catch { /* */ }
+      }
+      setTransCache((prev) => ({ ...prev, [qKey]: { enQuestion: final[0] || question.question, enOptions: final.slice(1, 1 + question.options.length) } }));
+    }).catch(async () => {
+      try {
+        const memResults = await mymemoryBatchTranslate(texts);
+        setTransCache((prev) => ({ ...prev, [qKey]: { enQuestion: memResults[0] || `[EN] ${question.question}`, enOptions: memResults.slice(1, 1 + question.options.length) } }));
+      } catch {
+        setTransCache((prev) => ({ ...prev, [qKey]: { enQuestion: `[EN] ${question.question}`, enOptions: question.options.map((o: string) => `[EN] ${o}`) } }));
+      }
     });
   }, [qKey, question, langMode, autoTrans]);
 

@@ -7,6 +7,7 @@ import { useAppSettings } from "@/context/AppContext";
 import { toTraditional } from "@/lib/chineseConv";
 import { isChinese } from "@/lib/translate";
 import { getEnDisplay, getEnOptions } from "@/lib/dict-translate";
+import { mymemoryBatchTranslate } from "@/lib/direct-translate";
 import ParticleBackground from "@/components/ParticleBackground";
 
 interface Q {
@@ -99,17 +100,20 @@ export default function ExamSessionPage() {
 
       translateMutation
         .mutateAsync({ texts, from: "zh-CN", to: "en" })
-        .then((result) => {
+        .then(async (result) => {
           const results = result.results;
+          const hasUntranslated = results.some((r) => r?.startsWith("[EN]"));
+          let finalResults = results;
+          if (hasUntranslated) {
+            try { finalResults = (await mymemoryBatchTranslate(texts)).map((r, i) => r ?? results[i]); } catch { /* */ }
+          }
           const newTransCache: Record<number, { enQuestion: string; enOptions: string[] }> = {};
           let idx = 0;
           batch.forEach((q) => {
             const optCount = q.options.length;
-            const enQuestion = results[idx] || q.question;
-            const enOptions = results.slice(idx + 1, idx + 1 + optCount);
-            while (enOptions.length < optCount) {
-              enOptions.push("[EN] " + q.options[enOptions.length]);
-            }
+            const enQuestion = finalResults[idx] || q.question;
+            const enOptions = finalResults.slice(idx + 1, idx + 1 + optCount);
+            while (enOptions.length < optCount) enOptions.push("[EN] " + q.options[enOptions.length]);
             newTransCache[q.id] = { enQuestion, enOptions };
             (q as any).enQuestion = enQuestion;
             (q as any).enOptions = enOptions;
@@ -118,51 +122,28 @@ export default function ExamSessionPage() {
             idx += 1 + optCount;
           });
           setTransCache((prev) => ({ ...prev, ...newTransCache }));
-
           if (bankData && batch.length > 0) {
             const allQs = JSON.parse(bankData.questionsJson);
-            const updatedQs = allQs.map((q: any) => {
-              if (newTransCache[q.id]) {
-                return { ...q, ...newTransCache[q.id], tcQuestion: toTraditional(q.question), tcOptions: q.options.map((o: string) => toTraditional(o)) };
-              }
-              return q;
-            });
+            const updatedQs = allQs.map((q: any) => newTransCache[q.id] ? { ...q, ...newTransCache[q.id], tcQuestion: toTraditional(q.question), tcOptions: q.options.map((o: string) => toTraditional(o)) } : q);
             updateBankMutation.mutate({ id: bankId, questionsJson: JSON.stringify(updatedQs) });
           }
         })
-        .catch(() => {
-          const llmTexts = batch.flatMap((q) => [q.question, ...q.options]);
-          llmTranslateMutation.mutateAsync({ texts: llmTexts }).then((llmResult) => {
-            const results = llmResult.results;
+        .catch(async () => {
+          try {
+            const memResults = await mymemoryBatchTranslate(texts);
             const newTransCache: Record<number, { enQuestion: string; enOptions: string[] }> = {};
             let idx = 0;
             batch.forEach((q) => {
               const optCount = q.options.length;
-              const enQuestion = results[idx] || `[EN] ${q.question}`;
-              const enOptions = results.slice(idx + 1, idx + 1 + optCount);
-              while (enOptions.length < optCount) enOptions.push(`[EN] ${q.options[enOptions.length]}`);
-              newTransCache[q.id] = { enQuestion, enOptions };
+              const rQ = memResults[idx];
+              const rOpts = memResults.slice(idx + 1, idx + 1 + optCount);
+              newTransCache[q.id] = { enQuestion: rQ && !rQ.startsWith("[EN]") ? rQ : `[EN] ${q.question}`, enOptions: rOpts.map((o, oi) => o && !o.startsWith("[EN]") ? o : `[EN] ${q.options[oi]}`) };
               idx += 1 + optCount;
             });
             setTransCache((prev) => ({ ...prev, ...newTransCache }));
-
-            if (bankData && batch.length > 0) {
-              const allQs = JSON.parse(bankData.questionsJson);
-              const updatedQs = allQs.map((q: any) => {
-                if (newTransCache[q.id]) {
-                  return { ...q, ...newTransCache[q.id], tcQuestion: toTraditional(q.question), tcOptions: q.options.map((o: string) => toTraditional(o)) };
-                }
-                return q;
-              });
-              updateBankMutation.mutate({ id: bankId, questionsJson: JSON.stringify(updatedQs) });
-            }
-          }).catch(() => {
-            setTransCache((prev) => {
-              const next = { ...prev };
-              batch.forEach((q) => { next[q.id] = { enQuestion: `[EN] ${q.question}`, enOptions: q.options.map((o) => `[EN] ${o}`) }; });
-              return next;
-            });
-          });
+          } catch {
+            setTransCache((prev) => { const n = { ...prev }; batch.forEach((q) => { n[q.id] = { enQuestion: `[EN] ${q.question}`, enOptions: q.options.map((o) => `[EN] ${o}`) }; }); return n; });
+          }
         });
     }
   }, [questions, lang, transCache, bankData, bankId]);

@@ -6,6 +6,7 @@ import { trpc } from "@/providers/trpc";
 import { toTraditional } from "@/lib/chineseConv";
 import { isChinese } from "@/lib/translate";
 import { getEnDisplay, getEnOptions } from "@/lib/dict-translate";
+import { mymemoryBatchTranslate } from "@/lib/direct-translate";
 import ParticleBackground from "@/components/ParticleBackground";
 
 interface Q {
@@ -123,20 +124,28 @@ export default function MockExamPracticePage() {
 
       translateMutation
         .mutateAsync({ texts, from: "zh-CN", to: "en" })
-        .then((result) => {
+        .then(async (result) => {
           const results = result.results;
+          // Check if any results still have [EN] markers — if so, call MyMemory directly
+          const hasUntranslated = results.some((r) => r?.startsWith("[EN]"));
+          let finalResults = results;
+          if (hasUntranslated) {
+            try {
+              const memResults = await mymemoryBatchTranslate(texts);
+              finalResults = memResults.map((r, i) => (r !== null ? r : results[i]));
+            } catch { /* keep original results */ }
+          }
+
           const newTransCache: Record<number, { enQuestion: string; enOptions: string[] }> = {};
           let idx = 0;
           batch.forEach((q) => {
             const optCount = q.options.length;
-            const enQuestion = results[idx] || q.question;
-            const enOptions = results.slice(idx + 1, idx + 1 + optCount);
-            // Pad if missing
+            const enQuestion = finalResults[idx] || q.question;
+            const enOptions = finalResults.slice(idx + 1, idx + 1 + optCount);
             while (enOptions.length < optCount) {
               enOptions.push("[EN] " + q.options[enOptions.length]);
             }
             newTransCache[q.id] = { enQuestion, enOptions };
-            // Also update the question object for DB save
             q.enQuestion = enQuestion;
             q.enOptions = enOptions;
             q.tcQuestion = toTrad(q.question);
@@ -146,7 +155,6 @@ export default function MockExamPracticePage() {
 
           setTransCache((prev) => ({ ...prev, ...newTransCache }));
 
-          // Save translated questions back to DB
           if (currentMock && batch.length > 0) {
             const updatedQuestions = questions.map((q: Q) => {
               if (newTransCache[q.id]) {
@@ -160,46 +168,28 @@ export default function MockExamPracticePage() {
             });
           }
         })
-        .catch(() => {
-          // All online APIs failed — use LLM for whole-sentence translation
-          const llmTexts = batch.flatMap((q) => [q.question, ...q.options]);
-          llmTranslateMutation.mutateAsync({ texts: llmTexts }).then((llmResult) => {
-            const results = llmResult.results;
+        .catch(async () => {
+          // Backend failed — try MyMemory directly from frontend
+          try {
+            const memResults = await mymemoryBatchTranslate(texts);
             const newTransCache: Record<number, { enQuestion: string; enOptions: string[] }> = {};
             let idx = 0;
             batch.forEach((q) => {
               const optCount = q.options.length;
-              const enQuestion = results[idx] || `[EN] ${q.question}`;
-              const enOptions = results.slice(idx + 1, idx + 1 + optCount);
+              const enQuestion = memResults[idx] || `[EN] ${q.question}`;
+              const enOptions = memResults.slice(idx + 1, idx + 1 + optCount);
               while (enOptions.length < optCount) enOptions.push(`[EN] ${q.options[enOptions.length]}`);
-              newTransCache[q.id] = { enQuestion, enOptions };
+              newTransCache[q.id] = { enQuestion: enQuestion.startsWith("[EN]") ? `[EN] ${q.question}` : enQuestion, enOptions: enOptions.map((o) => o?.startsWith("[EN]") ? `[EN] ${q.options[enOptions.indexOf(o)]}` : o) };
               idx += 1 + optCount;
             });
             setTransCache((prev) => ({ ...prev, ...newTransCache }));
-
-            // Save LLM-translated questions back to DB
-            if (currentMock && batch.length > 0) {
-              const updatedQuestions = questions.map((q: Q) => {
-                if (newTransCache[q.id]) {
-                  return { ...q, ...newTransCache[q.id], tcQuestion: toTrad(q.question), tcOptions: q.options.map((o: string) => toTrad(o)) };
-                }
-                return q;
-              });
-              updateQuestionsMutation.mutate({
-                id: currentMock.id,
-                questionsJson: JSON.stringify(updatedQuestions),
-              });
-            }
-          }).catch(() => {
-            // LLM also failed — mark as [EN] original
+          } catch {
             setTransCache((prev) => {
               const next = { ...prev };
-              batch.forEach((q) => {
-                next[q.id] = { enQuestion: `[EN] ${q.question}`, enOptions: q.options.map((o) => `[EN] ${o}`) };
-              });
+              batch.forEach((q) => { next[q.id] = { enQuestion: `[EN] ${q.question}`, enOptions: q.options.map((o) => `[EN] ${o}`) }; });
               return next;
             });
-          });
+          }
         })
         .finally(() => {
           setTranslatingIds((prev) => {
