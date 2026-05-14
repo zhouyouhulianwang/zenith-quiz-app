@@ -1,16 +1,16 @@
 import { z } from "zod";
-import { authedQuery } from "./middleware";
+import { authedQuery, publicQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { mockExams } from "@db/schema";
 import { eq, and, desc } from "drizzle-orm";
 
 export const mockExamRouter = {
-  list: authedQuery.query(async ({ ctx }) => {
+  list: authedQuery.query(async () => {
     const db = getDb();
+    // Return all mock exams (preset exams are shared across all users)
     return db
       .select()
       .from(mockExams)
-      .where(eq(mockExams.userId, ctx.user.id))
       .orderBy(desc(mockExams.createdAt));
   }),
 
