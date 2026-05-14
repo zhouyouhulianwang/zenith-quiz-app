@@ -5,8 +5,7 @@ import { ArrowLeft, Clock, ChevronLeft, ChevronRight, Flag, GraduationCap, Check
 import { trpc } from "@/providers/trpc";
 import { toTraditional } from "@/lib/chineseConv";
 import { isChinese } from "@/lib/translate";
-import { getEnDisplay, getEnOptions } from "@/lib/dict-translate";
-import { mymemoryBatchTranslate } from "@/lib/direct-translate";
+import { getEnDisplay, getEnOptions, mymemoryBatchTranslate } from "@/lib/dict-translate";
 import ParticleBackground from "@/components/ParticleBackground";
 
 interface Q {
