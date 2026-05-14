@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useSearchParams, useNavigate, useLocation } from "react-router";
 import { motion } from "framer-motion";
-import { ArrowLeft, Clock, ChevronLeft, ChevronRight, Flag, GraduationCap, Check, X, AlertCircle, Languages } from "lucide-react";
+import { ArrowLeft, Clock, ChevronLeft, ChevronRight, Flag, GraduationCap, Check, X, AlertCircle, Languages, Globe } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { toTraditional } from "@/lib/chineseConv";
+import { isChinese } from "@/lib/translate";
 import ParticleBackground from "@/components/ParticleBackground";
 
 interface Q {
@@ -62,6 +63,72 @@ export default function MockExamPracticePage() {
   const [expandedExplanation, setExpandedExplanation] = useState<number | null>(null);
   const [loadError, setLoadError] = useState("");
   const timerRef = useRef<ReturnType<typeof setInterval>>(null);
+
+  // Translation cache for auto-translated questions
+  const [transCache, setTransCache] = useState<Record<number, { enQuestion: string; enOptions: string[] }>>({});
+  const [translatingIds, setTranslatingIds] = useState<Set<number>>(new Set());
+  const translateMutation = trpc.translate.batchTranslate.useMutation();
+
+  // Auto-translate questions that don't have EN data
+  useEffect(() => {
+    if (langMode !== "entc" && langMode !== "en") return;
+
+    const needsTranslation = questions.filter((q) => {
+      if (!isChinese(q.question)) return false; // Not Chinese, no need to translate
+      if (q.enQuestion) return false; // Already has EN
+      if (transCache[q.id]) return false; // Already translated
+      if (translatingIds.has(q.id)) return false; // Currently translating
+      return true;
+    });
+
+    if (needsTranslation.length === 0) return;
+
+    // Batch translate in groups of 5
+    const batchSize = 5;
+    for (let i = 0; i < needsTranslation.length; i += batchSize) {
+      const batch = needsTranslation.slice(i, i + batchSize);
+      const ids = batch.map((q) => q.id);
+      const texts = batch.flatMap((q) => [q.question, ...q.options]);
+
+      setTranslatingIds((prev) => {
+        const next = new Set(prev);
+        ids.forEach((id) => next.add(id));
+        return next;
+      });
+
+      translateMutation
+        .mutateAsync({ texts, from: "zh-CN", to: "en" })
+        .then((result) => {
+          const results = result.results;
+          setTransCache((prev) => {
+            const next = { ...prev };
+            let idx = 0;
+            batch.forEach((q) => {
+              const optCount = q.options.length;
+              const enQuestion = results[idx] || q.question;
+              const enOptions = results.slice(idx + 1, idx + 1 + optCount);
+              // Pad if missing
+              while (enOptions.length < optCount) {
+                enOptions.push(q.options[enOptions.length]);
+              }
+              next[q.id] = { enQuestion, enOptions };
+              idx += 1 + optCount;
+            });
+            return next;
+          });
+        })
+        .catch(() => {
+          // Silently fail - will use fallback display
+        })
+        .finally(() => {
+          setTranslatingIds((prev) => {
+            const next = new Set(prev);
+            ids.forEach((id) => next.delete(id));
+            return next;
+          });
+        });
+    }
+  }, [questions, langMode, transCache, translatingIds]);
 
   // Load questions from API
   const questions: Q[] = useMemo(() => {
@@ -187,6 +254,10 @@ export default function MockExamPracticePage() {
     try { return toTraditional(text); } catch { return text; }
   }, []);
 
+  // Get auto-translated text if available
+  const autoTrans = currentQuestion ? transCache[currentQuestion.id] : null;
+  const isTransPending = currentQuestion ? translatingIds.has(currentQuestion.id) : false;
+
   // Compute display text based on langMode
   let displayQuestion = "";
   let displayOptions: string[] = [];
@@ -194,10 +265,14 @@ export default function MockExamPracticePage() {
   let subOptions: string[] | undefined;
 
   if (currentQuestion) {
+    // Build effective EN text: db en > auto-translated > original
+    const effectiveEnQuestion = currentQuestion.enQuestion || autoTrans?.enQuestion || "";
+    const effectiveEnOptions = currentQuestion.enOptions || autoTrans?.enOptions || [];
+
     switch (langMode) {
       case "en":
-        displayQuestion = currentQuestion.enQuestion || currentQuestion.question || "";
-        displayOptions = currentQuestion.enOptions || currentQuestion.options || [];
+        displayQuestion = effectiveEnQuestion || currentQuestion.question || "";
+        displayOptions = effectiveEnOptions.length > 0 ? effectiveEnOptions : currentQuestion.options || [];
         break;
       case "tc":
         displayQuestion = currentQuestion.tcQuestion || toTrad(currentQuestion.question || "");
@@ -208,21 +283,19 @@ export default function MockExamPracticePage() {
         displayOptions = currentQuestion.options || [];
         break;
       case "entc": {
-        const hasEn = !!currentQuestion.enQuestion;
-        displayQuestion = currentQuestion.enQuestion || currentQuestion.question || "";
-        displayOptions = currentQuestion.enOptions || currentQuestion.options || [];
+        const hasEn = !!effectiveEnQuestion;
+        displayQuestion = effectiveEnQuestion || currentQuestion.question || "";
+        displayOptions = effectiveEnOptions.length > 0 ? effectiveEnOptions : currentQuestion.options || [];
         const tcQ = currentQuestion.tcQuestion || toTrad(currentQuestion.question || "");
         const tcO = currentQuestion.tcOptions || currentQuestion.options?.map((o) => toTrad(o));
-        // Only show sub-line when: (1) EN text exists, or (2) TC is different from primary display
+        // Show TC sub-line when: (1) EN text exists (db or auto-translated), or (2) TC differs from primary
         if (hasEn) {
           subQuestion = tcQ;
           subOptions = tcO;
         } else if (tcQ !== displayQuestion) {
-          // No EN available — show TC as sub only if it differs from primary
           subQuestion = tcQ;
           subOptions = tcO;
         }
-        // If no EN and TC is same as primary, sub stays empty (no duplicate)
         break;
       }
     }
@@ -317,6 +390,16 @@ export default function MockExamPracticePage() {
                 </div>
               )}
             </div>
+
+            {/* Translation indicator */}
+            {isTransPending && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "10px", padding: "6px 12px", background: "rgba(0,212,255,0.08)", borderRadius: "8px", fontSize: "12px", color: "var(--accent-color)" }}>
+                <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }}>
+                  <Globe size={14} />
+                </motion.div>
+                <span>正在自动翻译为英文...</span>
+              </motion.div>
+            )}
 
             {/* Options */}
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>

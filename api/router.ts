@@ -6,6 +6,7 @@ import { recordRouter } from "./record-router";
 import { settingsRouter } from "./settings-router";
 import { adminRouter } from "./admin-router";
 import { mockExamRouter } from "./mock-exam-router";
+import { translateRouter } from "./translate-router";
 
 export const appRouter = createRouter({
   health: publicQuery.query(() => "ok"),
@@ -16,6 +17,7 @@ export const appRouter = createRouter({
   settings: settingsRouter,
   admin: adminRouter,
   mockExam: mockExamRouter,
+  translate: translateRouter,
 });
 
 export type AppRouter = typeof appRouter;

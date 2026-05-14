@@ -1,10 +1,11 @@
 import { useState, useMemo, useRef } from "react";
 import { useNavigate, useLocation } from "react-router";
 import { motion } from "framer-motion";
-import { ArrowLeft, XCircle, CheckCircle, ChevronLeft, ChevronRight, RotateCcw, Filter, AlertCircle, BookOpen, Clock, Languages } from "lucide-react";
+import { ArrowLeft, XCircle, CheckCircle, ChevronLeft, ChevronRight, RotateCcw, Filter, AlertCircle, BookOpen, Clock, Languages, Globe } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAppSettings } from "@/context/AppContext";
 import { toTraditional } from "@/lib/chineseConv";
+import { isChinese } from "@/lib/translate";
 import ParticleBackground from "@/components/ParticleBackground";
 
 type LangMode = "en" | "tc" | "sc" | "entc";
@@ -75,33 +76,65 @@ export default function MistakesPage() {
   const langMode = settings.questionLanguage as "en" | "tc" | "sc" | "entc";
   const showTc = langMode === "entc" || langMode === "tc";
 
+  // Auto-translation for EN/EN+繁 modes
+  const [transCache, setTransCache] = useState<Record<string, { enQuestion: string; enOptions: string[] }>>({});
+  const translateMutation = trpc.translate.batchTranslate.useMutation();
+  const qKey = question && current ? `${current.bankId}-${question.id}` : "";
+  const autoTrans = qKey ? transCache[qKey] : null;
+
+  // Trigger auto-translation when needed
+  useMemo(() => {
+    if (!question || !qKey) return;
+    if (langMode !== "entc" && langMode !== "en") return;
+    if ((question as any).enQuestion) return; // Already has EN
+    if (autoTrans) return; // Already translated
+    if (!isChinese(question.question)) return; // Not Chinese
+
+    const texts = [question.question, ...question.options];
+    translateMutation.mutateAsync({ texts, from: "zh-CN", to: "en" }).then((result) => {
+      const r = result.results;
+      setTransCache((prev) => ({
+        ...prev,
+        [qKey]: {
+          enQuestion: r[0] || question.question,
+          enOptions: r.slice(1, 1 + question.options.length),
+        },
+      }));
+    }).catch(() => { /* ignore */ });
+  }, [qKey, question, langMode, autoTrans]);
+
+  // Compute effective EN text
+  const dbEnQ = (question as any)?.enQuestion || "";
+  const dbEnOpts = ((question as any)?.enOptions || []) as string[];
+  const effEnQ = dbEnQ || autoTrans?.enQuestion || "";
+  const effEnOpts = dbEnOpts.length > 0 ? dbEnOpts : autoTrans?.enOptions || [];
+
   // Compute display text based on langMode
   const displayQuestion = question
     ? langMode === "en"
-      ? (question as any).enQuestion || question.question
+      ? effEnQ || question.question
       : langMode === "tc"
         ? toTraditional(question.question)
         : langMode === "entc"
-          ? (question as any).enQuestion || question.question
+          ? effEnQ || question.question
           : question.question
     : "";
   const displayOptions = question
     ? langMode === "en"
-      ? ((question as any).enOptions || question.options)
+      ? (effEnOpts.length > 0 ? effEnOpts : question.options)
       : langMode === "tc"
         ? question.options.map((opt: string) => toTraditional(opt))
         : langMode === "entc"
-          ? ((question as any).enOptions || question.options)
+          ? (effEnOpts.length > 0 ? effEnOpts : question.options)
           : question.options
     : [];
-  // Sub-line for EN+繁 mode (Traditional Chinese below English)
+  // Sub-line for EN+繁 mode
   const subQuestion = question && langMode === "entc"
     ? ((question as any).tcQuestion || toTraditional(question.question))
     : "";
   const subOptions = question && langMode === "entc"
     ? (((question as any).tcOptions || question.options.map((o: string) => toTraditional(o))) as string[])
     : undefined;
-  // Only show sub-line when it differs from primary (avoid duplicate when no EN available)
   const showSub = langMode === "entc" && subQuestion && subQuestion !== displayQuestion;
 
   const handlePrev = () => { if (currentIndex > 0) setCurrentIndex((p) => p - 1); };
@@ -176,6 +209,14 @@ export default function MistakesPage() {
                 <div style={{ fontSize: "17px", fontWeight: 500, color: "var(--text-primary)", lineHeight: 1.6 }}>{displayQuestion}</div>
                 {showSub && subQuestion && (
                   <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid var(--border-color)", fontSize: "16px", color: "var(--text-primary)", lineHeight: 1.6 }}>{subQuestion}</div>
+                )}
+                {translateMutation.isPending && !autoTrans && (langMode === "entc" || langMode === "en") && question && !(question as any).enQuestion && isChinese(question.question) && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "10px", padding: "6px 12px", background: "rgba(0,212,255,0.08)", borderRadius: "8px", fontSize: "12px", color: "var(--accent-color)" }}>
+                    <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }}>
+                      <Globe size={14} />
+                    </motion.div>
+                    <span>正在自动翻译为英文...</span>
+                  </motion.div>
                 )}
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   {displayOptions.map((opt, idx) => {
