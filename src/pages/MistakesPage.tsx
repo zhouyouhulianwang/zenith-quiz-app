@@ -1,11 +1,36 @@
 import { useState, useMemo, useRef } from "react";
 import { useNavigate, useLocation } from "react-router";
 import { motion } from "framer-motion";
-import { ArrowLeft, XCircle, CheckCircle, ChevronLeft, ChevronRight, RotateCcw, Filter, AlertCircle, BookOpen, Clock } from "lucide-react";
+import { ArrowLeft, XCircle, CheckCircle, ChevronLeft, ChevronRight, RotateCcw, Filter, AlertCircle, BookOpen, Clock, Languages } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAppSettings } from "@/context/AppContext";
 import { toTraditional } from "@/lib/chineseConv";
 import ParticleBackground from "@/components/ParticleBackground";
+
+type LangMode = "en" | "tc" | "sc" | "entc";
+
+const LANG_LABELS: Record<LangMode, string> = { en: "EN", tc: "繁體", sc: "简体", entc: "EN+繁" };
+
+function LanguageSwitcher({ current, onChange }: { current: LangMode; onChange: (m: LangMode) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ position: "relative" }}>
+      <button onClick={() => setOpen(!open)} style={{ background: "var(--card-bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "8px", padding: "4px 10px", fontSize: "11px", fontWeight: 600, color: "var(--accent-color)", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
+        <Languages size={11} /> {LANG_LABELS[current]}
+      </button>
+      {open && (
+        <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} style={{ position: "absolute", top: "30px", right: 0, background: "var(--card-bg)", border: "1px solid var(--border-color)", borderRadius: "10px", padding: "4px", zIndex: 50, boxShadow: "0 4px 12px rgba(0,0,0,0.15)", minWidth: "80px" }}>
+          {(Object.keys(LANG_LABELS) as LangMode[]).map((mode) => (
+            <button key={mode} onClick={() => { onChange(mode); setOpen(false); }} style={{ width: "100%", padding: "6px 12px", borderRadius: "6px", background: current === mode ? "var(--accent-color)" : "transparent", color: current === mode ? "#fff" : "var(--text-primary)", border: "none", fontSize: "12px", fontWeight: 600, cursor: "pointer", textAlign: "left" }}>
+              {LANG_LABELS[mode]}
+            </button>
+          ))}
+        </motion.div>
+      )}
+      {open && <div style={{ position: "fixed", inset: 0, zIndex: 40 }} onClick={() => setOpen(false)} />}
+    </div>
+  );
+}
 
 export default function MistakesPage() {
   const navigate = useNavigate();
@@ -47,8 +72,20 @@ export default function MistakesPage() {
   }, [bank?.questionsJson]);
   const question = current ? bankQuestions.find((q) => q.id === current.questionId) : null;
   const { settings, setSettings } = useAppSettings();
-  const langMode = settings.questionLanguage as "en" | "tc" | "sc" | "entc" | string;
+  const langMode = settings.questionLanguage as "en" | "tc" | "sc" | "entc";
   const showTc = langMode === "entc" || langMode === "tc";
+
+  // Compute display text based on langMode
+  const displayQuestion = question
+    ? langMode === "tc" || langMode === "entc"
+      ? toTraditional(question.question)
+      : question.question
+    : "";
+  const displayOptions = question
+    ? question.options.map((opt) =>
+        langMode === "tc" || langMode === "entc" ? toTraditional(opt) : opt
+      )
+    : [];
 
   const handlePrev = () => { if (currentIndex > 0) setCurrentIndex((p) => p - 1); };
   const handleNext = () => { if (currentIndex < filtered.length - 1) setCurrentIndex((p) => p + 1); };
@@ -91,9 +128,7 @@ export default function MistakesPage() {
           <button onClick={() => navigate("/")} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px", minWidth: "44px", minHeight: "44px", display: "flex", alignItems: "center", justifyContent: "center" }}><ArrowLeft size={24} color="var(--text-primary)" /></button>
           <div style={{ fontSize: "17px", fontWeight: 600, color: "var(--text-primary)" }}>{isWrongMode ? "错题回顾" : "正确回顾"}</div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <button onClick={() => setSettings({ questionLanguage: settings.questionLanguage === "entc" ? "sc" : settings.questionLanguage === "sc" ? "en" : "entc" })} style={{ background: "var(--card-bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "8px", padding: "4px 8px", fontSize: "11px", fontWeight: 600, color: "var(--accent-color)", cursor: "pointer" }}>
-              {settings.questionLanguage === "entc" ? "EN+繁" : settings.questionLanguage === "sc" ? "简体" : settings.questionLanguage === "en" ? "EN" : settings.questionLanguage === "tc" ? "繁體" : "EN+繁"}
-            </button>
+            <LanguageSwitcher current={langMode} onChange={(mode) => setSettings({ questionLanguage: mode })} />
             <div style={{ fontSize: "13px", color: isWrongMode ? "#ef4444" : "#10b981", fontWeight: 600 }}>{currentIndex + 1} / {filtered.length}</div>
           </div>
         </div>
@@ -121,10 +156,9 @@ export default function MistakesPage() {
                 <span style={{ fontSize: "11px", color: "var(--text-tertiary)", display: "flex", alignItems: "center", gap: "3px" }}><Clock size={10} />{formatDate(current.createdAt)}</span>
               </div>
               <div style={{ background: "var(--card-bg)", borderRadius: "16px", padding: "20px", border: "1px solid var(--border-color)", marginBottom: "16px" }}>
-                <div style={{ fontSize: "17px", fontWeight: 500, color: "var(--text-primary)", lineHeight: 1.6, marginBottom: "16px" }}>{showTc ? toTraditional(question.question) : question.question}</div>
+                <div style={{ fontSize: "17px", fontWeight: 500, color: "var(--text-primary)", lineHeight: 1.6, marginBottom: "16px" }}>{displayQuestion}</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  {question.options.map((opt, idx) => {
-                    const displayOpt = showTc ? toTraditional(opt) : opt;
+                  {displayOptions.map((opt, idx) => {
                     const isCorrect = question.correct.includes(idx);
                     const isSelected = current.selected.includes(idx);
                     const isWrong = isSelected && !isCorrect;

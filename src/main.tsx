@@ -1,6 +1,7 @@
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router";
 import { TRPCProvider } from "@/providers/trpc";
+import { AppProvider } from "@/context/AppContext";
 import "./index.css";
 import App from "./App";
 
@@ -17,7 +18,9 @@ if ("serviceWorker" in navigator) {
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <BrowserRouter>
     <TRPCProvider>
-      <App />
+      <AppProvider>
+        <App />
+      </AppProvider>
     </TRPCProvider>
   </BrowserRouter>
 );

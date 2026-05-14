@@ -118,7 +118,7 @@ function AnimatedRoutes() {
         exit={{ opacity: 0, x: -20 }}
         transition={{ duration: 0.25 }}
       >
-        <Routes location={location}>
+          <Routes location={location}>
           <Route path="/" element={<HomePage />} />
           <Route path="/library" element={<LibraryPage />} />
           <Route path="/training" element={<TrainingPage />} />
@@ -133,15 +133,15 @@ function AnimatedRoutes() {
           <Route path="/mock-exam/create" element={<MockExamCreatePage />} />
           <Route path="/mock-exam/practice" element={<MockExamPracticePage />} />
         </Routes>
+        {!hideNav && <BottomNav />}
       </motion.div>
-      {!hideNav && <BottomNav />}
     </AnimatePresence>
   );
 }
 
 export default function App() {
   return (
-    <AppProvider>
+    <>
       <ThemeManager />
       <div
         className="app-container"
@@ -179,6 +179,6 @@ export default function App() {
           />
         </Routes>
       </div>
-    </AppProvider>
+    </>
   );
 }

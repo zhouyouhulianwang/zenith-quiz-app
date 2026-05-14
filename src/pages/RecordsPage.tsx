@@ -1,11 +1,35 @@
 import { useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "framer-motion";
-import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle, XCircle, Clock, BookOpen, Filter, Calendar } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle, XCircle, Clock, BookOpen, Filter, Calendar, Languages } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAppSettings } from "@/context/AppContext";
 import { toTraditional } from "@/lib/chineseConv";
 import ParticleBackground from "@/components/ParticleBackground";
+
+type LangMode = "en" | "tc" | "sc" | "entc";
+const LANG_LABELS: Record<LangMode, string> = { en: "EN", tc: "繁體", sc: "简体", entc: "EN+繁" };
+
+function LanguageSwitcher({ current, onChange }: { current: LangMode; onChange: (m: LangMode) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ position: "relative" }}>
+      <button onClick={() => setOpen(!open)} style={{ background: "var(--card-bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "8px", padding: "4px 10px", fontSize: "11px", fontWeight: 600, color: "var(--accent-color)", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
+        <Languages size={11} /> {LANG_LABELS[current]}
+      </button>
+      {open && (
+        <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} style={{ position: "absolute", top: "30px", right: 0, background: "var(--card-bg)", border: "1px solid var(--border-color)", borderRadius: "10px", padding: "4px", zIndex: 50, boxShadow: "0 4px 12px rgba(0,0,0,0.15)", minWidth: "80px" }}>
+          {(Object.keys(LANG_LABELS) as LangMode[]).map((mode) => (
+            <button key={mode} onClick={() => { onChange(mode); setOpen(false); }} style={{ width: "100%", padding: "6px 12px", borderRadius: "6px", background: current === mode ? "var(--accent-color)" : "transparent", color: current === mode ? "#fff" : "var(--text-primary)", border: "none", fontSize: "12px", fontWeight: 600, cursor: "pointer", textAlign: "left" }}>
+              {LANG_LABELS[mode]}
+            </button>
+          ))}
+        </motion.div>
+      )}
+      {open && <div style={{ position: "fixed", inset: 0, zIndex: 40 }} onClick={() => setOpen(false)} />}
+    </div>
+  );
+}
 
 export default function RecordsPage() {
   const navigate = useNavigate();
@@ -24,8 +48,9 @@ export default function RecordsPage() {
   const current = filtered[currentIndex];
   const bank = current ? banks?.find((b) => b.id === current.bankId) : null;
   const question = current ? (JSON.parse(bank?.questionsJson || "[]") as Array<{ id: number; question: string; options: string[]; correct: number[]; explanation: string }>).find((q) => q.id === current.questionId) : null;
-  const { settings } = useAppSettings();
-  const showTc = settings.questionLanguage === "entc" || settings.questionLanguage === "tc";
+  const { settings, setSettings } = useAppSettings();
+  const langMode = settings.questionLanguage as LangMode;
+  const showTc = langMode === "entc" || langMode === "tc";
   const total = filtered.length;
   const correctCount = (records || []).filter((r) => r.isCorrect).length;
   const wrongCount = (records || []).filter((r) => !r.isCorrect).length;
@@ -68,7 +93,10 @@ export default function RecordsPage() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", paddingTop: "max(12px, env(safe-area-inset-top))", borderBottom: "1px solid var(--border-color)" }}>
           <button onClick={() => navigate("/")} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px", minWidth: "44px", minHeight: "44px", display: "flex", alignItems: "center", justifyContent: "center" }}><ArrowLeft size={24} color="var(--text-primary)" /></button>
           <div style={{ fontSize: "17px", fontWeight: 600, color: "var(--text-primary)" }}>练习记录</div>
-          <div style={{ fontSize: "13px", color: "var(--text-secondary)" }}>{currentIndex + 1} / {total}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <LanguageSwitcher current={langMode} onChange={(mode) => setSettings({ questionLanguage: mode })} />
+            <div style={{ fontSize: "13px", color: "var(--text-secondary)" }}>{currentIndex + 1} / {total}</div>
+          </div>
         </div>
         <div style={{ width: "100%", height: "3px", background: "var(--card-bg-secondary)" }}><motion.div animate={{ width: `${total > 0 ? ((currentIndex + 1) / total) * 100 : 0}%` }} style={{ height: "100%", background: "#00d4ff" }} /></div>
 
@@ -96,7 +124,9 @@ export default function RecordsPage() {
                 <span style={{ fontSize: "11px", color: "var(--text-tertiary)" }}><Clock size={10} />{formatDate(current.createdAt)}</span>
               </div>
               <div style={{ background: "var(--card-bg)", borderRadius: "16px", padding: "20px", border: "1px solid var(--border-color)" }}>
-                <div style={{ fontSize: "16px", fontWeight: 500, color: "var(--text-primary)", lineHeight: 1.6, marginBottom: "16px" }}>{showTc ? toTraditional(question.question) : question.question}</div>
+                <div style={{ fontSize: "16px", fontWeight: 500, color: "var(--text-primary)", lineHeight: 1.6, marginBottom: "16px" }}>
+                  {showTc ? toTraditional(question.question) : question.question}
+                </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   {question.options.map((opt, idx) => {
                     const isCorrect = question.correct.includes(idx);

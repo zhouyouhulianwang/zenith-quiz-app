@@ -172,15 +172,15 @@ export default function ExamSessionPage() {
   let secondaryQuestion = "";
   let secondaryOptions: string[] | undefined;
 
+  function toTrad(text: string) {
+    try { return toTraditional(text); } catch { return text; }
+  }
+
   if (lang === "entc" && currentQuestion) {
     primaryQuestion = currentQuestion.enQuestion || currentQuestion.question;
     primaryOptions = currentQuestion.enOptions || currentQuestion.options;
     secondaryQuestion = currentQuestion.tcQuestion || toTrad(currentQuestion.question);
     secondaryOptions = currentQuestion.tcOptions || currentQuestion.options.map((o) => toTrad(o));
-  }
-
-  function toTrad(text: string) {
-    try { return toTraditional(text); } catch { return text; }
   }
 
   if (!bankData || questions.length === 0) {

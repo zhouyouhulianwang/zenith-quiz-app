@@ -14,17 +14,12 @@ export default function MockExamListPage() {
   });
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
 
-  const handlePractice = (exam: { id: number; questionsJson: string; title: string }) => {
-    try {
-      const questions = JSON.parse(exam.questionsJson);
-      const params = new URLSearchParams();
-      params.set("mockExamId", String(exam.id));
-      navigate(`/mock-exam/practice?${params.toString()}`, {
-        state: { questions, title: exam.title },
-      });
-    } catch {
-      alert("试卷数据无效");
-    }
+  const handlePractice = (exam: { id: number; title: string }) => {
+    const params = new URLSearchParams();
+    params.set("mockExamId", String(exam.id));
+    navigate(`/mock-exam/practice?${params.toString()}`, {
+      state: { title: exam.title },
+    });
   };
 
   return (

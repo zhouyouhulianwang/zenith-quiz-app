@@ -63,30 +63,31 @@ export default function MockExamPracticePage() {
   const [loadError, setLoadError] = useState("");
   const timerRef = useRef<ReturnType<typeof setInterval>>(null);
 
-  // Load questions from location.state or fallback to API
+  // Load questions from API
   const questions: Q[] = useMemo(() => {
-    setLoadError("");
-    // Priority 1: location.state (passed from list page)
-    if (locationState?.questions && Array.isArray(locationState.questions) && locationState.questions.length > 0) {
-      return locationState.questions;
-    }
-    // Priority 2: API data
     if (currentMock?.questionsJson) {
       try {
         const parsed = JSON.parse(currentMock.questionsJson);
         if (Array.isArray(parsed) && parsed.length > 0) {
           return parsed;
         }
-        setLoadError("API返回的题目数组为空");
-        return [];
       } catch {
-        setLoadError("API返回的题目JSON解析失败");
-        return [];
+        // ignore
       }
     }
-    setLoadError("未找到题目数据");
     return [];
-  }, [locationState?.questions, currentMock?.questionsJson]);
+  }, [currentMock?.questionsJson]);
+
+  // Set load error in useEffect (not during render)
+  useEffect(() => {
+    if (questions.length > 0) {
+      setLoadError("");
+    } else if (currentMock?.questionsJson) {
+      setLoadError("API有数据但题目为空或解析失败");
+    } else {
+      setLoadError("未找到题目数据");
+    }
+  }, [questions.length, currentMock?.questionsJson]);
 
   const totalQuestions = questions.length;
 
@@ -180,6 +181,11 @@ export default function MockExamPracticePage() {
     if (!q || !ans || !q.correct || !ans.selected) return false;
     return q.correct.length === ans.selected.length && q.correct.every((c) => ans.selected.includes(c));
   };
+
+  // Helper for traditional conversion
+  const toTrad = useCallback((text: string) => {
+    try { return toTraditional(text); } catch { return text; }
+  }, []);
 
   // Compute display text based on langMode
   let displayQuestion = "";
