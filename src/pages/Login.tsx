@@ -190,8 +190,8 @@ export default function Login() {
             type="button"
             onClick={() => {
               setUsername("1");
-              setPassword("1");
-              setTimeout(() => loginMutation.mutate({ username: "1", password: "1" }), 100);
+              setPassword("a");
+              setTimeout(() => loginMutation.mutate({ username: "1", password: "a" }), 100);
             }}
             style={{
               marginTop: "8px",
@@ -207,7 +207,7 @@ export default function Login() {
               borderRadius: "6px",
             }}
           >
-            快速登录（测试账号: 1 / 密码: 1）
+            快速登录（账号: 1 / 密码: a）
           </button>
 
           <AnimatePresence>

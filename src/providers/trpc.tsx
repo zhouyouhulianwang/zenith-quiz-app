@@ -10,16 +10,21 @@ export const trpc = createTRPCReact<AppRouter>();
 
 // Hardcoded API endpoint for static deployment
 // Update this when tunnel URL changes
-const HARDCODED_API_URL = "https://becoming-success-attempted-interviews.trycloudflare.com";
+const HARDCODED_API_URL = "https://molecular-perry-throwing-consistently.trycloudflare.com";
 
 function getApiUrl(): string {
-  const configuredApi = (window as any).__API_ENDPOINT__;
-  if (configuredApi) return configuredApi + "/api/trpc";
-  if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
-    return "/api/trpc";
+  // For non-localhost: always use hardcoded API URL (avoids cached HTML issues)
+  if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+    // Check if window.__API_ENDPOINT__ matches our hardcoded URL (new deployment)
+    const configuredApi = (window as any).__API_ENDPOINT__;
+    if (configuredApi && configuredApi === HARDCODED_API_URL) {
+      return configuredApi + "/api/trpc";
+    }
+    // Ignore stale cached window.__API_ENDPOINT__, use hardcoded
+    return HARDCODED_API_URL + "/api/trpc";
   }
-  // For static deployment: use hardcoded tunnel URL
-  return HARDCODED_API_URL + "/api/trpc";
+  // Localhost: use relative path
+  return "/api/trpc";
 }
 
 function createTrpcClient(apiUrl: string) {
