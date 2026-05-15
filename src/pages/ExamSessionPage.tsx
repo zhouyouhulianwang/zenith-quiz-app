@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router";
 import { motion } from "framer-motion";
-import { ArrowLeft, Clock, ChevronLeft, ChevronRight, Flag, GraduationCap, BookOpen, Languages } from "lucide-react";
+import { ArrowLeft, Clock, ChevronLeft, ChevronRight, Flag, GraduationCap, Languages } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAppSettings } from "@/context/AppContext";
 import { toTraditional } from "@/lib/chineseConv";
@@ -57,7 +57,7 @@ export default function ExamSessionPage() {
   const [showNav, setShowNav] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [swipeDir, setSwipeDir] = useState<"left" | "right" | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval>>();
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   // Track which questions have been saved to DB (to avoid duplicate saves)
   const savedQuestionIds = useRef<Set<number>>(new Set());
 
@@ -76,8 +76,9 @@ export default function ExamSessionPage() {
   // Auto-translation for EN/EN+繁 modes
   const [transCache, setTransCache] = useState<Record<number, { enQuestion: string; enOptions: string[] }>>({});
   const translateMutation = trpc.translate.batchTranslate.useMutation();
-  const llmTranslateMutation = trpc.translate.llmTranslate.useMutation();
   const updateBankMutation = trpc.bank.updateQuestions.useMutation();
+
+  const lang = settings.questionLanguage;
 
   useEffect(() => {
     if (lang !== "entc" && lang !== "en") return;
@@ -157,14 +158,13 @@ export default function ExamSessionPage() {
   // Timer
   useEffect(() => {
     timerRef.current = setInterval(() => setElapsed((p) => p + 1), 1000);
-    return () => clearInterval(timerRef.current);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, []);
 
   const currentQuestion = questions[currentIndex];
   const currentAnswer = answers[currentIndex];
 
   const answeredCount = answers.filter((a) => a.selected.length > 0).length;
-  const flaggedCount = answers.filter((a) => a.flagged).length;
   const totalQuestions = questions.length;
 
   // Helper: save a single question record to DB
@@ -279,8 +279,6 @@ export default function ExamSessionPage() {
     }
   };
 
-  // Language
-  const lang = settings.questionLanguage;
   const fontSizeMap = { small: "15px", medium: "17px", large: "19px" };
   const fontSize = fontSizeMap[settings.fontSize];
   const optFontMap = { small: "14px", medium: "15px", large: "16px" };

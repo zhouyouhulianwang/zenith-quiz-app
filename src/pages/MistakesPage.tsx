@@ -75,12 +75,10 @@ export default function MistakesPage() {
   const question = current ? bankQuestions.find((q) => q.id === current.questionId) : null;
   const { settings, setSettings } = useAppSettings();
   const langMode = settings.questionLanguage as "en" | "tc" | "sc" | "entc";
-  const showTc = langMode === "entc" || langMode === "tc";
 
   // Auto-translation for EN/EN+繁 modes
   const [transCache, setTransCache] = useState<Record<string, { enQuestion: string; enOptions: string[] }>>({});
   const translateMutation = trpc.translate.batchTranslate.useMutation();
-  const llmTranslateMutation = trpc.translate.llmTranslate.useMutation();
   const qKey = question && current ? `${current.bankId}-${question.id}` : "";
   const autoTrans = qKey ? transCache[qKey] : null;
 
@@ -104,23 +102,16 @@ export default function MistakesPage() {
     }).catch(async () => {
       try {
         const memResults = await mymemoryBatchTranslate(texts);
-        setTransCache((prev) => ({ ...prev, [qKey]: { enQuestion: memResults[0] || `[EN] ${question.question}`, enOptions: memResults.slice(1, 1 + question.options.length) } }));
+        setTransCache((prev) => ({ ...prev, [qKey]: { enQuestion: memResults[0] || `[EN] ${question.question}`, enOptions: memResults.slice(1, 1 + question.options.length).map((o) => o || "") } }));
       } catch {
         setTransCache((prev) => ({ ...prev, [qKey]: { enQuestion: `[EN] ${question.question}`, enOptions: question.options.map((o: string) => `[EN] ${o}`) } }));
       }
     });
   }, [qKey, question, langMode, autoTrans]);
 
-  // Compute effective EN text
-  const dbEnQ = (question as any)?.enQuestion || "";
-  const dbEnOpts = ((question as any)?.enOptions || []) as string[];
-  const effEnQ = dbEnQ || autoTrans?.enQuestion || "";
-  const effEnOpts = dbEnOpts.length > 0 ? dbEnOpts : autoTrans?.enOptions || [];
-
   // Compute display text based on langMode
   const displayQ = question ? getEnDisplay(question.question, (question as any).enQuestion, autoTrans?.enQuestion) : "";
   const displayO = question ? getEnOptions(question.options, (question as any).enOptions, autoTrans?.enOptions) : [];
-  const hasEn = !!displayQ && !displayQ.startsWith("[EN]");
   const displayQuestion = question
     ? langMode === "en"
       ? displayQ

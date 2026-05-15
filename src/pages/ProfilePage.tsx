@@ -114,7 +114,7 @@ export default function ProfilePage() {
                 <SettingRow icon={Target} label="每日目标" value={`${settings.dailyGoal}题`} onClick={() => { const v = prompt("设置每日目标题数:", String(settings.dailyGoal)); if (v && !isNaN(Number(v))) setSettings({ dailyGoal: Number(v) }); }} />
                 <SettingRow icon={Bell} label="提醒时间" value={settings.reminderTime} onClick={() => { const v = prompt("设置提醒时间 (HH:MM):", settings.reminderTime); if (v && /^\d{2}:\d{2}$/.test(v)) setSettings({ reminderTime: v }); }} />
                 <SettingRow icon={Type} label="难度偏好" value={`${"★".repeat(settings.difficulty)}${"☆".repeat(5 - settings.difficulty)}`} onClick={() => { const v = prompt("设置难度偏好 (1-5):", String(settings.difficulty)); if (v) setSettings({ difficulty: Math.max(1, Math.min(5, Number(v))) }); }} />
-                <SettingRow icon={Languages} label="题目语言" value={{ zh: "中文", en: "English", both: "中英对照", tc: "繁體中文", entc: "英文+繁體" }[settings.questionLanguage] || "英文+繁體"} onClick={() => { const langs: Array<"zh" | "en" | "both" | "tc" | "entc"> = ["zh", "en", "both", "tc", "entc"]; const idx = langs.indexOf(settings.questionLanguage); setSettings({ questionLanguage: langs[(idx + 1) % langs.length] }); }} />
+                <SettingRow icon={Languages} label="题目语言" value={{ en: "English", tc: "繁體中文", entc: "英文+繁體", sc: "简体中文" }[settings.questionLanguage as "en" | "tc" | "entc" | "sc"] || "英文+繁體"} onClick={() => { const langs = ["entc", "sc", "en", "tc"] as const; type L = typeof langs[number]; const idx = langs.indexOf(settings.questionLanguage as L); setSettings({ questionLanguage: langs[(idx + 1) % langs.length] }); }} />
               </div>
             </div>
 

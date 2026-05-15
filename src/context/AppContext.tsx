@@ -111,7 +111,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("zenith-settings", JSON.stringify(next));
       // Also sync to database (fire and forget, will retry on next login if fails)
       try {
-        updateDbSettings.mutate(partial);
+        updateDbSettings.mutate(partial as Parameters<typeof updateDbSettings.mutate>[0]);
       } catch { /* ignore DB errors */ }
       return next;
     });

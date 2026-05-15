@@ -74,7 +74,6 @@ export default function MockExamPracticePage() {
   const [transCache, setTransCache] = useState<Record<number, { enQuestion: string; enOptions: string[] }>>({});
   const [translatingIds, setTranslatingIds] = useState<Set<number>>(new Set());
   const translateMutation = trpc.translate.batchTranslate.useMutation();
-  const llmTranslateMutation = trpc.translate.llmTranslate.useMutation();
 
   // Load questions from API
   const questions: Q[] = useMemo(() => {
@@ -176,9 +175,9 @@ export default function MockExamPracticePage() {
             batch.forEach((q) => {
               const optCount = q.options.length;
               const enQuestion = memResults[idx] || `[EN] ${q.question}`;
-              const enOptions = memResults.slice(idx + 1, idx + 1 + optCount);
+              const enOptions = memResults.slice(idx + 1, idx + 1 + optCount).map((o) => o || "");
               while (enOptions.length < optCount) enOptions.push(`[EN] ${q.options[enOptions.length]}`);
-              newTransCache[q.id] = { enQuestion: enQuestion.startsWith("[EN]") ? `[EN] ${q.question}` : enQuestion, enOptions: enOptions.map((o) => o?.startsWith("[EN]") ? `[EN] ${q.options[enOptions.indexOf(o)]}` : o) };
+              newTransCache[q.id] = { enQuestion: enQuestion.startsWith("[EN]") ? `[EN] ${q.question}` : enQuestion, enOptions: enOptions.map((o) => o?.startsWith("[EN]") ? `[EN] ${q.options[enOptions.indexOf(o)]}` : o || `[EN] ${q.options[enOptions.indexOf(o) || 0]}`) };
               idx += 1 + optCount;
             });
             setTransCache((prev) => ({ ...prev, ...newTransCache }));

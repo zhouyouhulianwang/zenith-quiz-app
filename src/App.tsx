@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Routes, Route, useLocation, useNavigate } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { Shield } from "lucide-react";
-import { AppProvider, useAppSettings } from "@/context/AppContext";
+import { useAppSettings } from "@/context/AppContext";
 import BottomNav from "@/components/BottomNav";
 import HomePage from "@/pages/HomePage";
 import LibraryPage from "@/pages/LibraryPage";

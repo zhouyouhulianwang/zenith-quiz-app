@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { authedQuery, publicQuery } from "./middleware";
+import { authedQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { mockExams } from "@db/schema";
 import { eq, and, desc } from "drizzle-orm";

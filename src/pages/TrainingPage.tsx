@@ -432,7 +432,6 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
   const [transCache, setTransCache] = useState<Record<number, { enQuestion: string; enOptions: string[] }>>({});
   const [translatingIds, setTranslatingIds] = useState<Set<number>>(new Set());
   const translateMutation = trpc.translate.batchTranslate.useMutation();
-  const llmTranslateMutation = trpc.translate.llmTranslate.useMutation();
   const updateBankMutation = trpc.bank.updateQuestions.useMutation();
 
   // Auto-translate questions without EN data
@@ -706,8 +705,9 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <button
               onClick={() => {
-                const langs: Array<"entc" | "zh" | "en" | "both" | "tc"> = ["entc", "zh", "en", "both", "tc"];
-                const idx = langs.indexOf(lang as "entc" | "zh" | "en" | "both" | "tc");
+                const langs = ["entc", "sc", "en", "tc"] as const;
+                type L = typeof langs[number];
+                const idx = langs.indexOf(lang as L);
                 setSettings({ questionLanguage: langs[(idx + 1) % langs.length] });
               }}
               style={{
@@ -787,7 +787,6 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
                 {currentAnswer?.submitted && <span style={{ color: currentAnswer.isCorrect ? "#10b981" : "#ef4444" }}>{currentAnswer.isCorrect ? " ✓ 正确" : " ✗ 错误"}</span>}
               </div>
               <div style={{ fontSize: "18px", fontWeight: 500, color: "var(--text-primary)", lineHeight: 1.6, whiteSpace: "pre-wrap", userSelect: "text", WebkitUserSelect: "text" }}>{displayQuestion}</div>
-              {lang === "both" && <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid var(--border-color)", fontSize: "14px", color: "var(--text-primary)", lineHeight: 1.6, userSelect: "text", WebkitUserSelect: "text" }}>{enQ}</div>}
               {lang === "entc" && secondaryQuestion && <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid var(--border-color)", fontSize: "16px", color: "var(--text-primary)", lineHeight: 1.6, userSelect: "text", WebkitUserSelect: "text" }}>{secondaryQuestion}</div>}
             </div>
 
@@ -815,7 +814,6 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
                     </div>
                     <div style={{ flex: 1 }}>
                       <span style={{ fontSize: "16px", color: "var(--text-primary)", lineHeight: 1.5, userSelect: "text", WebkitUserSelect: "text" }}>{option}</span>
-                      {lang === "both" && currentQuestion?.enOptions?.[index] && <div style={{ fontSize: "13px", color: "var(--text-primary)", marginTop: "4px", userSelect: "text", WebkitUserSelect: "text" }}>{currentQuestion.enOptions[index]}</div>}
                       {lang === "entc" && secondaryOptions?.[index] && <div style={{ fontSize: "15px", color: "var(--text-primary)", marginTop: "4px", userSelect: "text", WebkitUserSelect: "text" }}>{secondaryOptions[index]}</div>}
                     </div>
                     {submitted && isCorrect && <Check size={20} color="#10b981" style={{ flexShrink: 0, marginTop: "2px" }} />}

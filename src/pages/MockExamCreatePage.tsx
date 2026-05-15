@@ -1,11 +1,8 @@
 import { useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Check, ChevronDown, ChevronUp, Search, BookOpen, GraduationCap, X, FileText, Upload, FileJson } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, ChevronUp, Search, BookOpen, GraduationCap, X, FileText, Upload } from "lucide-react";
 import { trpc } from "@/providers/trpc";
-import { useAppSettings } from "@/context/AppContext";
-import { toTraditional } from "@/lib/chineseConv";
-import { isChinese } from "@/lib/translate";
 import ParticleBackground from "@/components/ParticleBackground";
 
 interface Q {
@@ -25,7 +22,6 @@ interface Q {
 
 export default function MockExamCreatePage() {
   const navigate = useNavigate();
-  const { settings } = useAppSettings();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: banks } = trpc.bank.list.useQuery();
@@ -221,10 +217,10 @@ export default function MockExamCreatePage() {
           let options: string[] = [];
           if (Array.isArray(q.options) && q.options.length >= 2) {
             if (typeof q.options[0] === "string") {
-              options = q.options.map(String).map(stripHtml).filter((o) => o.length > 0);
+              options = q.options.map(String).map(stripHtml).filter((o: string) => o.length > 0);
             } else if (typeof q.options[0] === "object") {
               options = q.options
-                .map((o: any) => stripHtml(o.value || o.text || o.label || o.content || o.option || ""))
+                .map((o: Record<string, unknown>) => stripHtml(String(o.value || o.text || o.label || o.content || o.option || "")))
                 .filter((o: string) => o.length > 0);
             }
           }
@@ -243,17 +239,17 @@ export default function MockExamCreatePage() {
           // Handle answer
           let correct: number[] = [];
           if (Array.isArray(q.correct) && q.correct.length > 0) {
-            correct = q.correct.map(Number).filter((n) => !isNaN(n) && n >= 0 && n < options.length);
+            correct = q.correct.map(Number).filter((n: number) => !isNaN(n) && n >= 0 && n < options.length);
           } else if (Array.isArray(q.answer) && q.answer.length > 0) {
-            correct = q.answer.map(Number).filter((n) => !isNaN(n) && n >= 0 && n < options.length);
+            correct = q.answer.map(Number).filter((n: number) => !isNaN(n) && n >= 0 && n < options.length);
           } else if (typeof q.answer === "string" && q.answer.length > 0) {
-            correct = q.answer.split("").map(letterToIndex).filter((n) => n >= 0 && n < options.length);
+            correct = q.answer.split("").map(letterToIndex).filter((n: number) => n >= 0 && n < options.length);
           } else if (typeof q.correct === "number") {
             const n = Number(q.correct);
             if (!isNaN(n) && n >= 0 && n < options.length) correct = [n];
           } else if (typeof q.answer === "number") {
-            const n = Number(q.answer);
-            if (!isNaN(n) && n >= 0 && n < options.length) correct = [n];
+            const na = Number(q.answer);
+            if (!isNaN(na) && na >= 0 && na < options.length) correct = [na];
           }
           if (correct.length === 0) {
             // Default to first option as correct if no valid answer found
@@ -313,8 +309,6 @@ export default function MockExamCreatePage() {
     reader.readAsText(file);
     e.target.value = "";
   };
-
-  const toTrad = (text: string) => { try { return toTraditional(text); } catch { return text; } };
 
   return (
     <div style={{ position: "relative", minHeight: "100dvh", background: "var(--page-bg)", overflowX: "hidden" }}>

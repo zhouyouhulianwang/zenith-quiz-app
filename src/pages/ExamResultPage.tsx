@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useSearchParams, useNavigate, useLocation } from "react-router";
 import { motion } from "framer-motion";
-import { ArrowLeft, Check, X, Clock, Home, RotateCcw, ChevronDown, ChevronUp, BookOpen, Trophy, Zap } from "lucide-react";
-import { useAppSettings } from "@/context/AppContext";
+import { ArrowLeft, Check, X, Home, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
 import ParticleBackground from "@/components/ParticleBackground";
 
 interface Q {
@@ -37,14 +36,9 @@ export default function ExamResultPage() {
   const correct = Number(searchParams.get("correct")) || 0;
   const total = Number(searchParams.get("total")) || 0;
   const time = Number(searchParams.get("time")) || 0;
-  const bankId = Number(searchParams.get("bankId"));
-
   const { questions = [], answers = [] } = (location.state || {}) as { questions: Q[]; answers: ExamResult[] };
 
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
-
-  const { settings } = useAppSettings();
-  const lang = settings.questionLanguage;
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}分${s % 60}秒`;
 

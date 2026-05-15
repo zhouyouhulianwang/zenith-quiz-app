@@ -51,7 +51,6 @@ export default function RecordsPage() {
   const question = current ? (JSON.parse(bank?.questionsJson || "[]") as Array<{ id: number; question: string; options: string[]; correct: number[]; explanation: string }>).find((q) => q.id === current.questionId) : null;
   const { settings, setSettings } = useAppSettings();
   const langMode = settings.questionLanguage as LangMode;
-  const showTc = langMode === "entc" || langMode === "tc";
   const total = filtered.length;
 
   // Auto-translation for EN/EN+繁 modes

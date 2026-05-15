@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "framer-motion";
-import { ArrowLeft, GraduationCap, BookOpen, ChevronRight, FileText } from "lucide-react";
+import { ArrowLeft, GraduationCap, BookOpen, ChevronRight } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import ParticleBackground from "@/components/ParticleBackground";
 

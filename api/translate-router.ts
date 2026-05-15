@@ -7,7 +7,6 @@ import { env } from "./lib/env";
 
 // In-memory cache
 const cache = new Map<string, string>();
-const MAX_CACHE = 5000;
 
 function getCacheKey(text: string, from: string, to: string): string {
   return `${from}:${to}:${text}`;
