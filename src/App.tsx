@@ -104,11 +104,11 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-const HIDE_NAV_PATHS = ["/training", "/mistakes"];
+const HIDE_NAV_PATHS = ["/training", "/mistakes", "/mock-exam/practice", "/exam/session"];
 
 function AnimatedRoutes() {
   const location = useLocation();
-  const hideNav = HIDE_NAV_PATHS.includes(location.pathname);
+  const hideNav = HIDE_NAV_PATHS.some((p) => location.pathname.startsWith(p));
   return (
     <AnimatePresence mode="wait">
       <motion.div
