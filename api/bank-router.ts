@@ -67,19 +67,13 @@ export const bankRouter = createRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const db = getDb();
-
-      // Translate all questions to EN + TC before saving
-      const { questions, allTranslated } = await translateQuestions(input.questions);
-      if (!allTranslated) {
-        throw new Error("翻译未完成，请检查 Moonshot API 配置或稍后重试");
-      }
-
-      const questionsJson = JSON.stringify(questions);
+      // Save immediately, translate async via translateBank endpoint
+      const questionsJson = JSON.stringify(input.questions);
       const chaptersJson = input.chapters ? JSON.stringify(input.chapters) : null;
       const result = await db.insert(banks).values({
         userId: ctx.user.id,
         title: input.title,
-        description: input.description || `${questions.length} 题`,
+        description: input.description || `${input.questions.length} 题`,
         category: input.category,
         color: input.color,
         questionsJson,
@@ -87,7 +81,7 @@ export const bankRouter = createRouter({
         progress: 0,
       });
       const insertId = result[0]?.insertId ? Number(result[0].insertId) : 0;
-      return { id: insertId, translated: true, count: questions.length };
+      return { id: insertId, count: input.questions.length };
     }),
 
   // Delete a bank
@@ -125,6 +119,27 @@ export const bankRouter = createRouter({
         .set({ questionsJson: input.questionsJson })
         .where(and(eq(banks.id, input.id), eq(banks.userId, ctx.user.id)));
       return { success: true };
+    }),
+
+  // Async translate bank questions
+  translateBank: authedQuery
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      const [row] = await db.select().from(banks).where(eq(banks.id, input.id));
+      if (!row) return { translated: false, error: "Not found" };
+      const questions = JSON.parse(row.questionsJson || "[]");
+      const needsTranslation = questions.some(
+        (q: any) => !q.enQuestion || /[\u4e00-\u9fff]/.test(q.enQuestion),
+      );
+      if (!needsTranslation) return { translated: true, alreadyDone: true };
+      try {
+        const { questions: translated, allTranslated } = await translateQuestions(questions);
+        await db.update(banks).set({ questionsJson: JSON.stringify(translated) }).where(eq(banks.id, input.id));
+        return { translated: allTranslated, total: questions.length };
+      } catch (err) {
+        return { translated: false, error: String(err) };
+      }
     }),
 
   // Update progress

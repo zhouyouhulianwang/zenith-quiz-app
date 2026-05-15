@@ -31,9 +31,21 @@ export default function MockExamCreatePage() {
   const { data: banks } = trpc.bank.list.useQuery();
   const utils = trpc.useUtils();
   const createMutation = trpc.mockExam.create.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
       utils.mockExam.list.invalidate();
+      // Auto-trigger async translation after create
+      if (data?.id) {
+        translateMutation.mutate({ id: data.id });
+      }
       navigate("/mock-exam/list");
+    },
+  });
+
+  const translateMutation = trpc.mockExam.translateExam.useMutation({
+    onSuccess: (data) => {
+      if (data?.translated) {
+        utils.mockExam.list.invalidate();
+      }
     },
   });
 
@@ -100,46 +112,10 @@ export default function MockExamCreatePage() {
     });
   };
 
-  const handleCreate = async () => {
+  const handleCreate = () => {
     if (selectedQuestionIds.size === 0 || !examTitle.trim()) return;
-    let selectedQuestions = allQuestions.filter((q) => selectedQuestionIds.has(q.id));
-    
-    // Auto-translate questions that don't have EN/TC data
-    const needsTrans = selectedQuestions.filter((q: Q) => !q.enQuestion && isChinese(q.question));
-    if (needsTrans.length > 0) {
-      setJsonError(`正在翻译 ${needsTrans.length} 道题目...`);
-      try {
-        const translate = trpc.translate.batchTranslate.useMutation();
-        const batchSize = 3;
-        for (let i = 0; i < needsTrans.length; i += batchSize) {
-          const batch = needsTrans.slice(i, i + batchSize);
-          const texts = batch.flatMap((q: Q) => [q.question, ...q.options]);
-          const result = await translate.mutateAsync({ texts, from: "zh-CN", to: "en" });
-          const results = result.results;
-          let idx = 0;
-          batch.forEach((q: Q) => {
-            const optCount = q.options.length;
-            let enQuestion = results[idx] || q.question;
-            let enOptions = results.slice(idx + 1, idx + 1 + optCount);
-            while (enOptions.length < optCount) enOptions.push(q.options[enOptions.length]);
-            // Validate translation
-            if (isChinese(enQuestion)) enQuestion = q.question;
-            // Update question
-            q.enQuestion = enQuestion;
-            q.enOptions = enOptions;
-            q.tcQuestion = toTrad(q.question);
-            q.tcOptions = q.options.map((o: string) => toTrad(o));
-            idx += 1 + optCount;
-          });
-        }
-        // Update selectedQuestions with translated data
-        selectedQuestions = allQuestions.filter((q) => selectedQuestionIds.has(q.id));
-      } catch {
-        // Continue with untranslated data
-      }
-      setJsonError("");
-    }
-    
+    const selectedQuestions = allQuestions.filter((q) => selectedQuestionIds.has(q.id));
+    // Backend translateQuestions will auto-translate EN + TC
     createMutation.mutate({
       title: examTitle.trim(),
       bankId: jsonMode ? 0 : (selectedBankId || 0),
@@ -602,7 +578,7 @@ export default function MockExamCreatePage() {
             </button>
             <button onClick={handleCreate} disabled={!examTitle.trim() || selectedQuestionIds.size === 0 || createMutation.isPending}
               style={{ flex: 1, padding: "14px", borderRadius: "14px", background: examTitle.trim() && selectedQuestionIds.size > 0 ? "var(--accent-color)" : "var(--card-bg-secondary)", color: examTitle.trim() && selectedQuestionIds.size > 0 ? "#fff" : "var(--text-tertiary)", border: "none", fontSize: "15px", fontWeight: 600, cursor: examTitle.trim() && selectedQuestionIds.size > 0 ? "pointer" : "not-allowed" }}>
-              {createMutation.isPending ? "创建中..." : "创建模拟卷"}
+              {createMutation.isPending ? "保存中..." : translateMutation.isPending ? "翻译中..." : "创建模拟卷"}
             </button>
           </div>
         )}

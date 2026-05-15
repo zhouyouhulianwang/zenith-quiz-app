@@ -575,8 +575,8 @@ export default function MockExamPracticePage() {
           </motion.div>
         </div>
 
-        {/* Bottom */}
-        <div style={{ flexShrink: 0, padding: "12px 16px", borderTop: "1px solid var(--border-color)", background: "var(--nav-bg)", backdropFilter: "blur(20px)" }}>
+        {/* Bottom Navigation - always visible */}
+        <div style={{ flexShrink: 0, padding: "12px 16px", borderTop: "1px solid var(--border-color)", background: "var(--nav-bg)", backdropFilter: "blur(20px)", zIndex: 50, position: "relative" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
             <button onClick={handlePrev} disabled={currentIndex === 0}
               style={{ background: "var(--card-bg)", border: "1px solid var(--border-color)", borderRadius: "10px", padding: "10px", cursor: currentIndex === 0 ? "not-allowed" : "pointer", opacity: currentIndex === 0 ? 0.4 : 1, display: "flex", alignItems: "center", gap: "4px", color: "var(--text-primary)" }}>

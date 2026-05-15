@@ -27,23 +27,47 @@ export const mockExamRouter = {
     )
     .mutation(async ({ ctx, input }) => {
       const db = getDb();
-
-      // Parse questions, translate to EN + TC before saving
-      const questions = JSON.parse(input.questionsJson);
-      const { questions: translated, allTranslated } = await translateQuestions(questions);
-      if (!allTranslated) {
-        throw new Error("翻译未完成，请检查 Moonshot API 配置或稍后重试");
-      }
-
-      await db.insert(mockExams).values({
+      // Save immediately without waiting for translation
+      // Translation will be done asynchronously via translateExam endpoint
+      const result = await db.insert(mockExams).values({
         userId: ctx.user.id,
         title: input.title,
         bankId: input.bankId,
         bankName: input.bankName,
-        questionsJson: JSON.stringify(translated),
+        questionsJson: input.questionsJson,
         questionCount: input.questionCount,
       });
-      return { success: true, translated: true };
+      const insertId = result[0]?.insertId ? Number(result[0].insertId) : 0;
+      return { success: true, id: insertId };
+    }),
+
+  // Async translate exam questions (called after create)
+  translateExam: authedQuery
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      const [row] = await db
+        .select()
+        .from(mockExams)
+        .where(eq(mockExams.id, input.id));
+      if (!row) return { translated: false, error: "Not found" };
+
+      const questions = JSON.parse(row.questionsJson || "[]");
+      const needsTranslation = questions.some(
+        (q: any) => !q.enQuestion || /[\u4e00-\u9fff]/.test(q.enQuestion),
+      );
+      if (!needsTranslation) return { translated: true, alreadyDone: true };
+
+      try {
+        const { questions: translated, allTranslated } = await translateQuestions(questions);
+        await db
+          .update(mockExams)
+          .set({ questionsJson: JSON.stringify(translated) })
+          .where(eq(mockExams.id, input.id));
+        return { translated: allTranslated, total: questions.length };
+      } catch (err) {
+        return { translated: false, error: String(err) };
+      }
     }),
 
   delete: authedQuery
