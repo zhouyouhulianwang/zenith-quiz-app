@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Plus, Trash2, GraduationCap, BookOpen, Clock, Play, FileText } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, GraduationCap, BookOpen, Clock, Play, FileText, Pencil } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import ParticleBackground from "@/components/ParticleBackground";
 
@@ -12,7 +12,12 @@ export default function MockExamListPage() {
   const deleteMutation = trpc.mockExam.delete.useMutation({
     onSuccess: () => utils.mockExam.list.invalidate(),
   });
+  const updateTitleMutation = trpc.mockExam.updateTitle.useMutation({
+    onSuccess: () => utils.mockExam.list.invalidate(),
+  });
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editTitle, setEditTitle] = useState("");
 
   const handlePractice = (exam: { id: number; title: string }) => {
     const params = new URLSearchParams();
@@ -22,10 +27,28 @@ export default function MockExamListPage() {
     });
   };
 
+  const startEdit = (exam: { id: number; title: string }) => {
+    setEditingId(exam.id);
+    setEditTitle(exam.title);
+  };
+
+  const saveEdit = () => {
+    if (editingId !== null && editTitle.trim()) {
+      updateTitleMutation.mutate({ id: editingId, title: editTitle.trim() });
+      setEditingId(null);
+      setEditTitle("");
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditTitle("");
+  };
+
   return (
     <div style={{ position: "relative", minHeight: "100dvh", background: "var(--page-bg)", overflowX: "hidden" }}>
       <ParticleBackground />
-      <div style={{ position: "relative", zIndex: 1, padding: "16px", paddingBottom: "200px" }}>
+      <div style={{ position: "relative", zIndex: 1, padding: "16px", paddingBottom: "100px" }}>
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
           <button onClick={() => navigate("/training")} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px", minWidth: "44px", minHeight: "44px", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -69,9 +92,47 @@ export default function MockExamListPage() {
                   <GraduationCap size={22} color="#f59e0b" />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {exam.title}
-                  </div>
+                  {/* Title - editable */}
+                  {editingId === exam.id ? (
+                    <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                      <input
+                        type="text"
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") cancelEdit(); }}
+                        autoFocus
+                        style={{
+                          flex: 1,
+                          fontSize: "16px",
+                          fontWeight: 600,
+                          color: "var(--text-primary)",
+                          background: "var(--card-bg-secondary)",
+                          border: "1px solid var(--accent-color)",
+                          borderRadius: "8px",
+                          padding: "4px 8px",
+                          outline: "none",
+                        }}
+                      />
+                      <button onClick={saveEdit}
+                        style={{ padding: "4px 10px", borderRadius: "6px", background: "var(--accent-color)", color: "#fff", border: "none", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>
+                        保存
+                      </button>
+                      <button onClick={cancelEdit}
+                        style={{ padding: "4px 10px", borderRadius: "6px", background: "var(--card-bg-secondary)", color: "var(--text-tertiary)", border: "1px solid var(--border-color)", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>
+                        取消
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1 }}>
+                        {exam.title}
+                      </div>
+                      <button onClick={() => startEdit(exam)}
+                        style={{ padding: "4px", borderRadius: "6px", background: "none", border: "none", color: "var(--text-tertiary)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <Pencil size={14} />
+                      </button>
+                    </div>
+                  )}
                   <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "6px", flexWrap: "wrap" }}>
                     <span style={{ fontSize: "12px", color: "var(--text-tertiary)", display: "flex", alignItems: "center", gap: "4px" }}>
                       <BookOpen size={12} /> {exam.bankName || "题库"}

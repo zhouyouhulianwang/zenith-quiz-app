@@ -100,6 +100,18 @@ export const mockExamRouter = {
       return { success: true };
     }),
 
+  // Update title
+  updateTitle: authedQuery
+    .input(z.object({ id: z.number(), title: z.string().min(1).max(255) }))
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      await db
+        .update(mockExams)
+        .set({ title: input.title })
+        .where(and(eq(mockExams.id, input.id), eq(mockExams.userId, ctx.user.id)));
+      return { success: true };
+    }),
+
   // Update questionsJson after translation (save translated text back to DB)
   updateQuestions: authedQuery
     .input(
