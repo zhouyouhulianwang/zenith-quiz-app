@@ -158,6 +158,22 @@ export default function MockExamCreatePage() {
           return;
         }
 
+        // Title simplification: "卷X模拟卷Y"
+        const simplifyTitle = (t: string): string => {
+          if (!t) return t;
+          const paperMatch = t.match(/Paper\s*(\d+)/i);
+          const juanMatch = t.match(/卷([一二三四五六七八九十])/);
+          const examMatch = t.match(/试卷\s*(\d+)/);
+          const mockMatch = t.match(/Mock\s*Exam\s*(\d+)/i);
+          const cnNums: Record<string, string> = { "1": "一", "2": "二", "3": "三", "4": "四", "5": "五", "6": "六", "7": "七", "8": "八", "9": "九", "10": "十" };
+          let paper = paperMatch ? cnNums[paperMatch[1]] || paperMatch[1] : juanMatch ? juanMatch[1] : null;
+          let exam = examMatch ? cnNums[examMatch[1]] || examMatch[1] : mockMatch ? cnNums[mockMatch[1]] || mockMatch[1] : null;
+          if (paper && exam) return `卷${paper}模拟卷${exam}`;
+          if (paper) return `卷${paper}模拟卷`;
+          if (exam) return `模拟卷${exam}`;
+          return t.length > 20 ? t.slice(0, 20) : t;
+        };
+
         // Handle HKSI exam format: [{exam_obj with questions array}]
         let examTitle = file.name.replace(/\.json$/i, "");
         let rawQuestions: any[] = [];
@@ -288,7 +304,7 @@ export default function MockExamCreatePage() {
         setJsonQuestions(questions);
         setSelectedQuestionIds(new Set(questions.map((q) => q.id)));
         setJsonMode(true);
-        setExamTitle(examTitle);
+        setExamTitle(simplifyTitle(examTitle));
         setStep(3);
       } catch (err: any) {
         setJsonError(err.message || "JSON 解析失败");
