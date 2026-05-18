@@ -152,11 +152,13 @@ export default function ExamSessionPage() {
     }
   }, [questions, lang, transCache, bankData, bankId]);
 
+  // Track whether we have restored historical answers
+  const restoredRef = useRef(false);
+
   // Build a map of previous answers keyed by questionId
   const prevRecordMap = useMemo(() => {
     const map = new Map<number, number[]>();
     if (!previousRecords) return map;
-    // Keep only the most recent answer per question
     for (const r of previousRecords) {
       if (!map.has(r.questionId)) {
         map.set(r.questionId, r.selected);
@@ -165,22 +167,23 @@ export default function ExamSessionPage() {
     return map;
   }, [previousRecords]);
 
-  // Initialize answers — restore previous selections from DB
+  // Restore previous selections from DB once questions and records are both ready
   useEffect(() => {
-    if (questions.length > 0 && answers.length === 0) {
-      const restored = questions.map((q) => {
-        const prev = prevRecordMap.get(q.id);
-        return { selected: prev || [], flagged: false };
-      });
-      setAnswers(restored);
-      // Mark already-answered questions so we don't re-save them
-      questions.forEach((q) => {
-        if (prevRecordMap.has(q.id)) {
-          savedQuestionIds.current.add(q.id);
-        }
-      });
-    }
-  }, [questions, answers.length, prevRecordMap]);
+    if (questions.length === 0 || restoredRef.current) return;
+    if (!previousRecords) return; // Wait until the query has resolved (even if empty)
+
+    restoredRef.current = true;
+    const restored = questions.map((q) => {
+      const prev = prevRecordMap.get(q.id);
+      return { selected: prev || [], flagged: false };
+    });
+    setAnswers(restored);
+    questions.forEach((q) => {
+      if (prevRecordMap.has(q.id)) {
+        savedQuestionIds.current.add(q.id);
+      }
+    });
+  }, [questions, previousRecords, prevRecordMap]);
 
   // Timer
   useEffect(() => {
