@@ -527,13 +527,15 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
     restoredRef.current = false;
   }, []);
 
-  // Restore saved progress
+  // Restore saved progress — wait for savedRecords to finish loading
   useEffect(() => {
     if (questions.length === 0 || restoredRef.current) return;
+    if (savedRecords === undefined) return; // Still loading
+
     restoredRef.current = true;
 
     const init: AnswerState[] = questions.map(() => ({ selected: [], submitted: false }));
-    for (const rec of savedRecords || []) {
+    for (const rec of savedRecords) {
       const idx = questions.findIndex((q) => q.id === rec.questionId);
       if (idx >= 0) {
         init[idx] = { selected: rec.selected, isCorrect: rec.isCorrect, submitted: true };
