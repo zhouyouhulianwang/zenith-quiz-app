@@ -58,6 +58,16 @@ export default function MockExamPracticePage() {
   const addRecord = trpc.record.add.useMutation();
   const upsertDaily = trpc.record.upsertDaily.useMutation();
 
+  // Load previous practice records to restore answers
+  const { data: prevMockRecords } = trpc.record.listByMockExam.useQuery(
+    { mockExamId },
+    { enabled: !!mockExamId },
+  );
+  const { data: prevBankRecords } = trpc.record.listByBank.useQuery(
+    { bankId: bankId || 0 },
+    { enabled: !!bankId },
+  );
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<ExamAnswer[]>([]);
   const [submitted, setSubmitted] = useState(false);
@@ -214,17 +224,35 @@ export default function MockExamPracticePage() {
 
   const totalQuestions = questions.length;
 
-  // Initialize answers
+  // Build a map of previous answers keyed by questionId
+  const prevRecordMap = useMemo(() => {
+    const prevRecords = mockExamId ? prevMockRecords : prevBankRecords;
+    const map = new Map<number, number[]>();
+    if (!prevRecords) return map;
+    for (const r of prevRecords) {
+      if (!map.has(r.questionId)) {
+        map.set(r.questionId, r.selected);
+      }
+    }
+    return map;
+  }, [prevMockRecords, prevBankRecords, mockExamId]);
+
+  // Initialize answers — restore previous selections from DB
   useEffect(() => {
     if (questions.length > 0 && answers.length === 0) {
-      setAnswers(
-        questions.map(() => ({
-          selected: [],
-          flagged: false,
-        })),
-      );
+      const restored = questions.map((q) => {
+        const prev = prevRecordMap.get(q.id);
+        return { selected: prev || [], flagged: false };
+      });
+      setAnswers(restored);
+      // Mark already-answered questions so we don't re-save them
+      questions.forEach((q) => {
+        if (prevRecordMap.has(q.id)) {
+          savedQuestionIds.current.add(q.id);
+        }
+      });
     }
-  }, [questions, answers.length]);
+  }, [questions, answers.length, prevRecordMap]);
 
   // Timer
   useEffect(() => {

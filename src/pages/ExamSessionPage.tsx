@@ -48,6 +48,10 @@ export default function ExamSessionPage() {
   const count = Number(searchParams.get("count")) || 50;
 
   const { data: bankData } = trpc.bank.get.useQuery({ id: bankId }, { enabled: !!bankId });
+  const { data: previousRecords } = trpc.record.listByBank.useQuery(
+    { bankId },
+    { enabled: !!bankId },
+  );
   const addRecord = trpc.record.add.useMutation();
   const upsertDaily = trpc.record.upsertDaily.useMutation();
 
@@ -148,12 +152,35 @@ export default function ExamSessionPage() {
     }
   }, [questions, lang, transCache, bankData, bankId]);
 
-  // Initialize answers
+  // Build a map of previous answers keyed by questionId
+  const prevRecordMap = useMemo(() => {
+    const map = new Map<number, number[]>();
+    if (!previousRecords) return map;
+    // Keep only the most recent answer per question
+    for (const r of previousRecords) {
+      if (!map.has(r.questionId)) {
+        map.set(r.questionId, r.selected);
+      }
+    }
+    return map;
+  }, [previousRecords]);
+
+  // Initialize answers — restore previous selections from DB
   useEffect(() => {
     if (questions.length > 0 && answers.length === 0) {
-      setAnswers(questions.map(() => ({ selected: [], flagged: false })));
+      const restored = questions.map((q) => {
+        const prev = prevRecordMap.get(q.id);
+        return { selected: prev || [], flagged: false };
+      });
+      setAnswers(restored);
+      // Mark already-answered questions so we don't re-save them
+      questions.forEach((q) => {
+        if (prevRecordMap.has(q.id)) {
+          savedQuestionIds.current.add(q.id);
+        }
+      });
     }
-  }, [questions.length]);
+  }, [questions, answers.length, prevRecordMap]);
 
   // Timer
   useEffect(() => {

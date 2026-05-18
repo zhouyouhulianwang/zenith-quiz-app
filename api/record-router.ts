@@ -72,6 +72,28 @@ export const recordRouter = createRouter({
       }));
     }),
 
+  // Get records for a specific mock exam
+  listByMockExam: authedQuery
+    .input(z.object({ mockExamId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const db = getDb();
+      const rows = await db
+        .select()
+        .from(practiceRecords)
+        .where(
+          and(
+            eq(practiceRecords.userId, ctx.user.id),
+            eq(practiceRecords.mockExamId, input.mockExamId),
+          ),
+        )
+        .orderBy(practiceRecords.createdAt);
+      return rows.map((r) => ({
+        ...r,
+        selected: JSON.parse(r.selected) as number[],
+        isCorrect: r.isCorrect === 1,
+      }));
+    }),
+
   // Upsert daily record
   upsertDaily: authedQuery
     .input(
