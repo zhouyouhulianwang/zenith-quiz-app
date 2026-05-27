@@ -28,6 +28,12 @@ function createTrpcClient(apiUrl: string) {
             ...(init ?? {}),
             credentials: "include",
             mode: "cors",
+          }).catch((err) => {
+            // Wrap network errors with a friendly message
+            if (err instanceof TypeError || err.message?.includes("fetch")) {
+              throw new Error("网络连接失败，请检查网络或稍后重试");
+            }
+            throw err;
           });
         },
       }),
