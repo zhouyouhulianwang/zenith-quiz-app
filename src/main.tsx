@@ -5,20 +5,13 @@ import { AppProvider } from "@/context/AppContext";
 import "./index.css";
 import App from "./App";
 
-// Force update Service Worker: unregister old, skip waiting on new
+// Unregister service workers to prevent cache issues
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    // First: unregister all existing service workers
-    navigator.serviceWorker.getRegistrations().then((regs) => {
-      for (const reg of regs) {
-        reg.unregister();
-      }
-      // After unregister, reload to get fresh content without SW cache
-      if (regs.length > 0) {
-        window.location.reload();
-      }
-    });
-  });
+  navigator.serviceWorker.getRegistrations().then((regs) => {
+    for (const reg of regs) {
+      reg.unregister();
+    }
+  }).catch(() => {});
 }
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

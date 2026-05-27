@@ -4,34 +4,23 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import superjson from "superjson";
 import type { AppRouter } from "../../api/router";
 import type { ReactNode } from "react";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 
 export const trpc = createTRPCReact<AppRouter>();
 
-export function TRPCProvider({ children }: { children: ReactNode }) {
-  const trpcClient = useMemo(
-    () =>
-      trpc.createClient({
-        links: [
-          httpBatchLink({
-            url: "/api/trpc",
-            transformer: superjson,
-            headers() {
-              return { "x-trpc-source": "zenith-client" };
-            },
-            fetch(input, init) {
-              return globalThis.fetch(input, {
-                ...(init ?? {}),
-                credentials: "include",
-                mode: "cors",
-              });
-            },
-          }),
-        ],
-      }),
-    [],
-  );
+const trpcClient = trpc.createClient({
+  links: [
+    httpBatchLink({
+      url: "/api/trpc",
+      transformer: superjson,
+      headers() {
+        return { "x-trpc-source": "zenith-client" };
+      },
+    }),
+  ],
+});
 
+export function TRPCProvider({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
 
   return (
