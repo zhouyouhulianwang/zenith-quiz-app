@@ -9,9 +9,10 @@ import { useState, useEffect, useMemo } from "react";
 export const trpc = createTRPCReact<AppRouter>();
 
 function getApiUrl(): string {
-  // In container deployment (Kimi platform), frontend and backend run on same domain
-  // Use relative path for API requests
-  return "/api/trpc";
+  // Use window.location to build the API URL relative to current page
+  // This works in both local dev, Kimi Preview, and static deployment
+  const base = new URL("/api/trpc", window.location.href).href;
+  return base;
 }
 
 function createTrpcClient(apiUrl: string) {
@@ -30,7 +31,7 @@ function createTrpcClient(apiUrl: string) {
             mode: "cors",
           }).catch((err) => {
             // Wrap network errors with a friendly message
-            if (err instanceof TypeError || err.message?.includes("fetch")) {
+            if (err instanceof TypeError || err.message?.includes("fetch") || err.message?.includes("Failed to fetch")) {
               throw new Error("网络连接失败，请检查网络或稍后重试");
             }
             throw err;
@@ -44,29 +45,13 @@ function createTrpcClient(apiUrl: string) {
 export function TRPCProvider({ children }: { children: ReactNode }) {
   const [apiUrl, setApiUrl] = useState(() => getApiUrl());
 
-  // Poll for window.__API_ENDPOINT__ being set by external config script
+  // Update API URL if window location changes (e.g., hash routing)
   useEffect(() => {
-    if ((window as any).__API_ENDPOINT__) {
-      const newUrl = getApiUrl();
-      if (newUrl !== apiUrl) setApiUrl(newUrl);
-      return;
+    const newUrl = getApiUrl();
+    if (newUrl !== apiUrl) {
+      setApiUrl(newUrl);
     }
-    // If not set immediately, wait for it
-    const timer = setInterval(() => {
-      if ((window as any).__API_ENDPOINT__) {
-        setApiUrl(getApiUrl());
-        clearInterval(timer);
-      }
-    }, 50);
-    // Fallback: use relative path after 2s
-    const fallback = setTimeout(() => {
-      clearInterval(timer);
-    }, 2000);
-    return () => {
-      clearInterval(timer);
-      clearTimeout(fallback);
-    };
-  }, []);
+  }, [window.location.pathname, window.location.host]);
 
   // Recreate client when API URL changes
   const trpcClient = useMemo(() => createTrpcClient(apiUrl), [apiUrl]);
