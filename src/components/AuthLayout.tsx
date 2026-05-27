@@ -1,4 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -47,6 +48,7 @@ export default function AuthLayout({
     return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
   });
   const { isLoading, user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
@@ -70,9 +72,7 @@ export default function AuthLayout({
             </p>
           </div>
           <Button
-            onClick={() => {
-              window.location.href = LOGIN_PATH;
-            }}
+            onClick={() => navigate(LOGIN_PATH)}
             size="lg"
             className="w-full shadow-lg hover:shadow-xl transition-all"
           >
