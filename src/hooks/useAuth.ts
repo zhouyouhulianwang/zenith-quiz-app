@@ -1,6 +1,6 @@
 import { trpc } from "@/providers/trpc";
 import { useCallback, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useLocation } from "react-router";
 import { LOGIN_PATH } from "@/const";
 
 type UseAuthOptions = {
@@ -13,6 +13,7 @@ export function useAuth(options?: UseAuthOptions) {
     options ?? {};
 
   const navigate = useNavigate();
+  const location = useLocation();
 
   const utils = trpc.useUtils();
 
@@ -37,12 +38,12 @@ export function useAuth(options?: UseAuthOptions) {
 
   useEffect(() => {
     if (redirectOnUnauthenticated && !isLoading && !user) {
-      const currentPath = window.location.pathname;
+      const currentPath = location.pathname;
       if (currentPath !== redirectPath) {
         navigate(redirectPath);
       }
     }
-  }, [redirectOnUnauthenticated, isLoading, user, navigate, redirectPath]);
+  }, [redirectOnUnauthenticated, isLoading, user, navigate, redirectPath, location.pathname]);
 
   return useMemo(
     () => ({
