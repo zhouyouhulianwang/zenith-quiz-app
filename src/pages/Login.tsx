@@ -28,12 +28,7 @@ export default function Login() {
     },
     onError: (err) => {
       console.error("[ZENITH] Login error:", err);
-      const msg = err.message || "";
-      if (msg.includes("Unexpected token") || msg.includes("not valid JSON") || msg.includes("网络连接失败")) {
-        setError("无法连接到服务器，请通过 Kimi 平台 Preview 打开");
-      } else {
-        setError(msg || "登录失败，请检查网络连接");
-      }
+      setError(err.message || "登录失败，请检查网络连接");
     },
   });
 
