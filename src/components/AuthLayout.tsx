@@ -47,7 +47,6 @@ export default function AuthLayout({
     return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
   });
   const { isLoading, user } = useAuth();
-  const navigate = useNavigate();
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
@@ -71,7 +70,9 @@ export default function AuthLayout({
             </p>
           </div>
           <Button
-            onClick={() => navigate(LOGIN_PATH)}
+            onClick={() => {
+              window.location.href = LOGIN_PATH;
+            }}
             size="lg"
             className="w-full shadow-lg hover:shadow-xl transition-all"
           >

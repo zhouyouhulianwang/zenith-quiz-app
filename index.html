@@ -34,42 +34,6 @@
   </head>
   <body>
     <div id="root"></div>
-    <div id="boot-error" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#fff;padding:20px;z-index:99999;font-family:sans-serif;color:#333;">
-      <h3 style="color:#ef4444;">加载错误</h3>
-      <pre id="boot-error-msg" style="background:#f5f5f5;padding:10px;overflow:auto;max-height:80vh;"></pre>
-    </div>
-    <script>
-      (function() {
-        var errors = [];
-        function showError(msg) {
-          errors.push(msg);
-          var el = document.getElementById('boot-error');
-          var msgEl = document.getElementById('boot-error-msg');
-          if (el && msgEl) {
-            el.style.display = 'block';
-            msgEl.textContent = errors.join('\n');
-          }
-        }
-        window.addEventListener('error', function(e) {
-          showError('ERROR: ' + e.message + ' at ' + e.filename + ':' + e.lineno);
-        });
-        window.addEventListener('unhandledrejection', function(e) {
-          showError('PROMISE REJECTED: ' + e.reason);
-        });
-        // Show loading indicator initially
-        var root = document.getElementById('root');
-        if (root) {
-          root.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;color:#999;font-family:sans-serif;font-size:16px;">Loading...</div>';
-        }
-        // After 8 seconds, if root is still empty, show error
-        setTimeout(function() {
-          var rootEl = document.getElementById('root');
-          if (rootEl && rootEl.children.length <= 1) {
-            showError('Timeout: App failed to render after 8 seconds');
-          }
-        }, 8000);
-      })();
-    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
