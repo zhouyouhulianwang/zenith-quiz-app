@@ -1,5 +1,4 @@
 import { useAuth } from "@/hooks/useAuth";
-import { useNavigate } from "react-router";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
