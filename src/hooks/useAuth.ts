@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate, useLocation } from "react-router";
+import { trpc } from "@/providers/trpc";
+import { useCallback, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router";
 import { LOGIN_PATH } from "@/const";
-import { getCurrentUser, logoutUser } from "@/lib/localApi";
 
 type UseAuthOptions = {
   redirectOnUnauthenticated?: boolean;
@@ -13,55 +13,46 @@ export function useAuth(options?: UseAuthOptions) {
     options ?? {};
 
   const navigate = useNavigate();
-  const location = useLocation();
-  const [user, setUser] = useState(() => getCurrentUser());
 
-  const isLoading = false;
-  const error = null;
+  const utils = trpc.useUtils();
 
-  const logout = useCallback(() => {
-    logoutUser();
-    setUser(null);
-    navigate(redirectPath);
-  }, [navigate, redirectPath]);
+  const {
+    data: user,
+    isLoading,
+    error,
+    refetch,
+  } = trpc.simpleAuth.me.useQuery(undefined, {
+    staleTime: 1000 * 60 * 5,
+    retry: false,
+  });
+
+  const logoutMutation = trpc.simpleAuth.logout.useMutation({
+    onSuccess: async () => {
+      await utils.invalidate();
+      navigate(redirectPath);
+    },
+  });
+
+  const logout = useCallback(() => logoutMutation.mutate(), [logoutMutation]);
 
   useEffect(() => {
-    if (redirectOnUnauthenticated && !user) {
-      const currentPath = location.pathname;
+    if (redirectOnUnauthenticated && !isLoading && !user) {
+      const currentPath = window.location.pathname;
       if (currentPath !== redirectPath) {
         navigate(redirectPath);
       }
     }
-  }, [redirectOnUnauthenticated, user, navigate, redirectPath, location.pathname]);
-
-  const refresh = useCallback(() => {
-    setUser(getCurrentUser());
-  }, []);
+  }, [redirectOnUnauthenticated, isLoading, user, navigate, redirectPath]);
 
   return useMemo(
     () => ({
-      user,
+      user: user ?? null,
       isAuthenticated: !!user,
-      isLoading,
+      isLoading: isLoading || logoutMutation.isPending,
       error,
       logout,
-      refresh,
+      refresh: refetch,
     }),
-    [user, isLoading, error, logout, refresh],
+    [user, isLoading, logoutMutation.isPending, error, logout, refetch],
   );
-}
-
-export function useOfflineMode(): boolean {
-  return true; // Always offline
-}
-
-export function useLocalAuth() {
-  return {
-    login: (_username: string, _password: string) => {
-      return { success: true };
-    },
-    register: (_username: string, _password: string) => {
-      return { success: true };
-    },
-  };
 }

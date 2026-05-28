@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { loginUser } from "@/lib/localApi";
+import { trpc } from "@/providers/trpc";
 import { Zap, Eye, EyeOff } from "lucide-react";
 
 export default function Login() {
@@ -18,6 +18,38 @@ export default function Login() {
     return () => window.visualViewport?.removeEventListener("resize", handleResize);
   }, []);
 
+  const loginMutation = trpc.simpleAuth.login.useMutation({
+    onSuccess: async (data) => {
+      if (data.success) {
+        window.location.href = "/";
+      } else {
+        setError(data.error || "登录失败");
+      }
+    },
+    onError: (err) => {
+      console.error("[ZENITH] Login error:", err);
+      setError(err.message || "登录失败，请检查网络连接");
+    },
+  });
+
+  // Auto-login from URL hash params for testing: #/login?user=1&pass=a
+  useEffect(() => {
+    const hash = window.location.hash;
+    const qIdx = hash.indexOf("?");
+    if (qIdx > 0) {
+      const params = new URLSearchParams(hash.slice(qIdx + 1));
+      const u = params.get("user");
+      const p = params.get("pass");
+      if (u && p) {
+        setUsername(u);
+        setPassword(p);
+        setTimeout(() => {
+          loginMutation.mutate({ username: u, password: p });
+        }, 300);
+      }
+    }
+  }, []);
+
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     setError("");
@@ -25,12 +57,7 @@ export default function Login() {
       setError("请输入账号和密码");
       return;
     }
-    const result = loginUser(username.trim(), password);
-    if (result.success) {
-      window.location.href = "/#/";
-    } else {
-      setError(result.error || "登录失败");
-    }
+    loginMutation.mutate({ username: username.trim(), password });
   };
 
   return (
@@ -53,6 +80,7 @@ export default function Login() {
         transition={{ duration: 0.5 }}
         style={{ width: "100%", maxWidth: "420px" }}
       >
+        {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: isKeyboardOpen ? "16px" : "32px", transition: "margin 0.3s ease" }}>
           <div
             style={{
@@ -77,17 +105,21 @@ export default function Login() {
           </p>
         </div>
 
+        {/* Form */}
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: "16px" }}>
-            <label style={{ color: "var(--text-secondary)", fontSize: "13px", marginBottom: "6px", display: "block" }}>
+            <label htmlFor="username" style={{ color: "var(--text-secondary)", fontSize: "13px", marginBottom: "6px", display: "block" }}>
               账号
             </label>
             <input
+              id="username"
               type="text"
               inputMode="numeric"
-              placeholder="输入账号 (1)"
+              placeholder="输入账号"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              onInput={(e) => setUsername(e.currentTarget.value)}
+              autoComplete="username"
               autoFocus
               style={{
                 width: "100%",
@@ -100,20 +132,26 @@ export default function Login() {
                 fontSize: "16px",
                 padding: "0 14px",
                 outline: "none",
+                transition: "border-color 0.2s, background 0.3s",
               }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = "#00d4ff"; }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = "var(--border-color)"; }}
             />
           </div>
 
           <div style={{ marginBottom: "20px" }}>
-            <label style={{ color: "var(--text-secondary)", fontSize: "13px", marginBottom: "6px", display: "block" }}>
+            <label htmlFor="password" style={{ color: "var(--text-secondary)", fontSize: "13px", marginBottom: "6px", display: "block" }}>
               密码
             </label>
             <div style={{ position: "relative" }}>
               <input
+                id="password"
                 type={showPassword ? "text" : "password"}
-                placeholder="输入密码 (a)"
+                placeholder="输入密码"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onInput={(e) => setPassword(e.currentTarget.value)}
+                autoComplete="current-password"
                 style={{
                   width: "100%",
                   boxSizing: "border-box",
@@ -125,7 +163,10 @@ export default function Login() {
                   fontSize: "16px",
                   padding: "0 44px 0 14px",
                   outline: "none",
+                  transition: "border-color 0.2s, background 0.3s",
                 }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = "#00d4ff"; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = "var(--border-color)"; }}
               />
               <button
                 type="button"
@@ -138,7 +179,13 @@ export default function Login() {
                   background: "none",
                   border: "none",
                   cursor: "pointer",
+                  padding: "8px",
                   color: "var(--text-tertiary)",
+                  minWidth: "44px",
+                  minHeight: "44px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -149,9 +196,10 @@ export default function Login() {
           <AnimatePresence>
             {error && (
               <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
+                key="error"
+                initial={{ opacity: 0, y: -10, height: 0 }}
+                animate={{ opacity: 1, y: 0, height: "auto" }}
+                exit={{ opacity: 0, y: -10, height: 0 }}
                 style={{
                   background: "rgba(239,68,68,0.1)",
                   border: "1px solid rgba(239,68,68,0.3)",
@@ -160,6 +208,7 @@ export default function Login() {
                   marginBottom: "16px",
                   fontSize: "13px",
                   color: "#ef4444",
+                  overflow: "hidden",
                 }}
               >
                 {error}
@@ -169,24 +218,28 @@ export default function Login() {
 
           <button
             type="submit"
+            disabled={loginMutation.isPending}
             style={{
               width: "100%",
               height: "48px",
               borderRadius: "12px",
               background: "#00d4ff",
-              color: "#fff",
+              color: "var(--text-primary)",
               fontSize: "16px",
               fontWeight: 600,
               border: "none",
-              cursor: "pointer",
+              cursor: loginMutation.isPending ? "not-allowed" : "pointer",
+              opacity: loginMutation.isPending ? 0.7 : 1,
+              transition: "opacity 0.2s, transform 0.15s",
+              WebkitTapHighlightColor: "transparent",
             }}
           >
-            登录
+            {loginMutation.isPending ? "登录中..." : "登录"}
           </button>
         </form>
 
         <p style={{ textAlign: "center", marginTop: "24px", fontSize: "12px", color: "var(--text-tertiary)" }}>
-          默认账号: 1 / 密码: a
+          请输入账号和密码
         </p>
       </motion.div>
     </div>

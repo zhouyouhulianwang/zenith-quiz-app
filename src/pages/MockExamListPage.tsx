@@ -19,7 +19,7 @@ export default function MockExamListPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState("");
 
-  const handlePractice = (exam: any) => {
+  const handlePractice = (exam: { id: number; title: string }) => {
     const params = new URLSearchParams();
     params.set("mockExamId", String(exam.id));
     navigate(`/mock-exam/practice?${params.toString()}`, {
@@ -27,7 +27,7 @@ export default function MockExamListPage() {
     });
   };
 
-  const startEdit = (exam: any) => {
+  const startEdit = (exam: { id: number; title: string }) => {
     setEditingId(exam.id);
     setEditTitle(exam.title);
   };

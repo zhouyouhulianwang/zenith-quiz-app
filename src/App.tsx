@@ -85,7 +85,7 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!user) {
+  if (!user || user.role !== "admin") {
     return (
       <div className="flex flex-col items-center justify-center gap-3" style={{ minHeight: "100dvh", background: "var(--page-bg)", color: "#ef4444", padding: "20px" }}>
         <Shield size={48} />
