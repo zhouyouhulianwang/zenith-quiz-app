@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { motion } from "framer-motion";
 import { ArrowLeft, Check, X, Clock, ChevronRight, ChevronLeft, RotateCcw, Home, BookOpen, Languages, AlertCircle, Trophy, Zap, FileText, GraduationCap } from "lucide-react";
-import { trpc } from "@/providers/trpc";
+import { getBanks, getBank, getPracticeRecords, savePracticeRecord, updateDailyStats } from "@/lib/localApi";
 import { useAppSettings } from "@/context/AppContext";
 import { toTraditional } from "@/lib/chineseConv";
 import { isChinese } from "@/lib/translate";
@@ -40,8 +40,8 @@ interface Q {
 // ========== Training Selector ==========
 function TrainingSelector({ onSelect }: { onSelect: (id: number) => void }) {
   const navigate = useNavigate();
-  const { data: banks } = trpc.bank.list.useQuery();
-  const { data: records } = trpc.record.list.useQuery();
+  const banks = getBanks();
+  const records = getPracticeRecords();
 
   const bankStats = useMemo(() => {
     return (banks || []).map((b) => {
@@ -207,11 +207,11 @@ function BankCard({ bank, onSelect }: { bank: { id: number; title: string; color
 // ========== Chapter Selector ==========
 function ChapterSelector({ bankId, onSelectChapter }: { bankId: number; onSelectChapter: (chapterId?: number) => void }) {
   const navigate = useNavigate();
-  const { data: bank } = trpc.bank.get.useQuery({ id: bankId });
-  const { data: records } = trpc.record.listByBank.useQuery({ bankId });
+  const bank = getBank(bankId);
+  const records = getPracticeRecords(bankId);
 
-  const allQuestions: Q[] = useMemo(() => bank ? JSON.parse(bank.questionsJson) : [], [bank?.questionsJson]);
-  const chapters: ChapterInfo[] = useMemo(() => bank?.chaptersJson ? JSON.parse(bank.chaptersJson) : [], [bank?.chaptersJson]);
+  const allQuestions: Q[] = useMemo(() => bank?.questions || [], [bank]);
+  const chapters: ChapterInfo[] = useMemo(() => bank?.chapters || [], [bank]);
 
   // Per-chapter stats
   const chapterStats = useMemo(() => {
@@ -384,25 +384,21 @@ function ChapterBar({
 function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { bankId: number; chapterId?: number }) {
   const navigate = useNavigate();
   const { settings, setSettings } = useAppSettings();
-  const utils = trpc.useUtils();
 
-  const { data: bankData } = trpc.bank.get.useQuery({ id: rawBankId });
-  const { data: savedRecords } = trpc.record.listByBank.useQuery({ bankId: rawBankId });
-  const addRecord = trpc.record.add.useMutation({
-    onSuccess: () => {
-      utils.record.list.invalidate();
-      utils.record.listByBank.invalidate({ bankId: rawBankId });
+  const bankData = getBank(rawBankId);
+  const savedRecords = getPracticeRecords(rawBankId);
+  
+  // Local save functions replacing tRPC mutations
+  const addRecord = {
+    mutate: (data: any) => {
+      savePracticeRecord(data);
+      updateDailyStats(data.isCorrect);
       setSaveError("");
     },
-    onError: (err) => {
-      console.error("保存失败:", err);
-      setSaveError("记录保存失败，请检查网络");
-      // Auto clear error after 3s
-      setTimeout(() => setSaveError(""), 3000);
-    },
-  });
-  const upsertDaily = trpc.record.upsertDaily.useMutation();
-  const updateProgress = trpc.bank.updateProgress.useMutation({ onSuccess: () => utils.bank.list.invalidate() });
+    isPending: false,
+  } as any;
+  const upsertDaily = { mutate: () => {} } as any;
+  const updateProgress = { mutate: () => {} } as any;
 
   // Internal chapter state — allows switching chapters during practice
   const [activeChapterId, setActiveChapterId] = useState<number | undefined>(initialChapterId);
@@ -416,9 +412,9 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
   const restoredRef = useRef(false);
   const [saveError, setSaveError] = useState("");
 
-  // Memoize parsed questions to avoid re-parsing on every render
-  const allQuestions: Q[] = useMemo(() => bankData ? JSON.parse(bankData.questionsJson) : [], [bankData?.questionsJson]);
-  const chapters: ChapterInfo[] = useMemo(() => bankData?.chaptersJson ? JSON.parse(bankData.chaptersJson) : [], [bankData?.chaptersJson]);
+  // Questions and chapters from local data
+  const allQuestions: Q[] = useMemo(() => bankData?.questions || [], [bankData]);
+  const chapters: ChapterInfo[] = useMemo(() => bankData?.chapters || [], [bankData]);
 
   // Filter by active chapter
   const questions: Q[] = useMemo(() =>

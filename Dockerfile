@@ -1,20 +1,25 @@
-FROM node:20-alpine AS base
+# ZENITH Quiz App - Fullstack Docker Image
+FROM node:20-slim
+
 WORKDIR /app
 
-FROM base AS deps
-COPY package.json package-lock.json ./
-RUN npm config set registry https://npm.mirrors.msh.team
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --prefer-offline --no-audit
+# Install dependencies
+COPY package.json package-lock.json* ./
+RUN npm ci --production=false
 
-FROM deps AS build
+# Copy source code
 COPY . .
+
+# Build frontend and backend
 RUN npm run build
 
-FROM node:20-alpine AS production
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=build /app/dist ./dist
-COPY package.json .env ./
-
+# Expose port
 EXPOSE 3000
-CMD ["npm", "start"]
+
+# Environment variables
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOST=0.0.0.0
+
+# Start the server
+CMD ["node", "dist/boot.js"]
