@@ -13,7 +13,9 @@ export default function MockExamListPage() {
     onSuccess: () => utils.mockExam.list.invalidate(),
   });
   const updateTitleMutation = trpc.mockExam.updateTitle.useMutation({
-    onSuccess: () => utils.mockExam.list.invalidate(),
+    onSuccess: async () => {
+      await utils.mockExam.list.invalidate();
+    },
   });
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);

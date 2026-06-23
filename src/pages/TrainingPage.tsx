@@ -165,9 +165,9 @@ function TrainingSelector({ onSelect }: { onSelect: (id: number) => void }) {
   );
 }
 
-function BankCard({ bank, onSelect }: { bank: { id: number; title: string; color: string; progress: number; questionsJson: string; chaptersJson: string | null; recCount: number; wrongCount: number }; onSelect: (id: number) => void }) {
+function BankCard({ bank, onSelect }: { bank: { id: number; title: string; color: string; progress: number; questionCount: number; chaptersJson: string | null; recCount: number; wrongCount: number }; onSelect: (id: number) => void }) {
   const chapters: ChapterInfo[] = useMemo(() => bank.chaptersJson ? JSON.parse(bank.chaptersJson) : [], [bank.chaptersJson]);
-  const qCount = useMemo(() => { try { return JSON.parse(bank.questionsJson).length; } catch { return 0; } }, [bank.questionsJson]);
+  const qCount = bank.questionCount;
 
   return (
     <motion.div
@@ -210,7 +210,7 @@ function ChapterSelector({ bankId, onSelectChapter }: { bankId: number; onSelect
   const { data: bank } = trpc.bank.get.useQuery({ id: bankId });
   const { data: records } = trpc.record.listByBank.useQuery({ bankId });
 
-  const allQuestions: Q[] = useMemo(() => bank ? JSON.parse(bank.questionsJson) : [], [bank?.questionsJson]);
+  const allQuestions: Q[] = useMemo(() => bank?.questions || [], [bank?.questions]);
   const chapters: ChapterInfo[] = useMemo(() => bank?.chaptersJson ? JSON.parse(bank.chaptersJson) : [], [bank?.chaptersJson]);
 
   // Per-chapter stats
@@ -417,7 +417,7 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
   const [saveError, setSaveError] = useState("");
 
   // Memoize parsed questions to avoid re-parsing on every render
-  const allQuestions: Q[] = useMemo(() => bankData ? JSON.parse(bankData.questionsJson) : [], [bankData?.questionsJson]);
+  const allQuestions: Q[] = useMemo(() => bankData ? JSON.parse(bankData.questions) : [], [bankData?.questionsJson]);
   const chapters: ChapterInfo[] = useMemo(() => bankData?.chaptersJson ? JSON.parse(bankData.chaptersJson) : [], [bankData?.chaptersJson]);
 
   // Filter by active chapter
@@ -486,7 +486,7 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
           });
           setTransCache((prev) => ({ ...prev, ...newTransCache }));
           if (bankData && batch.length > 0) {
-            const allQs = JSON.parse(bankData.questionsJson);
+            const allQs = JSON.parse(bankData.questions);
             const updatedQs = allQs.map((q: any) => newTransCache[q.id] ? { ...q, ...newTransCache[q.id], tcQuestion: toTraditional(q.question), tcOptions: q.options.map((o: string) => toTraditional(o)) } : q);
             updateBankMutation.mutate({ id: rawBankId, questionsJson: JSON.stringify(updatedQs) });
           }

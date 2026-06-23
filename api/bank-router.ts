@@ -21,7 +21,7 @@ export interface Question {
 }
 
 export const bankRouter = createRouter({
-  // List all banks for current user
+  // List all banks for current user (lightweight, no questionsJson)
   list: authedQuery.query(async ({ ctx }) => {
     const db = getDb();
     const rows = await db
@@ -31,7 +31,9 @@ export const bankRouter = createRouter({
       .orderBy(desc(banks.importedAt));
     return rows.map((row) => ({
       ...row,
-      questions: JSON.parse(row.questionsJson) as Question[],
+      questions: [],
+      questionsJson: "",
+      questionCount: JSON.parse(row.questionsJson || "[]").length,
     }));
   }),
 
@@ -48,7 +50,17 @@ export const bankRouter = createRouter({
       if (rows.length === 0) return null;
       const row = rows[0];
       return {
-        ...row,
+        id: row.id,
+        userId: row.userId,
+        title: row.title,
+        description: row.description,
+        category: row.category,
+        color: row.color,
+        cover: row.cover,
+        progress: row.progress,
+        importedAt: row.importedAt,
+        lastPracticedAt: row.lastPracticedAt,
+        chaptersJson: row.chaptersJson,
         questions: JSON.parse(row.questionsJson) as Question[],
       };
     }),
@@ -158,6 +170,23 @@ export const bankRouter = createRouter({
           progress: input.progress,
           lastPracticedAt: new Date(),
         })
+        .where(and(eq(banks.id, input.id), eq(banks.userId, ctx.user.id)));
+      return { success: true };
+    }),
+
+  // Update bank title
+  updateTitle: authedQuery
+    .input(
+      z.object({
+        id: z.number(),
+        title: z.string().min(1).max(255),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      await db
+        .update(banks)
+        .set({ title: input.title })
         .where(and(eq(banks.id, input.id), eq(banks.userId, ctx.user.id)));
       return { success: true };
     }),

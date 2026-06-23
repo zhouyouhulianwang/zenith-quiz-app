@@ -65,7 +65,12 @@ export default function MistakesPage() {
 
   const filtered = useMemo(() => filterBankId ? targetRecords.filter((r) => r.bankId === filterBankId) : targetRecords, [targetRecords, filterBankId]);
   const current = filtered[currentIndex];
-  const bank = current ? banks?.find((b) => b.id === current.bankId) : null;
+  const currentBankId = current?.bankId || 0;
+  const { data: fullBank } = trpc.bank.get.useQuery(
+    { id: currentBankId },
+    { enabled: !!currentBankId },
+  );
+  const bank = current ? (fullBank || banks?.find((b) => b.id === current.bankId)) : null;
   // Memoize parsed questions to avoid re-parsing on every render
   const bankQuestions = useMemo(() => {
     if (!bank?.questionsJson) return [];

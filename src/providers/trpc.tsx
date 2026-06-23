@@ -64,7 +64,14 @@ export function TRPCProvider({ children }: { children: ReactNode }) {
 
   // Recreate client when API URL changes
   const trpcClient = useMemo(() => createTrpcClient(apiUrl), [apiUrl]);
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 0,
+        refetchOnWindowFocus: true,
+      },
+    },
+  }));
 
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>

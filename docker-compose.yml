@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: zenith-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: zenith_root_pass
+      MYSQL_DATABASE: zenith
+      MYSQL_USER: zenith
+      MYSQL_PASSWORD: zenith_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uzenith", "-pzenith_pass"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  zenith:
+    image: node:20-alpine
+    container_name: zenith-app
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOST=0.0.0.0
+      - DATABASE_URL=mysql://zenith:zenith_pass@mysql:3306/zenith
+      - MOONSHOT_API_KEY=sk-95QiFKcwjm0UBowMXHj68nydiX0Z9Mw6acyVApRfY7qOrr4O
+      - APP_ID=19df549a-d392-8e19-8000-0000411d35dd
+      - APP_SECRET=28jdkHJ4EKPYcRYYDTw83wfVG91hBOJX
+      - KIMI_AUTH_URL=https://auth.kimi.com
+      - KIMI_OPEN_URL=https://open.kimi.com
+      - OWNER_UNION_ID=d6giq5drnuihgloev7h0
+    volumes:
+      - ./dist:/app/dist
+      - ./db:/app/db
+    command: node /app/dist/boot.js
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  mysql_data:

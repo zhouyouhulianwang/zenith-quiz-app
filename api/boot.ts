@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { cors } from "hono/cors";
+import { compress } from "hono/compress";
 import type { HttpBindings } from "@hono/node-server";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { appRouter } from "./router";
@@ -10,6 +11,9 @@ import { createOAuthCallbackHandler } from "./kimi/auth";
 import { Paths } from "@contracts/constants";
 
 const app = new Hono<{ Bindings: HttpBindings }>();
+
+// Enable gzip compression for responses > 1KB
+app.use(compress({ encoding: "gzip", threshold: 1024 }));
 
 // Custom CORS middleware - must be first, before any other middleware
 app.all("*", async (c, next) => {
@@ -71,7 +75,8 @@ if (env.isProduction) {
   serveStaticFiles(app);
 
   const port = parseInt(process.env.PORT || "3000");
-  serve({ fetch: app.fetch, port }, () => {
-    console.log(`Server running on http://localhost:${port}/`);
+  const hostname = process.env.HOST || "0.0.0.0";
+  serve({ fetch: app.fetch, port, hostname }, () => {
+    console.log(`Server running on http://${hostname}:${port}/`);
   });
 }

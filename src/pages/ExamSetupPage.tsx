@@ -13,22 +13,27 @@ interface ChapterInfo {
 
 export default function ExamSetupPage() {
   const navigate = useNavigate();
-  const { data: banks } = trpc.bank.list.useQuery();
-
   const [selectedBankId, setSelectedBankId] = useState<number | null>(null);
   const [selectedChapterId, setSelectedChapterId] = useState<number | undefined>(undefined);
   const [questionCount, setQuestionCount] = useState(40);
 
+  const { data: banks } = trpc.bank.list.useQuery();
+  const { data: fullBank } = trpc.bank.get.useQuery(
+    { id: selectedBankId || 0 },
+    { enabled: !!selectedBankId },
+  );
+
   const selectedBank = banks?.find((b) => b.id === selectedBankId);
+  const bankData = fullBank || selectedBank;
   const chapters: ChapterInfo[] = useMemo(() => {
-    if (!selectedBank?.chaptersJson) return [];
-    try { return JSON.parse(selectedBank.chaptersJson); } catch { return []; }
-  }, [selectedBank?.chaptersJson]);
+    if (!bankData?.chaptersJson) return [];
+    try { return JSON.parse(bankData.chaptersJson); } catch { return []; }
+  }, [bankData?.chaptersJson]);
 
   const allQuestions: { chapterId?: number }[] = useMemo(() => {
-    if (!selectedBank?.questionsJson) return [];
-    try { return JSON.parse(selectedBank.questionsJson); } catch { return []; }
-  }, [selectedBank?.questionsJson]);
+    if (!bankData?.questions) return [];
+    return bankData.questions;
+  }, [bankData?.questions]);
 
   const availableCount = useMemo(() => {
     if (!selectedChapterId) return allQuestions.length;
@@ -71,7 +76,7 @@ export default function ExamSetupPage() {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {banks.map((bank, i) => {
-                const qCount = (() => { try { return JSON.parse(bank.questionsJson).length; } catch { return 0; } })();
+                const qCount = bank.questionCount || 0;
                 const isSelected = selectedBankId === bank.id;
                 return (
                   <motion.button key={bank.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}

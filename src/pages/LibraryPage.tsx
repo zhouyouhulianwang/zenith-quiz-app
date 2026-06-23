@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Upload, X, Clock, Tag, ChevronRight, Trash2 } from "lucide-react";
+import { Search, Upload, X, Clock, Tag, ChevronRight, Trash2, Pencil, Check } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { parseTxtToBank } from "@/utils/txtParser";
@@ -20,25 +20,28 @@ function answerToIndex(answer: string): number[] {
   return indices.length > 0 ? indices : [0];
 }
 
-function stripOptionPrefix(opt: string): string {
-  if (!opt) return "";
-  return opt.replace(/^[A-Z][\.．、\s]\s*/, "").trim();
+function stripOptionPrefix(opt: unknown): string {
+  const s = typeof opt === "string" ? opt : String(opt || "");
+  if (!s) return "";
+  return s.replace(/^[A-Z][\.．、\s]\s*/, "").trim();
 }
 
-function stripHtml(html: string): string {
-  if (!html) return "";
+function stripHtml(html: unknown): string {
+  const s = typeof html === "string" ? html : String(html || "");
+  if (!s) return "";
   const tmp = document.createElement("div");
-  tmp.innerHTML = html;
+  tmp.innerHTML = s;
   let text = tmp.textContent || tmp.innerText || "";
-  text = text.replace(/\n+/g, "\n").replace(/ +/g, " ").trim();
-  return text;
+  text = typeof text === "string" ? text : String(text);
+  return text.replace(/\n+/g, "\n").replace(/ +/g, " ").trim();
 }
 
-function mapQuestionType(qtype: string): Question["type"] {
+function mapQuestionType(qtype: string | number): Question["type"] {
   const mapping: Record<string, Question["type"]> = {
     "单选题": "single", "多选题": "multiple", "判断题": "boolean", "填空题": "fill",
+    "1": "single", "2": "multiple", "3": "boolean", "4": "fill",
   };
-  return mapping[qtype] || "single";
+  return mapping[String(qtype)] || "single";
 }
 
 interface ChapterInfo {
@@ -47,7 +50,59 @@ interface ChapterInfo {
   questionCount: number;
 }
 
+function isChineseKeyFormat(data: Record<string, unknown>): boolean {
+  return "章节列表" in data || "卷名" in data;
+}
+
+function parseChineseOptions(opts: unknown): string[] {
+  if (!Array.isArray(opts)) return [];
+  // Format: [{"key":"A","value":"xxx"}, ...] or ["A. xxx", ...]
+  return opts.map((opt) => {
+    if (opt && typeof opt === "object" && "key" in opt && "value" in opt) {
+      return `${opt.key as string}. ${opt.value as string}`;
+    }
+    return String(opt);
+  });
+}
+
+function parseChinesePaperJson(data: Record<string, unknown>): { title: string; questions: Question[]; chapters: ChapterInfo[] } {
+  const chapters = (data.章节列表 as Array<Record<string, unknown>>) || [];
+  const questions: Question[] = [];
+  const chapterInfos: ChapterInfo[] = [];
+  for (const ch of chapters) {
+    const qs = (ch.题目 as Array<Record<string, unknown>>) || [];
+    const chapterId = (ch.章节ID as number) || (ch.章节编号 as number) || 0;
+    const chapterName = (ch.章节名 as string) || (ch.父章节 as string) || "未命名章节";
+    if (qs.length > 0) {
+      chapterInfos.push({ chapterId, chapterName, questionCount: qs.length });
+    }
+    for (const q of qs) {
+      const options = parseChineseOptions(q.选项);
+      questions.push({
+        id: (q.题目ID as number) || 0,
+        type: mapQuestionType(q.题型 ?? "单选题"),
+        question: stripHtml((q.题目内容 as string) || ""),
+        options: options.map(stripOptionPrefix),
+        correct: answerToIndex((q.答案 as string) || ""),
+        explanation: stripHtml((q.解析 as string) || ""),
+        enQuestion: stripHtml((q.英文内容 as string) || ""),
+        enOptions: [], // Will be auto-translated
+        tcQuestion: stripHtml((q.繁体内容 as string) || ""),
+        chapterId,
+        chapterName,
+      });
+    }
+  }
+  const title = `${data.卷名 as string} ${data.卷英文名 as string || ""}`.trim() || "未命名题库";
+  return { title, questions, chapters: chapterInfos };
+}
+
 function parsePaperJson(data: Record<string, unknown>): { title: string; questions: Question[]; chapters: ChapterInfo[] } {
+  // Detect Chinese-key format (卷一/卷二 JSON)
+  if (isChineseKeyFormat(data)) {
+    return parseChinesePaperJson(data);
+  }
+  // Standard format
   const chapters = (data.chapters as Array<Record<string, unknown>>) || [];
   const questions: Question[] = [];
   const chapterInfos: ChapterInfo[] = [];
@@ -61,13 +116,13 @@ function parsePaperJson(data: Record<string, unknown>): { title: string; questio
     for (const q of qs) {
       questions.push({
         id: (q.id as number) || 0,
-        type: mapQuestionType((q.questionType as string) || "单选题"),
+        type: mapQuestionType(q.questionType ?? "单选题"),
         question: stripHtml((q.content as string) || ""),
-        options: ((q.options as string[]) || []).map(stripOptionPrefix),
+        options: parseChineseOptions(q.options).map(stripOptionPrefix),
         correct: answerToIndex((q.answer as string) || ""),
         explanation: stripHtml((q.analysis as string) || ""),
         enQuestion: stripHtml((q.enContent as string) || ""),
-        enOptions: ((q.enOptions as string[]) || []).map(stripOptionPrefix),
+        enOptions: [],
         chapterId,
         chapterName,
       });
@@ -103,7 +158,17 @@ export default function LibraryPage() {
   const [activeCategory, setActiveCategory] = useState("全部");
   const [importError, setImportError] = useState("");
   const [importSuccess, setImportSuccess] = useState("");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const updateTitle = trpc.bank.updateTitle.useMutation({
+    onSuccess: async () => {
+      await utils.bank.list.invalidate();
+      setEditingId(null);
+    },
+  });
 
   const filteredBanks = (banks || []).filter((bank) => {
     const matchesSearch = bank.title.toLowerCase().includes(searchQuery.toLowerCase());
@@ -149,8 +214,10 @@ export default function LibraryPage() {
           setImportSuccess(`成功导入「${title}」，共 ${questions.length} 题`);
           setTimeout(() => setImportSuccess(""), 3000);
         } catch (err) {
-          setImportError(err instanceof Error ? err.message : "导入失败，请检查文件格式");
-          setTimeout(() => setImportError(""), 3000);
+          console.error("IMPORT ERROR:", err);
+          const msg = err instanceof Error ? `${err.message}\n${err.stack}` : "导入失败，请检查文件格式";
+          setImportError(msg);
+          setTimeout(() => setImportError(""), 8000);
         }
       };
       reader.readAsText(file);
@@ -250,10 +317,42 @@ export default function LibraryPage() {
                 <div style={{ height: "4px", background: bank.color || "#00d4ff" }} />
                 <div style={{ padding: "14px 16px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "6px" }}>
-                    <h3 style={{ fontSize: "16px", fontWeight: 600, color: "var(--text-primary)", margin: 0, flex: 1 }}>{bank.title}</h3>
-                    <span style={{ fontSize: "11px", padding: "3px 10px", borderRadius: "10px", background: "rgba(0,212,255,0.15)", color: "#00d4ff", whiteSpace: "nowrap" }}>
-                      {JSON.parse(bank.questionsJson).length}题
-                    </span>
+                    {editingId === bank.id ? (
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", flex: 1 }}>
+                        <input
+                          type="text"
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") updateTitle.mutate({ id: bank.id, title: editTitle });
+                            if (e.key === "Escape") setEditingId(null);
+                          }}
+                          autoFocus
+                          style={{ flex: 1, fontSize: "15px", fontWeight: 600, padding: "4px 8px", borderRadius: "6px", border: "1px solid #00d4ff", background: "var(--card-bg)", color: "var(--text-primary)", outline: "none" }}
+                        />
+                        <button onClick={() => updateTitle.mutate({ id: bank.id, title: editTitle })} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px" }}>
+                          <Check size={16} color="#10b981" />
+                        </button>
+                        <button onClick={() => setEditingId(null)} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px" }}>
+                          <X size={16} color="#666" />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <h3 style={{ fontSize: "16px", fontWeight: 600, color: "var(--text-primary)", margin: 0, flex: 1, display: "flex", alignItems: "center", gap: "6px" }}>
+                          {bank.title}
+                          <button
+                            onClick={() => { setEditingId(bank.id); setEditTitle(bank.title); }}
+                            style={{ background: "none", border: "none", cursor: "pointer", padding: "2px", opacity: 0.5 }}
+                          >
+                            <Pencil size={13} color="#00d4ff" />
+                          </button>
+                        </h3>
+                        <span style={{ fontSize: "11px", padding: "3px 10px", borderRadius: "10px", background: "rgba(0,212,255,0.15)", color: "#00d4ff", whiteSpace: "nowrap" }}>
+                          {bank.questionCount}题
+                        </span>
+                      </>
+                    )}
                   </div>
                   <p style={{ fontSize: "13px", color: "var(--text-secondary)", margin: "0 0 10px 0", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                     {bank.description || ""}
@@ -271,7 +370,7 @@ export default function LibraryPage() {
                       style={{ flex: 1, padding: "10px", borderRadius: "8px", background: "#00d4ff", color: "var(--page-bg)", fontSize: "13px", fontWeight: 600, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
                       开始训练 <ChevronRight size={14} />
                     </motion.button>
-                    <motion.button whileTap={{ scale: 0.95 }} onClick={() => deleteBank.mutate({ id: bank.id })}
+                    <motion.button whileTap={{ scale: 0.95 }} onClick={() => setConfirmDelete(bank.id)}
                       style={{ padding: "10px", borderRadius: "8px", background: "var(--card-bg-secondary)", color: "#ef4444", border: "none", cursor: "pointer" }}>
                       <Trash2 size={16} />
                     </motion.button>
@@ -282,6 +381,46 @@ export default function LibraryPage() {
           )}
         </div>
       </div>
+
+      {/* Delete Confirm Dialog */}
+      <AnimatePresence>
+        {confirmDelete !== null && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}
+          >
+            <motion.div
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.8 }}
+              transition={{ type: "spring", damping: 20 }}
+              style={{ background: "var(--card-bg)", borderRadius: "20px", padding: "28px", width: "100%", maxWidth: "340px", border: "1px solid var(--border-color)", textAlign: "center" }}
+            >
+              <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "rgba(239,68,68,0.15)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
+                <Trash2 size={22} color="#ef4444" />
+              </div>
+              <h3 style={{ fontSize: "18px", fontWeight: 700, color: "var(--text-primary)", margin: "0 0 8px" }}>删除题库</h3>
+              <p style={{ fontSize: "14px", color: "var(--text-secondary)", margin: "0 0 20px" }}>删除后无法恢复，确认删除吗？</p>
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button
+                  onClick={() => setConfirmDelete(null)}
+                  style={{ flex: 1, padding: "12px", borderRadius: "12px", background: "var(--card-bg-secondary)", color: "var(--text-primary)", border: "1px solid var(--border-color)", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}
+                >
+                  取消
+                </button>
+                <button
+                  onClick={() => { deleteBank.mutate({ id: confirmDelete }); setConfirmDelete(null); }}
+                  style={{ flex: 1, padding: "12px", borderRadius: "12px", background: "#ef4444", color: "#fff", border: "none", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}
+                >
+                  删除
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

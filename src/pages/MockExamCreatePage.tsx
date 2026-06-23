@@ -24,8 +24,32 @@ export default function MockExamCreatePage() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // State hooks must be declared before any conditional usage
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [selectedBankId, setSelectedBankId] = useState<number | null>(null);
+  const [selectedQuestionIds, setSelectedQuestionIds] = useState<Set<number>>(new Set());
+  const [examTitle, setExamTitle] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [expandedChapter, setExpandedChapter] = useState<number | null>(null);
+  const [jsonMode, setJsonMode] = useState(false);
+  const [jsonQuestions, setJsonQuestions] = useState<Q[]>([]);
+  const [jsonError, setJsonError] = useState("");
+
   const { data: banks } = trpc.bank.list.useQuery();
+  const { data: fullBank } = trpc.bank.get.useQuery(
+    { id: selectedBankId || 0 },
+    { enabled: !!selectedBankId },
+  );
   const utils = trpc.useUtils();
+
+  const translateMutation = trpc.mockExam.translateExam.useMutation({
+    onSuccess: (data) => {
+      if (data?.translated) {
+        utils.mockExam.list.invalidate();
+      }
+    },
+  });
+
   const createMutation = trpc.mockExam.create.useMutation({
     onSuccess: (data) => {
       utils.mockExam.list.invalidate();
@@ -37,36 +61,19 @@ export default function MockExamCreatePage() {
     },
   });
 
-  const translateMutation = trpc.mockExam.translateExam.useMutation({
-    onSuccess: (data) => {
-      if (data?.translated) {
-        utils.mockExam.list.invalidate();
-      }
-    },
-  });
-
-  const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [selectedBankId, setSelectedBankId] = useState<number | null>(null);
-  const [selectedQuestionIds, setSelectedQuestionIds] = useState<Set<number>>(new Set());
-  const [examTitle, setExamTitle] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [expandedChapter, setExpandedChapter] = useState<number | null>(null);
-  const [jsonMode, setJsonMode] = useState(false);
-  const [jsonQuestions, setJsonQuestions] = useState<Q[]>([]);
-  const [jsonError, setJsonError] = useState("");
-
   const selectedBank = banks?.find((b) => b.id === selectedBankId);
+  const bankData = fullBank || selectedBank;
 
   const allQuestions: Q[] = useMemo(() => {
     if (jsonMode) return jsonQuestions;
-    if (!selectedBank?.questionsJson) return [];
-    try { return JSON.parse(selectedBank.questionsJson); } catch { return []; }
-  }, [jsonMode, jsonQuestions, selectedBank?.questionsJson]);
+    if (!bankData?.questionsJson) return [];
+    try { return bankData.questions; } catch { return []; }
+  }, [jsonMode, jsonQuestions, bankData?.questionsJson]);
 
   const chapters = useMemo(() => {
-    if (jsonMode || !selectedBank?.chaptersJson) return [];
-    try { return JSON.parse(selectedBank.chaptersJson); } catch { return []; }
-  }, [jsonMode, selectedBank?.chaptersJson]);
+    if (jsonMode || !bankData?.chaptersJson) return [];
+    try { return JSON.parse(bankData.chaptersJson); } catch { return []; }
+  }, [jsonMode, bankData?.chaptersJson]);
 
   const questionsByChapter = useMemo(() => {
     const map: Record<number, Q[]> = {};
@@ -375,7 +382,7 @@ export default function MockExamCreatePage() {
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 {banks.map((bank, i) => {
-                  const qCount = (() => { try { return JSON.parse(bank.questionsJson).length; } catch { return 0; } })();
+                  const qCount = bank.questionCount || 0;
                   const isSelected = selectedBankId === bank.id;
                   return (
                     <motion.button key={bank.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}

@@ -68,7 +68,7 @@ export default function ExamSessionPage() {
   // Parse and prepare questions
   const allQuestions: Q[] = useMemo(() => {
     if (!bankData) return [];
-    try { return JSON.parse(bankData.questionsJson); } catch { return []; }
+    try { return bankData.questions; } catch { return []; }
   }, [bankData]);
 
   const questions: Q[] = useMemo(() => {
@@ -127,7 +127,7 @@ export default function ExamSessionPage() {
           });
           setTransCache((prev) => ({ ...prev, ...newTransCache }));
           if (bankData && batch.length > 0) {
-            const allQs = JSON.parse(bankData.questionsJson);
+            const allQs = bankData.questions;
             const updatedQs = allQs.map((q: any) => newTransCache[q.id] ? { ...q, ...newTransCache[q.id], tcQuestion: toTraditional(q.question), tcOptions: q.options.map((o: string) => toTraditional(o)) } : q);
             updateBankMutation.mutate({ id: bankId, questionsJson: JSON.stringify(updatedQs) });
           }
