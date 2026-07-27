@@ -6,12 +6,13 @@ import { eq, and, desc } from "drizzle-orm";
 import { translateQuestions } from "./translate-service";
 
 export const mockExamRouter = {
-  list: authedQuery.query(async () => {
+  list: authedQuery.query(async ({ ctx }) => {
     const db = getDb();
-    // Return all mock exams (preset exams are shared across all users)
+    // Return only current user's mock exams
     return db
       .select()
       .from(mockExams)
+      .where(eq(mockExams.userId, ctx.user.id))
       .orderBy(desc(mockExams.createdAt));
   }),
 
@@ -44,13 +45,13 @@ export const mockExamRouter = {
   // Async translate exam questions (called after create)
   translateExam: authedQuery
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const db = getDb();
       const [row] = await db
         .select()
         .from(mockExams)
-        .where(eq(mockExams.id, input.id));
-      if (!row) return { translated: false, error: "Not found" };
+        .where(and(eq(mockExams.id, input.id), eq(mockExams.userId, ctx.user.id)));
+      if (!row) return { translated: false, error: "Not found or no permission" };
 
       const questions = JSON.parse(row.questionsJson || "[]");
       const needsTranslation = questions.some(
@@ -120,12 +121,12 @@ export const mockExamRouter = {
         questionsJson: z.string(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const db = getDb();
       await db
         .update(mockExams)
         .set({ questionsJson: input.questionsJson })
-        .where(eq(mockExams.id, input.id));
+        .where(and(eq(mockExams.id, input.id), eq(mockExams.userId, ctx.user.id)));
       return { success: true };
     }),
 };
