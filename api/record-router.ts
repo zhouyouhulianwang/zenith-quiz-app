@@ -2,7 +2,7 @@ import { z } from "zod";
 import { eq, and, desc } from "drizzle-orm";
 import { createRouter, authedQuery } from "./middleware";
 import { getDb } from "./queries/connection";
-import { practiceRecords, dailyRecords } from "@db/schema";
+import { practiceRecords, dailyRecords, banks } from "@db/schema";
 
 export const recordRouter = createRouter({
   // Add a practice record
@@ -92,6 +92,45 @@ export const recordRouter = createRouter({
         selected: JSON.parse(r.selected) as number[],
         isCorrect: r.isCorrect === 1,
       }));
+    }),
+
+  // Clear all practice records for a specific bank (and reset its progress)
+  clearByBank: authedQuery
+    .input(z.object({ bankId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      await db
+        .delete(practiceRecords)
+        .where(
+          and(
+            eq(practiceRecords.userId, ctx.user.id),
+            eq(practiceRecords.bankId, input.bankId),
+          ),
+        );
+      // Reset bank progress so it goes back to "unpracticed"
+      await db
+        .update(banks)
+        .set({ progress: 0 })
+        .where(
+          and(eq(banks.id, input.bankId), eq(banks.userId, ctx.user.id)),
+        );
+      return { success: true };
+    }),
+
+  // Clear only wrong-answer records for a specific bank (or all banks when bankId = 0)
+  clearWrong: authedQuery
+    .input(z.object({ bankId: z.number().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      const conditions = [
+        eq(practiceRecords.userId, ctx.user.id),
+        eq(practiceRecords.isCorrect, 0),
+      ];
+      if (input.bankId) {
+        conditions.push(eq(practiceRecords.bankId, input.bankId));
+      }
+      await db.delete(practiceRecords).where(and(...conditions));
+      return { success: true };
     }),
 
   // Upsert daily record

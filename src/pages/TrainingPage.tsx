@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { motion } from "framer-motion";
-import { ArrowLeft, Check, X, Clock, ChevronRight, ChevronLeft, RotateCcw, Home, BookOpen, Languages, AlertCircle, Trophy, Zap, FileText, GraduationCap } from "lucide-react";
+import { ArrowLeft, Check, X, Clock, ChevronRight, ChevronLeft, RotateCcw, Home, BookOpen, Languages, AlertCircle, Trophy, Zap, FileText, GraduationCap, Trash2, PlayCircle } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAppSettings } from "@/context/AppContext";
 import { toTraditional } from "@/lib/chineseConv";
@@ -37,11 +37,41 @@ interface Q {
   chapterName?: string;
 }
 
+type PracticeMode = "all" | "unpracticed" | "wrong";
+
+interface LastSession {
+  bankId: number;
+  chapterId: number | null;
+  mode: PracticeMode;
+  ts: number;
+}
+
+const LAST_SESSION_KEY = "zenith-last-training";
+
+function readLastSession(): LastSession | null {
+  try {
+    const s = localStorage.getItem(LAST_SESSION_KEY);
+    if (!s) return null;
+    const parsed = JSON.parse(s);
+    if (typeof parsed?.bankId !== "number") return null;
+    return parsed as LastSession;
+  } catch {
+    return null;
+  }
+}
+
 // ========== Training Selector ==========
-function TrainingSelector({ onSelect }: { onSelect: (id: number) => void }) {
+function TrainingSelector({ onSelect }: { onSelect: (id: number, opts?: { chapterId?: number; mode?: PracticeMode }) => void }) {
   const navigate = useNavigate();
+  const utils = trpc.useUtils();
   const { data: banks } = trpc.bank.list.useQuery();
   const { data: records } = trpc.record.list.useQuery();
+  const clearByBank = trpc.record.clearByBank.useMutation({
+    onSuccess: () => {
+      utils.record.list.invalidate();
+      utils.bank.list.invalidate();
+    },
+  });
 
   const bankStats = useMemo(() => {
     return (banks || []).map((b) => {
@@ -50,6 +80,19 @@ function TrainingSelector({ onSelect }: { onSelect: (id: number) => void }) {
       return { ...b, recCount: recs.length, wrongCount };
     });
   }, [banks, records]);
+
+  // Last practice session — let user jump straight back in
+  const lastSession = useMemo(() => readLastSession(), []);
+  const lastBank = useMemo(
+    () => (lastSession ? (banks || []).find((b) => b.id === lastSession.bankId) : undefined),
+    [lastSession, banks]
+  );
+
+  const handleClearBank = useCallback((bankId: number, title: string) => {
+    if (window.confirm(`确定清空「${title}」的全部练习记录吗？此操作不可恢复。`)) {
+      clearByBank.mutate({ bankId });
+    }
+  }, [clearByBank]);
 
   const unpracticed = useMemo(() => bankStats.filter((b) => b.recCount === 0), [bankStats]);
   const inProgress = useMemo(() => bankStats.filter((b) => b.recCount > 0 && b.progress < 100), [bankStats]);
@@ -71,6 +114,26 @@ function TrainingSelector({ onSelect }: { onSelect: (id: number) => void }) {
             <p style={{ fontSize: "13px", color: "var(--text-tertiary)", margin: "2px 0 0" }}>选择题库开始练习，或错题重练</p>
           </div>
         </div>
+
+        {lastBank && lastSession && (
+          <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.97 }}
+            onClick={() => onSelect(lastBank.id, { chapterId: lastSession.chapterId ?? undefined, mode: lastSession.mode })}
+            style={{
+              width: "100%", padding: "16px", borderRadius: "14px",
+              background: "linear-gradient(135deg, rgba(0,212,255,0.15), rgba(0,119,255,0.05))",
+              border: "1px solid rgba(0,212,255,0.35)", marginBottom: "16px",
+              display: "flex", alignItems: "center", gap: "12px", cursor: "pointer",
+            }}>
+            <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: "rgba(0,212,255,0.18)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <PlayCircle size={22} color="#00d4ff" />
+            </div>
+            <div style={{ flex: 1, textAlign: "left" }}>
+              <div style={{ fontSize: "15px", fontWeight: 600, color: "#00d4ff" }}>继续上次练习</div>
+              <div style={{ fontSize: "12px", color: "var(--text-primary)", marginTop: "2px" }}>{lastBank.title} · 从上次位置继续</div>
+            </div>
+            <ChevronRight size={18} color="#00d4ff" />
+          </motion.button>
+        )}
 
         {totalWrong > 0 && (
           <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} whileTap={{ scale: 0.97 }}
@@ -133,19 +196,19 @@ function TrainingSelector({ onSelect }: { onSelect: (id: number) => void }) {
           {inProgress.length > 0 && (
             <div>
               <div style={{ fontSize: "11px", fontWeight: 500, color: "#00d4ff", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: "8px", paddingLeft: "4px" }}>继续练习 · {inProgress.length}</div>
-              {inProgress.map((b) => <BankCard key={b.id} bank={b} onSelect={onSelect} />)}
+              {inProgress.map((b) => <BankCard key={b.id} bank={b} onSelect={onSelect} onClear={handleClearBank} />)}
             </div>
           )}
           {unpracticed.length > 0 && (
             <div>
               <div style={{ fontSize: "11px", fontWeight: 500, color: "var(--text-primary)", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: "8px", paddingLeft: "4px" }}>未练习 · {unpracticed.length}</div>
-              {unpracticed.map((b) => <BankCard key={b.id} bank={b} onSelect={onSelect} />)}
+              {unpracticed.map((b) => <BankCard key={b.id} bank={b} onSelect={onSelect} onClear={handleClearBank} />)}
             </div>
           )}
           {completed.length > 0 && (
             <div>
               <div style={{ fontSize: "11px", fontWeight: 500, color: "#10b981", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: "8px", paddingLeft: "4px" }}>已完成 · {completed.length}</div>
-              {completed.map((b) => <BankCard key={b.id} bank={b} onSelect={onSelect} />)}
+              {completed.map((b) => <BankCard key={b.id} bank={b} onSelect={onSelect} onClear={handleClearBank} />)}
             </div>
           )}
         </div>
@@ -165,7 +228,7 @@ function TrainingSelector({ onSelect }: { onSelect: (id: number) => void }) {
   );
 }
 
-function BankCard({ bank, onSelect }: { bank: { id: number; title: string; color: string; progress: number; questionCount: number; chaptersJson: string | null; recCount: number; wrongCount: number }; onSelect: (id: number) => void }) {
+function BankCard({ bank, onSelect, onClear }: { bank: { id: number; title: string; color: string; progress: number; questionCount: number; chaptersJson: string | null; recCount: number; wrongCount: number }; onSelect: (id: number) => void; onClear: (id: number, title: string) => void }) {
   const chapters: ChapterInfo[] = useMemo(() => bank.chaptersJson ? JSON.parse(bank.chaptersJson) : [], [bank.chaptersJson]);
   const qCount = bank.questionCount;
 
@@ -200,18 +263,42 @@ function BankCard({ bank, onSelect }: { bank: { id: number; title: string; color
       {bank.wrongCount > 0 && <span style={{ fontSize: "11px", padding: "3px 8px", borderRadius: "8px", background: "rgba(239,68,68,0.12)", color: "#ef4444", fontWeight: 500, flexShrink: 0 }}>{bank.wrongCount} 错题</span>}
       {bank.progress >= 100 && <Trophy size={16} color="#10b981" />}
       {bank.recCount === 0 && <Zap size={16} color="#00d4ff" />}
+      {bank.recCount > 0 && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onClear(bank.id, bank.title); }}
+          title="清空该卷练习记录"
+          style={{
+            background: "none", border: "none", cursor: "pointer", padding: "8px",
+            minWidth: "36px", minHeight: "36px", display: "flex", alignItems: "center", justifyContent: "center",
+            flexShrink: 0, WebkitTapHighlightColor: "transparent",
+          }}
+        >
+          <Trash2 size={16} color="var(--text-tertiary)" />
+        </button>
+      )}
     </motion.div>
   );
 }
 
 // ========== Chapter Selector ==========
-function ChapterSelector({ bankId, onSelectChapter }: { bankId: number; onSelectChapter: (chapterId?: number) => void }) {
+function ChapterSelector({ bankId, mode, onModeChange, onSelectChapter }: { bankId: number; mode: PracticeMode; onModeChange: (m: PracticeMode) => void; onSelectChapter: (chapterId: number) => void }) {
   const navigate = useNavigate();
   const { data: bank } = trpc.bank.get.useQuery({ id: bankId });
   const { data: records } = trpc.record.listByBank.useQuery({ bankId });
 
   const allQuestions: Q[] = useMemo(() => bank?.questions || [], [bank?.questions]);
   const chapters: ChapterInfo[] = useMemo(() => bank?.chaptersJson ? JSON.parse(bank.chaptersJson) : [], [bank?.chaptersJson]);
+
+  // Latest record per question (records arrive in ascending createdAt order)
+  const latestByQ = useMemo(() => {
+    const m = new Map<number, { isCorrect: boolean }>();
+    for (const r of records || []) m.set(r.questionId, { isCorrect: r.isCorrect });
+    return m;
+  }, [records]);
+
+  // Smart-selection counts across the whole bank
+  const unpracticedCount = useMemo(() => allQuestions.filter((q) => !latestByQ.has(q.id)).length, [allQuestions, latestByQ]);
+  const wrongQCount = useMemo(() => allQuestions.filter((q) => latestByQ.has(q.id) && !latestByQ.get(q.id)!.isCorrect).length, [allQuestions, latestByQ]);
 
   // Per-chapter stats
   const chapterStats = useMemo(() => {
@@ -227,28 +314,58 @@ function ChapterSelector({ bankId, onSelectChapter }: { bankId: number; onSelect
     <div style={{ minHeight: "100dvh", background: "var(--page-bg)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-tertiary)" }}>加载中...</div>
   );
 
-  // No chapters — skip directly
+  // No chapters — skip directly (0 = all chapters)
   if (chapters.length === 0) {
-    onSelectChapter(undefined);
+    onSelectChapter(0);
     return null;
   }
+
+  const modeOptions: { key: PracticeMode; label: string; count: number; color: string }[] = [
+    { key: "all", label: "全部题目", count: allQuestions.length, color: "#00d4ff" },
+    { key: "unpracticed", label: "未练习", count: unpracticedCount, color: "#f59e0b" },
+    { key: "wrong", label: "错题", count: wrongQCount, color: "#ef4444" },
+  ];
 
   return (
     <div style={{ position: "relative", minHeight: "100dvh", background: "var(--page-bg)", overflowX: "hidden" }}>
       <ParticleBackground />
       <div style={{ position: "relative", zIndex: 1, padding: "16px", paddingBottom: "100px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
           <button onClick={() => navigate("/training")} style={{ background: "none", border: "none", cursor: "pointer", padding: "8px", minWidth: "44px", minHeight: "44px", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <ArrowLeft size={24} color="var(--text-primary)" />
           </button>
           <div style={{ flex: 1 }}>
             <h1 style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>{bank.title}</h1>
-            <p style={{ fontSize: "12px", color: "var(--text-tertiary)", margin: "2px 0 0" }}>选择章节开始练习</p>
+            <p style={{ fontSize: "12px", color: "var(--text-tertiary)", margin: "2px 0 0" }}>选择练习范围与章节</p>
           </div>
         </div>
 
+        {/* Smart selection mode */}
+        <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
+          {modeOptions.map((opt) => {
+            const active = mode === opt.key;
+            const disabled = opt.key !== "all" && opt.count === 0;
+            return (
+              <button key={opt.key}
+                onClick={() => !disabled && onModeChange(opt.key)}
+                style={{
+                  flex: 1, padding: "10px 6px", borderRadius: "12px",
+                  background: active ? `${opt.color}20` : "var(--card-bg)",
+                  border: active ? `1.5px solid ${opt.color}` : "1px solid var(--border-color)",
+                  cursor: disabled ? "not-allowed" : "pointer",
+                  opacity: disabled ? 0.4 : 1,
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: "2px",
+                  WebkitTapHighlightColor: "transparent", userSelect: "none", touchAction: "manipulation",
+                }}>
+                <span style={{ fontSize: "13px", fontWeight: 600, color: active ? opt.color : "var(--text-primary)" }}>{opt.label}</span>
+                <span style={{ fontSize: "11px", color: active ? opt.color : "var(--text-tertiary)" }}>{opt.count} 题</span>
+              </button>
+            );
+          })}
+        </div>
+
         <motion.button whileTap={{ scale: 0.98 }}
-          onClick={() => onSelectChapter(undefined)}
+          onClick={() => onSelectChapter(0)}
           style={{
             width: "100%", padding: "16px", borderRadius: "14px",
             background: "linear-gradient(135deg, #00d4ff20, #0077ff10)",
@@ -263,7 +380,9 @@ function ChapterSelector({ bankId, onSelectChapter }: { bankId: number; onSelect
           </div>
           <div style={{ flex: 1, textAlign: "left" }}>
             <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--text-primary)" }}>全部章节</div>
-            <div style={{ fontSize: "12px", color: "var(--text-primary)", marginTop: "2px" }}>{allQuestions.length} 题</div>
+            <div style={{ fontSize: "12px", color: "var(--text-primary)", marginTop: "2px" }}>
+              {mode === "all" ? `${allQuestions.length} 题` : mode === "unpracticed" ? `${unpracticedCount} 道未练习` : `${wrongQCount} 道错题`}
+            </div>
           </div>
           <ChevronRight size={18} color="#00d4ff" />
         </motion.button>
@@ -381,7 +500,7 @@ function ChapterBar({
 }
 
 // ========== Training Session ==========
-function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { bankId: number; chapterId?: number }) {
+function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId, mode = "all" }: { bankId: number; chapterId?: number; mode?: PracticeMode }) {
   const navigate = useNavigate();
   const { settings, setSettings } = useAppSettings();
   const utils = trpc.useUtils();
@@ -420,11 +539,52 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
   const allQuestions: Q[] = useMemo(() => (bankData?.questions as Q[]) || [], [bankData?.questions]);
   const chapters: ChapterInfo[] = useMemo(() => bankData?.chaptersJson ? JSON.parse(bankData.chaptersJson) : [], [bankData?.chaptersJson]);
 
-  // Filter by active chapter
-  const questions: Q[] = useMemo(() =>
-    activeChapterId ? allQuestions.filter((q) => q.chapterId === activeChapterId) : allQuestions,
-    [allQuestions, activeChapterId]
-  );
+  // Latest record per question (ascending createdAt → later entries win)
+  const latestByQ = useMemo(() => {
+    const m = new Map<number, { isCorrect: boolean }>();
+    for (const r of savedRecords || []) m.set(r.questionId, { isCorrect: r.isCorrect });
+    return m;
+  }, [savedRecords]);
+
+  // For "unpracticed"/"wrong" modes the question list is frozen at session start,
+  // so mid-session record updates (e.g. a wrong question answered correctly) don't
+  // shift the list underneath the user.
+  const [frozenQuestions, setFrozenQuestions] = useState<Q[] | null>(null);
+  useEffect(() => {
+    if (mode === "all") { setFrozenQuestions(null); return; }
+    if (frozenQuestions !== null) return;
+    if (savedRecords === undefined || !bankData) return;
+    let qs = activeChapterId ? allQuestions.filter((q) => q.chapterId === activeChapterId) : allQuestions;
+    if (mode === "unpracticed") qs = qs.filter((q) => !latestByQ.has(q.id));
+    else if (mode === "wrong") qs = qs.filter((q) => latestByQ.has(q.id) && !latestByQ.get(q.id)!.isCorrect);
+    setFrozenQuestions(qs);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, savedRecords, bankData, activeChapterId]);
+
+  // Filter by active chapter (+ frozen smart-selection list for non-"all" modes)
+  const questions: Q[] = useMemo(() => {
+    if (mode !== "all") return frozenQuestions ?? [];
+    return activeChapterId ? allQuestions.filter((q) => q.chapterId === activeChapterId) : allQuestions;
+  }, [mode, frozenQuestions, allQuestions, activeChapterId]);
+
+  // Remember where the user practiced so the selector can offer "继续上次练习"
+  useEffect(() => {
+    try {
+      localStorage.setItem(LAST_SESSION_KEY, JSON.stringify({
+        bankId: rawBankId,
+        chapterId: activeChapterId ?? null,
+        mode,
+        ts: Date.now(),
+      } satisfies LastSession));
+    } catch { /* storage unavailable */ }
+  }, [rawBankId, activeChapterId, mode]);
+
+  // Per-session position memory (only for "all" mode — filtered modes always start fresh)
+  const posKey = `zenith-training-pos-${rawBankId}-${activeChapterId ?? "all"}-${mode}`;
+  useEffect(() => {
+    if (mode !== "all" || !restoredRef.current) return;
+    try { localStorage.setItem(posKey, String(currentIndex)); } catch { /* */ }
+  }, [currentIndex, mode, posKey]);
 
   const lang = settings.questionLanguage;
 
@@ -536,6 +696,7 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
     setCurrentIndex(0);
     setAnswers([]);
     setShowSummary(false);
+    setFrozenQuestions(null); // recompute smart-selection list for the new chapter
     restoredRef.current = false;
   }, []);
 
@@ -546,6 +707,13 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
 
     restoredRef.current = true;
 
+    if (mode !== "all") {
+      // Smart-selection modes are fresh re-practice sessions
+      setAnswers(questions.map(() => ({ selected: [], submitted: false })));
+      setCurrentIndex(0);
+      return;
+    }
+
     const init: AnswerState[] = questions.map(() => ({ selected: [], submitted: false }));
     for (const rec of savedRecords) {
       const idx = questions.findIndex((q) => q.id === rec.questionId);
@@ -554,10 +722,19 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
       }
     }
     const firstUnanswered = init.findIndex((a) => !a.submitted);
+    // Prefer the exact last position if it's still valid; otherwise first unanswered
+    let startIndex = firstUnanswered >= 0 ? firstUnanswered : 0;
+    try {
+      const savedPos = localStorage.getItem(posKey);
+      if (savedPos !== null) {
+        const pos = Number(savedPos);
+        if (Number.isInteger(pos) && pos >= 0 && pos < questions.length) startIndex = pos;
+      }
+    } catch { /* */ }
     setAnswers(init);
-    setCurrentIndex(firstUnanswered >= 0 ? firstUnanswered : 0);
+    setCurrentIndex(startIndex);
   // Depend on both chapter and question count to re-run on chapter switch
-  }, [activeChapterId, questions.length, savedRecords]);
+  }, [activeChapterId, questions.length, savedRecords, mode, posKey]);
 
   useEffect(() => { setQStartTime(Date.now()); setSwipeDir(null); }, [currentIndex]);
 
@@ -670,8 +847,19 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
   const accuracy = submittedAnswers.length > 0 ? Math.round((correctCount / submittedAnswers.length) * 100) : 0;
   const totalTime = Math.round((Date.now() - startTime) / 1000);
 
-  if (!bankData || questions.length === 0) {
+  if (!bankData || (mode === "all" && questions.length === 0) || (mode !== "all" && frozenQuestions === null)) {
     return <div style={{ minHeight: "100dvh", background: "var(--page-bg)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-tertiary)" }}>加载中...</div>;
+  }
+
+  // Smart-selection mode with no matching questions
+  if (questions.length === 0) {
+    return (
+      <div style={{ minHeight: "100dvh", background: "var(--page-bg)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px", color: "var(--text-tertiary)" }}>
+        <Check size={48} color="#10b981" />
+        <p style={{ fontSize: "15px" }}>{mode === "wrong" ? "太棒了，当前没有错题！" : "没有未练习的题目了！"}</p>
+        <button onClick={() => navigate("/training")} style={{ padding: "12px 28px", background: "#00d4ff", color: "var(--page-bg)", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}>返回训练</button>
+      </div>
+    );
   }
 
   // Use auto-translated text with client-side dictionary fallback
@@ -924,7 +1112,7 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               <motion.button whileTap={{ scale: 0.95 }}
-                onClick={() => { setCurrentIndex(0); setAnswers(questions.map(() => ({ selected: [], submitted: false }))); setShowSummary(false); restoredRef.current = false; }}
+                onClick={() => { setCurrentIndex(0); setAnswers(questions.map(() => ({ selected: [], submitted: false }))); setShowSummary(false); setFrozenQuestions(null); restoredRef.current = false; }}
                 style={{ padding: "14px", borderRadius: "12px", background: "#00d4ff", color: "var(--page-bg)", fontSize: "14px", fontWeight: 600, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", minHeight: "48px", touchAction: "manipulation" }}>
                 <RotateCcw size={16} /> 再来一组
               </motion.button>
@@ -940,40 +1128,49 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
   );
 }
 
+// ========== Per-bank flow (remounts on bank switch via key) ==========
+// Chapter convention: undefined = not chosen yet, 0 = all chapters, >0 = specific chapter
+function TrainingFlow({ bankId, initialChapterId, initialMode }: { bankId: number; initialChapterId?: number; initialMode?: PracticeMode }) {
+  // Persist selectedChapter per bank in sessionStorage for page refresh
+  const [selectedChapter, setSelectedChapter] = useState<number | undefined>(() => {
+    if (initialChapterId !== undefined) return initialChapterId;
+    const saved = sessionStorage.getItem(`zenith-training-chapter-${bankId}`);
+    return saved !== null ? Number(saved) : undefined;
+  });
+  const [mode, setMode] = useState<PracticeMode>(initialMode ?? "all");
+
+  // Persist to sessionStorage when changed
+  useEffect(() => {
+    const key = `zenith-training-chapter-${bankId}`;
+    if (selectedChapter !== undefined) {
+      sessionStorage.setItem(key, String(selectedChapter));
+    } else {
+      sessionStorage.removeItem(key);
+    }
+  }, [selectedChapter, bankId]);
+
+  // If no chapter selected yet, show chapter selector first
+  if (selectedChapter === undefined) {
+    return <ChapterSelector bankId={bankId} mode={mode} onModeChange={setMode} onSelectChapter={(chId) => setSelectedChapter(chId)} />;
+  }
+
+  return <TrainingSession bankId={bankId} chapterId={selectedChapter === 0 ? undefined : selectedChapter} mode={mode} />;
+}
+
 // ========== Entry Point ==========
 export default function TrainingPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const navState = location.state as { bankId?: number; chapterId?: number } | null;
+  const navState = location.state as { bankId?: number; chapterId?: number; mode?: PracticeMode } | null;
   const bankId = navState?.bankId;
-  const chapterId = navState?.chapterId;
-
-  // Persist selectedChapter in sessionStorage for page refresh
-  const [selectedChapter, setSelectedChapter] = useState<number | undefined>(() => {
-    const saved = sessionStorage.getItem("zenith-training-chapter");
-    return saved ? Number(saved) : chapterId;
-  });
-
-  // Persist to sessionStorage when changed
-  useEffect(() => {
-    if (selectedChapter !== undefined) {
-      sessionStorage.setItem("zenith-training-chapter", String(selectedChapter));
-    } else {
-      sessionStorage.removeItem("zenith-training-chapter");
-    }
-  }, [selectedChapter]);
 
   // Wrap navigate in useCallback to pass to TrainingSelector
-  const handleSelectBank = useCallback((id: number) => {
-    navigate("/training", { state: { bankId: id } });
+  const handleSelectBank = useCallback((id: number, opts?: { chapterId?: number; mode?: PracticeMode }) => {
+    navigate("/training", { state: { bankId: id, chapterId: opts?.chapterId, mode: opts?.mode } });
   }, [navigate]);
 
   if (!bankId) return <TrainingSelector onSelect={handleSelectBank} />;
 
-  // If no chapter selected yet, show chapter selector first
-  if (selectedChapter === undefined && chapterId === undefined) {
-    return <ChapterSelector bankId={bankId} onSelectChapter={(chId) => setSelectedChapter(chId)} />;
-  }
-
-  return <TrainingSession bankId={bankId} chapterId={selectedChapter ?? chapterId} />;
+  // key={bankId} forces a fresh flow when switching banks (no cross-bank state leaks)
+  return <TrainingFlow key={bankId} bankId={bankId} initialChapterId={navState?.chapterId} initialMode={navState?.mode} />;
 }

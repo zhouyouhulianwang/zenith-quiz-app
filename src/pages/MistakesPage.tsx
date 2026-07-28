@@ -1,7 +1,7 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router";
 import { motion } from "framer-motion";
-import { ArrowLeft, XCircle, CheckCircle, ChevronLeft, ChevronRight, RotateCcw, Filter, AlertCircle, BookOpen, Clock, Languages, Globe } from "lucide-react";
+import { ArrowLeft, XCircle, CheckCircle, ChevronLeft, ChevronRight, RotateCcw, Filter, AlertCircle, BookOpen, Clock, Languages, Globe, Trash2, Check, X } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useAppSettings } from "@/context/AppContext";
 import { toTraditional } from "@/lib/chineseConv";
@@ -40,10 +40,41 @@ export default function MistakesPage() {
   const mode = (location.state as { mode?: "wrong" | "correct" } | null)?.mode || "wrong";
   const isWrongMode = mode === "wrong";
 
+  const utils = trpc.useUtils();
   const { data: records } = trpc.record.list.useQuery();
   const { data: banks } = trpc.bank.list.useQuery();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [filterBankId, setFilterBankId] = useState<number | null>(null);
+
+  // ── Re-practice mode ──────────────────────────────
+  const [practiceMode, setPracticeMode] = useState(false);
+  // key = `${bankId}-${questionId}` → latest re-practice result this session
+  const [answeredMap, setAnsweredMap] = useState<Record<string, { selected: number[]; isCorrect: boolean }>>({});
+  const [multiSel, setMultiSel] = useState<Record<string, number[]>>({});
+  const qStartRef = useRef<number>(Date.now());
+  const dirtyRef = useRef(false); // whether any new record was written this visit
+
+  const addRecord = trpc.record.add.useMutation({
+    onSuccess: () => { dirtyRef.current = true; },
+  });
+  const clearWrong = trpc.record.clearWrong.useMutation({
+    onSuccess: () => {
+      utils.record.list.invalidate();
+      setCurrentIndex(0);
+      setAnsweredMap({});
+      setMultiSel({});
+    },
+  });
+
+  // Refresh the record list when leaving so re-answered questions update everywhere
+  useEffect(() => {
+    return () => { if (dirtyRef.current) utils.record.list.invalidate(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => { qStartRef.current = Date.now(); }, [currentIndex, filterBankId]);
+
+  // Clamp index when the filtered list shrinks (e.g. after clearing)
 
   const targetRecords = useMemo(() => {
     type Rec = NonNullable<typeof records>[number];
@@ -162,6 +193,50 @@ export default function MistakesPage() {
   };
   const formatDate = (ts: Date | number) => { const d = new Date(ts); return `${d.getMonth() + 1}月${d.getDate()}日 ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; };
 
+  // Clamp index when the filtered list shrinks (e.g. after clearing records)
+  useEffect(() => {
+    if (filtered.length > 0 && currentIndex >= filtered.length) setCurrentIndex(filtered.length - 1);
+  }, [filtered.length, currentIndex]);
+
+  // ── Re-practice handlers ──────────────────────────
+  const currentKey = current ? `${current.bankId}-${current.questionId}` : "";
+  const practiceAnswer = currentKey ? answeredMap[currentKey] : undefined;
+
+  const submitPractice = useCallback((selected: number[]) => {
+    if (!current || !question || !currentKey) return;
+    const correct = question.correct.length === selected.length && question.correct.every((c) => selected.includes(c));
+    setAnsweredMap((prev) => ({ ...prev, [currentKey]: { selected, isCorrect: correct } }));
+    addRecord.mutate({
+      bankId: current.bankId,
+      questionId: current.questionId,
+      chapterId: (current as { chapterId?: number }).chapterId ?? undefined,
+      chapterName: (current as { chapterName?: string }).chapterName ?? undefined,
+      selected,
+      isCorrect: correct,
+      timeSpent: Date.now() - qStartRef.current,
+    });
+  }, [current, question, currentKey, addRecord]);
+
+  const handlePracticeSelect = useCallback((idx: number) => {
+    if (!practiceMode || !current || !question || practiceAnswer) return;
+    const qType = (question as { type?: string }).type || "single";
+    if (qType === "multiple") {
+      setMultiSel((prev) => {
+        const cur = prev[currentKey] || [];
+        return { ...prev, [currentKey]: cur.includes(idx) ? cur.filter((i) => i !== idx) : [...cur, idx] };
+      });
+    } else {
+      submitPractice([idx]);
+    }
+  }, [practiceMode, current, question, practiceAnswer, currentKey, submitPractice]);
+
+  const handleClearWrong = useCallback(() => {
+    const scope = filterBankId ? "当前题库" : "全部题库";
+    if (window.confirm(`确定清空${scope}的错题记录吗？此操作不可恢复。`)) {
+      clearWrong.mutate({ bankId: filterBankId ?? undefined });
+    }
+  }, [filterBankId, clearWrong]);
+
   if (targetRecords.length === 0) {
     const themeColor = isWrongMode ? "#ef4444" : "#10b981";
     return (
@@ -190,6 +265,36 @@ export default function MistakesPage() {
           </div>
         </div>
         <div style={{ width: "100%", height: "3px", background: "var(--card-bg-secondary)" }}><motion.div animate={{ width: `${filtered.length > 0 ? ((currentIndex + 1) / filtered.length) * 100 : 0}%` }} transition={{ duration: 0.3 }} style={{ height: "100%", background: isWrongMode ? "#ef4444" : "#10b981" }} /></div>
+
+        {/* Mode toolbar: review / re-practice + clear */}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 16px 0" }}>
+          <div style={{ display: "flex", background: "var(--card-bg-secondary)", borderRadius: "10px", padding: "3px", flex: 1 }}>
+            {([{ key: false, label: "回顾模式" }, { key: true, label: "重练模式" }] as const).map((opt) => (
+              <button key={opt.label}
+                onClick={() => setPracticeMode(opt.key)}
+                style={{
+                  flex: 1, padding: "7px 0", borderRadius: "8px", border: "none", cursor: "pointer",
+                  fontSize: "13px", fontWeight: 600,
+                  background: practiceMode === opt.key ? (isWrongMode ? "#ef4444" : "#10b981") : "transparent",
+                  color: practiceMode === opt.key ? "var(--page-bg)" : "var(--text-secondary)",
+                  transition: "all 0.2s", WebkitTapHighlightColor: "transparent", touchAction: "manipulation",
+                }}>
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          {isWrongMode && (
+            <button onClick={handleClearWrong}
+              style={{
+                display: "flex", alignItems: "center", gap: "4px", padding: "8px 12px",
+                borderRadius: "10px", border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.08)",
+                color: "#ef4444", fontSize: "12px", fontWeight: 600, cursor: "pointer",
+                whiteSpace: "nowrap", WebkitTapHighlightColor: "transparent", touchAction: "manipulation",
+              }}>
+              <Trash2 size={13} /> 清空错题
+            </button>
+          )}
+        </div>
 
         {/* Filter */}
         {bankOptions.length > 1 && (
@@ -228,26 +333,70 @@ export default function MistakesPage() {
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   {displayOptions.map((opt, idx) => {
                     const isCorrect = question.correct.includes(idx);
-                    const isSelected = current.selected.includes(idx);
+                    // In practice mode: before answering show pending selections, after answering show the new result
+                    const effSelected = practiceMode
+                      ? (practiceAnswer ? practiceAnswer.selected : (multiSel[currentKey] || []))
+                      : current.selected;
+                    const answered = practiceMode ? !!practiceAnswer : true;
+                    const isSelected = effSelected.includes(idx);
                     const isWrong = isSelected && !isCorrect;
-                    const bg = isCorrect ? "rgba(16,185,129,0.12)" : isWrong ? "rgba(239,68,68,0.12)" : isSelected ? "rgba(16,185,129,0.08)" : "var(--card-bg-secondary)";
-                    const border = isCorrect ? "1px solid rgba(16,185,129,0.3)" : isWrong ? "1px solid rgba(239,68,68,0.3)" : isSelected ? "1px solid rgba(16,185,129,0.2)" : "1px solid var(--border-color)";
-                    const color = isCorrect ? "#10b981" : isWrong ? "#ef4444" : isSelected ? "var(--text-secondary)" : "var(--text-secondary)";
+                    const clickable = practiceMode && !answered;
+                    const bg = !answered && isSelected ? "rgba(0,212,255,0.12)"
+                      : isCorrect ? "rgba(16,185,129,0.12)" : isWrong ? "rgba(239,68,68,0.12)" : isSelected ? "rgba(16,185,129,0.08)" : "var(--card-bg-secondary)";
+                    const border = !answered && isSelected ? "1px solid rgba(0,212,255,0.5)"
+                      : isCorrect ? "1px solid rgba(16,185,129,0.3)" : isWrong ? "1px solid rgba(239,68,68,0.3)" : isSelected ? "1px solid rgba(16,185,129,0.2)" : "1px solid var(--border-color)";
+                    const color = isCorrect && answered ? "#10b981" : isWrong && answered ? "#ef4444" : "var(--text-secondary)";
                     return (
-                      <div key={idx} style={{ padding: "10px 12px", borderRadius: "8px", background: bg, border, fontSize: "14px", color, display: "flex", alignItems: "center", gap: "8px" }}>
-                        <span style={{ width: "22px", height: "22px", borderRadius: "50%", background: isCorrect ? "#10b981" : isWrong ? "#ef4444" : isSelected ? "#00d4ff" : "var(--text-tertiary)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 600, color: "var(--text-primary)", flexShrink: 0 }}>{String.fromCharCode(65 + idx)}</span>
+                      <div key={idx}
+                        onClick={clickable ? () => handlePracticeSelect(idx) : undefined}
+                        style={{ padding: "10px 12px", borderRadius: "8px", background: bg, border, fontSize: "14px", color, display: "flex", alignItems: "center", gap: "8px", cursor: clickable ? "pointer" : "default", WebkitTapHighlightColor: "transparent", userSelect: "none", touchAction: clickable ? "manipulation" : "auto" }}>
+                        <span style={{ width: "22px", height: "22px", borderRadius: "50%", background: !answered && isSelected ? "#00d4ff" : isCorrect && answered ? "#10b981" : isWrong && answered ? "#ef4444" : isSelected ? "#00d4ff" : "var(--text-tertiary)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 600, color: "var(--text-primary)", flexShrink: 0 }}>{String.fromCharCode(65 + idx)}</span>
                         <span>{opt}{showSub && subOptions?.[idx] && (
                           <span style={{ display: "block", marginTop: "3px", fontSize: "13px", color: "var(--text-secondary)" }}>{subOptions[idx]}</span>
                         )}</span>
-                        {isCorrect && <span style={{ fontSize: "11px", marginLeft: "auto" }}>正确答案</span>}
-                        {!isCorrect && isSelected && <span style={{ fontSize: "11px", marginLeft: "auto" }}>你的选择</span>}
+                        {answered && isCorrect && <Check size={16} color="#10b981" style={{ marginLeft: "auto", flexShrink: 0 }} />}
+                        {answered && isWrong && <X size={16} color="#ef4444" style={{ marginLeft: "auto", flexShrink: 0 }} />}
+                        {!answered && isSelected && <span style={{ fontSize: "11px", marginLeft: "auto", color: "#00d4ff" }}>已选</span>}
+                        {!practiceMode && isCorrect && <span style={{ fontSize: "11px", marginLeft: "auto" }}>正确答案</span>}
+                        {!practiceMode && !isCorrect && isSelected && <span style={{ fontSize: "11px", marginLeft: "auto" }}>你的选择</span>}
                       </div>
                     );
                   })}
                 </div>
+
+                {/* Multi-select submit in practice mode */}
+                {practiceMode && !practiceAnswer && (question as { type?: string }).type === "multiple" && (
+                  <motion.button whileTap={{ scale: 0.97 }}
+                    onClick={() => { const sel = multiSel[currentKey] || []; if (sel.length > 0) submitPractice(sel); }}
+                    disabled={!(multiSel[currentKey] || []).length}
+                    style={{
+                      marginTop: "12px", width: "100%", padding: "12px", borderRadius: "10px",
+                      background: (multiSel[currentKey] || []).length ? "#00d4ff" : "var(--card-bg-secondary)",
+                      color: (multiSel[currentKey] || []).length ? "var(--page-bg)" : "var(--text-tertiary)",
+                      fontSize: "14px", fontWeight: 600, border: "none",
+                      cursor: (multiSel[currentKey] || []).length ? "pointer" : "not-allowed",
+                      minHeight: "44px", touchAction: "manipulation",
+                    }}>
+                    确认提交 ({(multiSel[currentKey] || []).length}项已选)
+                  </motion.button>
+                )}
+
+                {/* Practice result banner */}
+                {practiceMode && practiceAnswer && (
+                  <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                    style={{
+                      marginTop: "12px", padding: "10px 14px", borderRadius: "10px",
+                      background: practiceAnswer.isCorrect ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)",
+                      border: `1px solid ${practiceAnswer.isCorrect ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)"}`,
+                      fontSize: "13px", fontWeight: 600,
+                      color: practiceAnswer.isCorrect ? "#10b981" : "#ef4444",
+                    }}>
+                    {practiceAnswer.isCorrect ? "✓ 回答正确！本题已记录为正确" : "✗ 回答错误，请查看解析后继续"}
+                  </motion.div>
+                )}
                 <div style={{ marginTop: "16px", display: "flex", gap: "12px" }}>
                   <div style={{ flex: 1, padding: "10px", borderRadius: "8px", background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.15)" }}><div style={{ fontSize: "11px", color: "#10b981" }}>正确答案</div><div style={{ fontSize: "16px", fontWeight: 700, color: "#10b981" }}>{question.correct.map((c) => String.fromCharCode(65 + c)).join(", ")}</div></div>
-                  <div style={{ flex: 1, padding: "10px", borderRadius: "8px", background: isWrongMode ? "rgba(239,68,68,0.08)" : "rgba(16,185,129,0.08)", border: isWrongMode ? "1px solid rgba(239,68,68,0.15)" : "1px solid rgba(16,185,129,0.15)" }}><div style={{ fontSize: "11px", color: isWrongMode ? "#ef4444" : "#10b981" }}>你的答案</div><div style={{ fontSize: "16px", fontWeight: 700, color: isWrongMode ? "#ef4444" : "#10b981" }}>{current.selected.map((c) => String.fromCharCode(65 + c)).join(", ") || "-"}</div></div>
+                  <div style={{ flex: 1, padding: "10px", borderRadius: "8px", background: isWrongMode ? "rgba(239,68,68,0.08)" : "rgba(16,185,129,0.08)", border: isWrongMode ? "1px solid rgba(239,68,68,0.15)" : "1px solid rgba(16,185,129,0.15)" }}><div style={{ fontSize: "11px", color: isWrongMode ? "#ef4444" : "#10b981" }}>{practiceMode && practiceAnswer ? "本次作答" : "你的答案"}</div><div style={{ fontSize: "16px", fontWeight: 700, color: isWrongMode ? "#ef4444" : "#10b981" }}>{(practiceMode && practiceAnswer ? practiceAnswer.selected : current.selected).map((c) => String.fromCharCode(65 + c)).join(", ") || "-"}</div></div>
                 </div>
                 {question.explanation && <div style={{ marginTop: "16px", padding: "12px", borderRadius: "10px", background: "var(--page-bg)" }}><div style={{ fontSize: "12px", color: "var(--text-tertiary)", marginBottom: "4px" }}>解析</div><div style={{ fontSize: "13px", color: "var(--text-secondary)", lineHeight: 1.6 }}>{question.explanation}</div></div>}
               </div>
