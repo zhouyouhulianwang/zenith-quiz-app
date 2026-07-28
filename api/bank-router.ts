@@ -3,7 +3,7 @@ import { eq, and, desc } from "drizzle-orm";
 import { createRouter, authedQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { banks, practiceRecords } from "@db/schema";
-import { translateQuestions } from "./translate-service";
+import { translateQuestions, toTraditional } from "./translate-service";
 
 export interface Question {
   id: number;
@@ -79,8 +79,13 @@ export const bankRouter = createRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const db = getDb();
-      // Save immediately, translate async via translateBank endpoint
-      const questionsJson = JSON.stringify(input.questions);
+      // 1. Generate Traditional Chinese at import time (no API needed)
+      const questionsWithTC = input.questions.map((q: any) => ({
+        ...q,
+        tcQuestion: q.question ? toTraditional(q.question) : undefined,
+        tcOptions: q.options ? q.options.map((o: string) => toTraditional(o)) : undefined,
+      }));
+      const questionsJson = JSON.stringify(questionsWithTC);
       const chaptersJson = input.chapters ? JSON.stringify(input.chapters) : null;
       const result = await db.insert(banks).values({
         userId: ctx.user.id,
@@ -93,6 +98,19 @@ export const bankRouter = createRouter({
         progress: 0,
       });
       const insertId = result[0]?.insertId ? Number(result[0].insertId) : 0;
+      // 2. Auto-trigger English translation after 10 seconds (don't block response)
+      if (insertId) {
+        setTimeout(async () => {
+          try {
+            console.log(`[auto-translate] Starting translation for bank ${insertId}`);
+            const { translateBankAllInternal } = await import("./translate-router");
+            const transResult = await translateBankAllInternal(insertId, ctx.user.id);
+            console.log(`[auto-translate] Bank ${insertId} done:`, transResult);
+          } catch (e) {
+            console.error(`[auto-translate] Bank ${insertId} failed:`, e);
+          }
+        }, 10000);
+      }
       return { id: insertId, count: input.questions.length };
     }),
 
