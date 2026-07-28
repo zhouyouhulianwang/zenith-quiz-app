@@ -432,7 +432,11 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
   const [transCache, setTransCache] = useState<Record<number, { enQuestion: string; enOptions: string[] }>>({});
   const [translatingIds, setTranslatingIds] = useState<Set<number>>(new Set());
   const translateMutation = trpc.translate.batchTranslate.useMutation();
-  const updateBankMutation = trpc.bank.updateQuestions.useMutation();
+  const updateBankMutation = trpc.bank.updateQuestions.useMutation({
+    onSuccess: () => {
+      utils.bank.get.invalidate({ id: rawBankId });
+    },
+  });
 
   // Auto-translate questions without EN data
   useEffect(() => {
@@ -449,7 +453,7 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
 
     if (needsTranslation.length === 0) return;
 
-    const batchSize = 10;
+    const batchSize = 3;
     for (let i = 0; i < needsTranslation.length; i += batchSize) {
       const batch = needsTranslation.slice(i, i + batchSize);
       const ids = batch.map((q) => q.id);
@@ -699,6 +703,8 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
   const typeLabel = { single: "单选题", multiple: "多选题", boolean: "判断题", fill: "填空题" }[currentQuestion?.type || "single"];
   const langMap: Record<string, string> = { zh: "中", en: "EN", both: "中英", tc: "繁", entc: "EN+繁" };
   const langLabelText = langMap[lang] || "EN+繁";
+  const isTranslatingCurrent = currentQuestion ? translatingIds.has(currentQuestion.id) : false;
+  const showEnMode = lang === "en" || lang === "entc";
 
   return (
     <div style={{ position: "relative", minHeight: "100dvh", background: "var(--page-bg)" }}>
@@ -789,6 +795,7 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
             <div style={{ background: "var(--card-bg)", borderRadius: "16px", padding: "20px", border: "1px solid var(--border-color)", marginBottom: "16px" }}>
               <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "4px 12px", borderRadius: "8px", background: "rgba(0,212,255,0.15)", color: "#00d4ff", fontSize: "12px", fontWeight: 500, marginBottom: "12px" }}>
                 {typeLabel}
+                {isTranslatingCurrent && showEnMode && <span style={{ color: "#f59e0b", fontSize: "11px" }}>翻译中...</span>}
                 {currentQuestion?.chapterId !== undefined && (
                   <span style={{ opacity: 0.7 }}>
                     第{chapters.findIndex((c) => c.chapterId === currentQuestion.chapterId) + 1}章
