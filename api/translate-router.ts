@@ -1,6 +1,15 @@
 import { z } from "zod";
-import { createRouter, publicQuery } from "./middleware";
+import { createRouter, publicQuery, authedQuery } from "./middleware";
 import { env } from "./lib/env";
+import { getDb } from "./queries/connection";
+import { banks } from "@db/schema";
+import { eq } from "drizzle-orm";
+import s2t from "chinese-s2t";
+
+function toTraditional(simple: string): string {
+  if (!simple) return simple;
+  try { return s2t.s2t(simple); } catch { return simple; }
+}
 
 // Translation router
 // Priority: 1) Free APIs (Google/MyMemory) 2) Moonshot LLM (guaranteed)
@@ -239,4 +248,97 @@ export const translateRouter = createRouter({
   stats: publicQuery.query(() => {
     return { cacheSize: cache.size, moonshotConfigured: !!env.moonshotApiKey };
   }),
+
+  // Batch translate all questions in a bank and save to DB
+  translateBankAll: authedQuery
+    .input(z.object({ bankId: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      const [row] = await db.select().from(banks).where(eq(banks.id, input.bankId));
+      if (!row) return { success: false, error: "Bank not found" };
+
+      const questions = JSON.parse(row.questionsJson || "[]");
+      if (!questions.length) return { success: false, error: "No questions" };
+
+      // Collect all texts that need translation
+      const textsToTranslate: { qIdx: number; text: string; isOption: boolean; optIdx?: number }[] = [];
+      for (let qIdx = 0; qIdx < questions.length; qIdx++) {
+        const q = questions[qIdx];
+        if (!q.enQuestion && q.question && hasChinese(q.question)) {
+          textsToTranslate.push({ qIdx, text: q.question, isOption: false });
+        }
+        if (q.options && Array.isArray(q.options)) {
+          for (let oIdx = 0; oIdx < q.options.length; oIdx++) {
+            const opt = q.options[oIdx];
+            if (!q.enOptions?.[oIdx] && opt && hasChinese(opt)) {
+              textsToTranslate.push({ qIdx, text: opt, isOption: true, optIdx: oIdx });
+            }
+          }
+        }
+      }
+
+      const total = textsToTranslate.length;
+      if (total === 0) {
+        // Just ensure TC fields exist
+        let updated = 0;
+        for (const q of questions) {
+          if (!q.tcQuestion && q.question) { q.tcQuestion = toTraditional(q.question); updated++; }
+          if (!q.tcOptions && q.options) { q.tcOptions = q.options.map((o: string) => toTraditional(o)); updated++; }
+        }
+        if (updated > 0) {
+          await db.update(banks).set({ questionsJson: JSON.stringify(questions) }).where(eq(banks.id, input.bankId));
+        }
+        return { success: true, translated: 0, total: 0, alreadyDone: true };
+      }
+
+      // Batch translate with small batches
+      const BATCH = 5;
+      let done = 0;
+      let failed = 0;
+
+      for (let i = 0; i < total; i += BATCH) {
+        const batch = textsToTranslate.slice(i, i + BATCH);
+        const texts = batch.map((b) => b.text);
+        const { results } = await batchTranslate(texts);
+
+        for (let j = 0; j < batch.length; j++) {
+          const item = batch[j];
+          const result = results[j];
+          const q = questions[item.qIdx];
+
+          if (result && !result.startsWith("[EN]")) {
+            if (item.isOption && item.optIdx !== undefined) {
+              if (!q.enOptions) q.enOptions = [];
+              q.enOptions[item.optIdx] = result;
+            } else {
+              q.enQuestion = result;
+            }
+          } else {
+            failed++;
+          }
+          done++;
+        }
+
+        // Save progress every 2 batches
+        if (i % (BATCH * 2) === 0 || i + BATCH >= total) {
+          await db.update(banks).set({ questionsJson: JSON.stringify(questions) }).where(eq(banks.id, input.bankId));
+        }
+
+        // Rate limit: wait between batches
+        if (i + BATCH < total) {
+          await new Promise((r) => setTimeout(r, 500));
+        }
+      }
+
+      // Ensure all TC fields
+      for (const q of questions) {
+        if (!q.tcQuestion && q.question) q.tcQuestion = toTraditional(q.question);
+        if (!q.tcOptions && q.options) q.tcOptions = q.options.map((o: string) => toTraditional(o));
+      }
+
+      // Final save
+      await db.update(banks).set({ questionsJson: JSON.stringify(questions) }).where(eq(banks.id, input.bankId));
+
+      return { success: true, translated: done - failed, total, failed };
+    }),
 });
