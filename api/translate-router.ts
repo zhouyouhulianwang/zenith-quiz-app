@@ -55,62 +55,77 @@ async function mymemoryTranslate(text: string, from: string, to: string): Promis
 // Source 3: Moonshot LLM (guaranteed, uses API key)
 async function moonshotTranslate(texts: string[]): Promise<string[]> {
   const apiKey = env.moonshotApiKey;
-  console.log("[translate] moonshot api key present:", !!apiKey, "length:", apiKey?.length);
   if (!apiKey) return texts.map((t) => `[EN] ${t}`);
 
-  try {
-    const prompt = `Translate the following Chinese text to English. Translate the FULL sentence, not word by word. Return ONLY the English translations, one per line, in the same order. Do not add any explanation or notes.
+  const prompt = `Translate the following Chinese text to English. Translate the FULL sentence, not word by word. Return ONLY the English translations, one per line, in the same order. Do not add any explanation or notes.
 
 ${texts.map((t, i) => `${i + 1}. ${t}`).join("\n")}`;
 
-    console.log("[translate] calling moonshot for", texts.length, "texts");
-    const res = await fetch("https://api.moonshot.ai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "moonshot-v1-8k",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.1,
-      }),
-      signal: AbortSignal.timeout(20000),
-    });
-    console.log("[translate] moonshot response status:", res.status);
-
-    if (!res.ok) {
-      const err = await res.text();
-      console.warn("[moonshot] translate failed:", res.status, err);
-      return texts.map((t) => `[EN] ${t}`);
-    }
-
-    const data = (await res.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
-    };
-    const content = data.choices?.[0]?.message?.content;
-    if (!content) return texts.map((t) => `[EN] ${t}`);
-
-    // Parse numbered results
-    const results: string[] = [];
-    const lines = content.split("\n").filter((l) => l.trim());
-
-    for (let i = 0; i < texts.length; i++) {
-      const prefix = `${i + 1}.`;
-      const line = lines.find((l) => l.trim().startsWith(prefix));
-      if (line) {
-        const translated = line.substring(line.indexOf(prefix) + prefix.length).trim();
-        results.push(translated || `[EN] ${texts[i]}`);
-      } else {
-        results.push(`[EN] ${texts[i]}`);
+  // Retry with exponential backoff for 429 errors
+  const maxRetries = 3;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      if (attempt > 0) {
+        const delay = Math.min(1000 * Math.pow(2, attempt), 8000);
+        console.log(`[translate] moonshot retry ${attempt}/${maxRetries}, waiting ${delay}ms`);
+        await new Promise((r) => setTimeout(r, delay));
       }
-    }
 
-    return results;
-  } catch (err) {
-    console.warn("[moonshot] translate error:", err);
-    return texts.map((t) => `[EN] ${t}`);
+      const res = await fetch("https://api.moonshot.ai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "moonshot-v1-8k",
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.1,
+        }),
+        signal: AbortSignal.timeout(30000),
+      });
+
+      // Handle 429 with retry
+      if (res.status === 429) {
+        console.warn(`[translate] moonshot 429 (attempt ${attempt + 1}/${maxRetries})`);
+        continue;
+      }
+
+      if (!res.ok) {
+        const err = await res.text();
+        console.warn("[translate] moonshot failed:", res.status, err);
+        return texts.map((t) => `[EN] ${t}`);
+      }
+
+      const data = (await res.json()) as {
+        choices?: Array<{ message?: { content?: string } }>;
+      };
+      const content = data.choices?.[0]?.message?.content;
+      if (!content) return texts.map((t) => `[EN] ${t}`);
+
+      // Parse numbered results
+      const results: string[] = [];
+      const lines = content.split("\n").filter((l) => l.trim());
+
+      for (let i = 0; i < texts.length; i++) {
+        const prefix = `${i + 1}.`;
+        const line = lines.find((l) => l.trim().startsWith(prefix));
+        if (line) {
+          const translated = line.substring(line.indexOf(prefix) + prefix.length).trim();
+          results.push(translated || `[EN] ${texts[i]}`);
+        } else {
+          results.push(`[EN] ${texts[i]}`);
+        }
+      }
+
+      return results;
+    } catch (err) {
+      console.warn(`[translate] moonshot error (attempt ${attempt + 1}/${maxRetries}):`, err);
+      if (attempt === maxRetries - 1) break;
+    }
   }
+
+  return texts.map((t) => `[EN] ${t}`);
 }
 
 // Batch translate: try free APIs first, fallback to Moonshot LLM
