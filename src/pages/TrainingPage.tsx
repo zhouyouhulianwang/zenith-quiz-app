@@ -417,7 +417,7 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
   const [saveError, setSaveError] = useState("");
 
   // Memoize parsed questions to avoid re-parsing on every render
-  const allQuestions: Q[] = useMemo(() => bankData ? JSON.parse(bankData.questions) : [], [bankData?.questionsJson]);
+  const allQuestions: Q[] = useMemo(() => (bankData?.questions as Q[]) || [], [bankData?.questions]);
   const chapters: ChapterInfo[] = useMemo(() => bankData?.chaptersJson ? JSON.parse(bankData.chaptersJson) : [], [bankData?.chaptersJson]);
 
   // Filter by active chapter
