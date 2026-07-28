@@ -486,7 +486,7 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
           });
           setTransCache((prev) => ({ ...prev, ...newTransCache }));
           if (bankData && batch.length > 0) {
-            const allQs = JSON.parse(bankData.questions);
+            const allQs = bankData.questions as Q[];
             const updatedQs = allQs.map((q: any) => newTransCache[q.id] ? { ...q, ...newTransCache[q.id], tcQuestion: toTraditional(q.question), tcOptions: q.options.map((o: string) => toTraditional(o)) } : q);
             updateBankMutation.mutate({ id: rawBankId, questionsJson: JSON.stringify(updatedQs) });
           }
