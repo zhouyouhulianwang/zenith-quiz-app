@@ -121,7 +121,7 @@ export default function ProfilePage() {
             <div>
               <div style={{ fontSize: "12px", color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px", paddingLeft: "4px" }}>数据管理</div>
               <div style={{ background: "var(--card-bg)", borderRadius: "12px", border: "1px solid var(--border-color)", overflow: "hidden" }}>
-                <SettingRow icon={Download} label="导出数据" value="JSON" onClick={handleExport} />
+                {/* <SettingRow icon={Download} label="导出数据" value="JSON" onClick={handleExport} /> */}
                 <SettingRow icon={RotateCcw} label="按卷清空记录" value={`${banks?.length || 0} 套题库`} onClick={() => setShowBankReset(true)} />
                 <SettingRow icon={Trash2} label="清空所有记录" value="" danger onClick={() => setShowResetConfirm(true)} />
               </div>
