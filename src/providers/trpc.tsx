@@ -28,6 +28,7 @@ function createTrpcClient(apiUrl: string) {
             ...(init ?? {}),
             credentials: "include",
             mode: "cors",
+            signal: AbortSignal.timeout(60000),
           });
         },
       }),
