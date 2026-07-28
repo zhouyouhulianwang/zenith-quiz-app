@@ -504,8 +504,16 @@ function TrainingSession({ bankId: rawBankId, chapterId: initialChapterId }: { b
               idx += 1 + optCount;
             });
             setTransCache((prev) => ({ ...prev, ...newTransCache }));
+            // Save fallback translations to DB too
+            if (bankData && batch.length > 0) {
+              const allQs = bankData.questions as Q[];
+              const updatedQs = allQs.map((q: any) => newTransCache[q.id] ? { ...q, ...newTransCache[q.id], tcQuestion: toTraditional(q.question), tcOptions: q.options.map((o: string) => toTraditional(o)) } : q);
+              updateBankMutation.mutate({ id: rawBankId, questionsJson: JSON.stringify(updatedQs) });
+            }
           } catch {
-            setTransCache((prev) => { const n = { ...prev }; batch.forEach((q) => { n[q.id] = { enQuestion: `[EN] ${q.question}`, enOptions: q.options.map((o) => `[EN] ${o}`) }; }); return n; });
+            const fallbackCache: Record<number, { enQuestion: string; enOptions: string[] }> = {};
+            batch.forEach((q) => { fallbackCache[q.id] = { enQuestion: `[EN] ${q.question}`, enOptions: q.options.map((o) => `[EN] ${o}`) }; });
+            setTransCache((prev) => { const n = { ...prev }; batch.forEach((q) => { n[q.id] = fallbackCache[q.id]; }); return n; });
           }
         })
         .finally(() => {
