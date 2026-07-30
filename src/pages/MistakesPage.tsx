@@ -102,12 +102,11 @@ export default function MistakesPage() {
     { enabled: !!currentBankId },
   );
   const bank = current ? (fullBank || banks?.find((b) => b.id === current.bankId)) : null;
-  // Memoize parsed questions to avoid re-parsing on every render
+  // bank.get returns parsed `questions`; bank.list only carries metadata (questionsJson: "")
   const bankQuestions = useMemo(() => {
-    if (!bank?.questionsJson) return [];
-    try { return JSON.parse(bank.questionsJson) as Array<{ id: number; question: string; options: string[]; correct: number[]; explanation: string }>; }
-    catch { return []; }
-  }, [bank?.questionsJson]);
+    const qs = (fullBank as { questions?: Array<{ id: number; question: string; options: string[]; correct: number[]; explanation: string }> } | null | undefined)?.questions;
+    return Array.isArray(qs) ? qs : [];
+  }, [fullBank]);
   const question = current ? bankQuestions.find((q) => q.id === current.questionId) : null;
   const { settings, setSettings } = useAppSettings();
   const langMode = settings.questionLanguage as "en" | "tc" | "sc" | "entc";

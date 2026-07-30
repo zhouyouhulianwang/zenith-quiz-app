@@ -48,7 +48,13 @@ export default function RecordsPage() {
 
   const current = filtered[currentIndex];
   const bank = current ? banks?.find((b) => b.id === current.bankId) : null;
-  const question = current ? (JSON.parse(bank?.questionsJson || "[]") as Array<{ id: number; question: string; options: string[]; correct: number[]; explanation: string }>).find((q) => q.id === current.questionId) : null;
+  // bank.list only carries metadata (questionsJson: ""); fetch full bank for questions
+  const currentBankId = current?.bankId || 0;
+  const { data: fullBank } = trpc.bank.get.useQuery(
+    { id: currentBankId },
+    { enabled: !!currentBankId },
+  );
+  const question = current ? (((fullBank as { questions?: Array<{ id: number; question: string; options: string[]; correct: number[]; explanation: string }> } | null | undefined)?.questions) || []).find((q) => q.id === current.questionId) : null;
   const { settings, setSettings } = useAppSettings();
   const langMode = settings.questionLanguage as LangMode;
   const total = filtered.length;

@@ -66,9 +66,10 @@ export default function MockExamCreatePage() {
 
   const allQuestions: Q[] = useMemo(() => {
     if (jsonMode) return jsonQuestions;
-    if (!bankData?.questionsJson) return [];
-    try { return bankData.questions; } catch { return []; }
-  }, [jsonMode, jsonQuestions, bankData?.questionsJson]);
+    // bank.get returns parsed `questions`; bank.list only carries metadata (questions: [])
+    const qs = (bankData as { questions?: Q[] } | null | undefined)?.questions;
+    return Array.isArray(qs) && qs.length > 0 ? qs : [];
+  }, [jsonMode, jsonQuestions, bankData]);
 
   const chapters = useMemo(() => {
     if (jsonMode || !bankData?.chaptersJson) return [];
